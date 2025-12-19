@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c8670d67f2ecfaa47b33864997218a65, type: 3}
+  m_Name: Dialogue_2
+  m_EditorClassIdentifier: 
+  nodeName: EventNode
+  speaker: Another Test Name
+  text: 'You can continue by clicking any key or any key down
+
+    This DialogueSystem
+    could deal with long article
+
+    And Press any key down advanced will directly
+    show whole article'

@@ -1,0 +1,34 @@
+# Unity默认忽略文件
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# VS/ Rider 项目文件（可选，若用IDE开发）
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+/.vs/
+
+# 其他
+/[Mm]emoryCaptures/
+/[Pp]rofiler/
+/[Rr]ecordings/

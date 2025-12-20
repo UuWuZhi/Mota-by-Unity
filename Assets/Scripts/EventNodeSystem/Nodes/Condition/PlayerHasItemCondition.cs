@@ -9,14 +9,19 @@ public class PlayerHasItemCondition : ConditionNode
 
     public override void Evaluate(EventNodeContext ctx, Action<bool> onResult)
     {
-        //Debug.Log("Node:检测物品开始");
-        bool hasItem;
+        bool hasItem = false;
         try
         {
-            hasItem = ctx.PlayerInventory != null && ctx.PlayerInventory.HasItem(itemType, requiredCount);
+            if (ctx.InventoryService != null)
+            {
+                hasItem = ctx.InventoryService.HasItem(itemType, requiredCount);
+            }
+            else
+            {
+                Debug.LogError("PlayerHasItemCondition: InventoryService 未配置，无法判断道具数量。请确保 InventoryAdapter 已通过容器注册。");
+            }
         }
         catch { hasItem = false; }
-        //Debug.Log($"物品检测结果：{hasItem}");
         onResult?.Invoke(hasItem);
     }
 }

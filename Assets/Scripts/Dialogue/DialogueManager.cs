@@ -1,33 +1,38 @@
-using System;
-using System.Collections.Generic;
-using UnityEngine;
-
 /// <summary>
 /// 简化的对话管理器：仅负责展示对话数据并广播当前节点变更/对话开始/结束事件。
 /// 对话的推进与选项处理由外部系统（Node 系统 / 控制器）负责调用 SetCurrentNode / EndDialogue。
 /// </summary>
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+
 public class DialogueManager : MonoBehaviour
 {
     public static DialogueManager Instance { get; private set; }
-
     public bool IsActive { get; private set; } = false;
-
-    // 当前节点
     private DialogueNode _currentNode;
-    public DialogueNode CurrentNode => _currentNode;
-
-    // 事件
-    public event Action OnDialogueStarted; // 对话开始
-    public event Action<DialogueNode> OnNodeChanged; // 当前节点变更
-    public event Action OnDialogueEnded; // 对话结束
-
+    public event Action OnDialogueStarted;
+    public event Action<DialogueNode> OnNodeChanged;
+    public event Action OnDialogueEnded;
+    //==============================================================================//
+    //                                                                              //
+    //                                 生命周期                                     //
+    //                                                                              //
+    //==============================================================================//
+    #region 生命周期
     private void Awake()
     {
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
         DontDestroyOnLoad(gameObject);
     }
-
+    #endregion
+    //==============================================================================//
+    //                                                                              //
+    //                                 对话进程                                     //
+    //                                                                              //
+    //==============================================================================//
+    #region 对话进程
     /// <summary>
     /// 启动对话（直接传入起始 DialogueNode）。
     /// 对话推进仍由外部控制（通常通过 SetCurrentNode 或 EndDialogue）。
@@ -40,7 +45,26 @@ public class DialogueManager : MonoBehaviour
         OnDialogueStarted?.Invoke();
         PublishCurrentNode();
     }
-
+    /// <summary>
+    /// 结束当前对话（外部可调用）
+    /// </summary>
+    public void EndDialogue()
+    {
+        IsActive = false;
+        OnDialogueEnded?.Invoke();
+        _currentNode = null;
+    }
+    private void PublishCurrentNode()
+    {
+        OnNodeChanged?.Invoke(_currentNode);
+    }
+    #endregion
+    //==============================================================================//
+    //                                                                              //
+    //                                 外部接口                                     //
+    //                                                                              //
+    //==============================================================================//
+    #region 外部接口
     /// <summary>
     /// 运行时简便 API：显示单段文字并在结束时回调（内部创建临时 DialogueNode）。
     /// 对话结束回调由 onComplete 接收；对话推进仍由外部控制（通常临时对话无选项，结束即回调）。
@@ -109,19 +133,5 @@ public class DialogueManager : MonoBehaviour
         PublishCurrentNode();
         return true;
     }
-
-    /// <summary>
-    /// 结束当前对话（外部可调用）
-    /// </summary>
-    public void EndDialogue()
-    {
-        IsActive = false;
-        OnDialogueEnded?.Invoke();
-        _currentNode = null;
-    }
-
-    private void PublishCurrentNode()
-    {
-        OnNodeChanged?.Invoke(_currentNode);
-    }
+    #endregion
 }

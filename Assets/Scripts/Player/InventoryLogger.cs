@@ -2,8 +2,7 @@ using System;
 using UnityEngine;
 
 /// <summary>
-/// 只是一个容器 EntryPoint，用来展示通过构造注入 IInventoryService 的最小使用示例。
-/// 容器会在启动时构造本对象并注入依赖（RegisterEntryPoint）。
+/// 容器 EntryPoint 示例：构造时订阅 IInventoryService 事件并记录日志
 /// </summary>
 public class InventoryLogger
 {
@@ -18,6 +17,6 @@ public class InventoryLogger
 
     private void OnItemChanged(ItemType t)
     {
-        Debug.Log($"[InventoryLogger] OnItemChanged: {t}, 当前数量: {_inventory.GetItemCount(t)}");
+        Debug.Log($"[InventoryLogger] OnItemChanged: {t}, Count: {_inventory.GetItemCount(t)}");
     }
 }

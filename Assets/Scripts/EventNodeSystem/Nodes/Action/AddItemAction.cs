@@ -10,10 +10,15 @@ public class AddItemAction : ActionNode
 
     public override void Execute(EventNodeContext ctx, Action onComplete)
     {
-        // 简单调用背包接口
-        if (ctx.PlayerInventory != null)
+        // 强制使用 InventoryService；如果不可用则记录错误并直接完成（避免隐式回退）
+        if (ctx.InventoryService != null)
         {
-            ctx.PlayerInventory.AddItem(itemType, count);
+            ctx.InventoryService.AddItem(itemType, count);
+            Debug.Log("使用 InventoryService 添加道具。");
+        }
+        else
+        {
+            Debug.LogError("AddItemAction: InventoryService 未配置，无法添加道具。请确保 InventoryAdapter 已通过容器注册。");
         }
         onComplete?.Invoke();
     }

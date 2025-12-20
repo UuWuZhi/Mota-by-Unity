@@ -9,10 +9,15 @@ public class RemoveAction : ActionNode
 
     public override void Execute(EventNodeContext ctx, Action onComplete)
     {
-        // 简单调用背包接口
-        if (ctx.PlayerInventory != null)
+        // 使用接口服务进行移除
+        if (ctx.InventoryService != null)
         {
-            ctx.PlayerInventory.RemoveItem(itemType, count);
+            ctx.InventoryService.RemoveItem(itemType, count);
+            Debug.Log("使用 InventoryService 移除道具。");
+        }
+        else
+        {
+            Debug.LogError("RemoveAction: InventoryService 未配置，无法移除道具。请确保 InventoryAdapter 已通过容器注册。");
         }
         onComplete?.Invoke();
     }

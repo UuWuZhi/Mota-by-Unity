@@ -2,6 +2,7 @@ using UnityEngine;
 using VContainer;
 using VContainer.Unity;
 
+[DefaultExecutionOrder(-200)]
 /// <summary>
 /// 最小 Composition Root：把现有的单例实例注册到 VContainer 中，支持逐步迁移到 DI。
 /// 把此脚本挂到场景中的一个根 GameObject（保证在其他对象访问 Instance 之后执行）。
@@ -16,13 +17,23 @@ public class DiBootstrap : LifetimeScope
         if (EventCenter.Instance != null) builder.RegisterInstance(EventCenter.Instance).As<EventCenter>().AsSelf();
         if (GridManager.Instance != null) builder.RegisterInstance(GridManager.Instance).As<GridManager>().AsSelf();
         if (MapManager.Instance != null) builder.RegisterInstance(MapManager.Instance).As<MapManager>().AsSelf();
-        if (PlayerInventory.Instance != null) builder.RegisterInstance(PlayerInventory.Instance).As<PlayerInventory>().AsSelf();
         if (DialogueManager.Instance != null) builder.RegisterInstance(DialogueManager.Instance).As<DialogueManager>().AsSelf();
+        if (PlayerAttribute.Instance != null) builder.RegisterInstance(PlayerAttribute.Instance).As<PlayerAttribute>().AsSelf();
+        if (PlayerMovement.Instance != null) builder.RegisterInstance(PlayerMovement.Instance).As<PlayerMovement>().AsSelf();
 
-        // 注册适配器：把 PlayerInventory 暴露为 IInventoryService
-        builder.Register<InventoryAdapter>(Lifetime.Singleton).As<IInventoryService>();
+        // 如果场景中存在 PlayerInventory，则把它注册到容器，避免构造器解析失败
+        //if (PlayerInventory.Instance != null)
+        //{
+        //    builder.RegisterInstance(PlayerInventory.Instance).As<PlayerInventory>().AsSelf();
+        //}
 
-        // 注册 EntryPoint 用于演示容器注入
+        // 注册 InventoryAdapter 由容器管理；容器会尝试使用无参构造或通过构造参数注入
+        builder.Register<InventoryAdapter>(Lifetime.Singleton).As<IInventoryService>().AsSelf();
+
+        // 注册 GameInitializationEntryPoint（容器负责构造并在启动时调用 Start）
+        builder.RegisterEntryPoint<GameInitializationEntryPoint>();
+
+        // 注册 EntryPoint 用于演示容器注入（同时保证 InventoryAdapter 被构造）
         builder.RegisterEntryPoint<InventoryLogger>();
 
         // 示例：注册一个纯 C# 服务为单例

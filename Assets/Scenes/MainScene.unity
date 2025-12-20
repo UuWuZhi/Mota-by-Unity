@@ -864,6 +864,7 @@ GameObject:
   - component: {fileID: 430610160}
   - component: {fileID: 430610164}
   - component: {fileID: 430610165}
+  - component: {fileID: 430610166}
   m_Layer: 5
   m_Name: Canvas_UI
   m_TagString: Untagged
@@ -989,6 +990,24 @@ MonoBehaviour:
   textYellowkey: {fileID: 848409141}
   textBluekey: {fileID: 1364166871}
   textRedkey: {fileID: 391236890}
+--- !u!114 &430610166
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 430610159}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 50c8d70fab8e06e49b564da280920fac, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  root: {fileID: 925947737}
+  speakerText: {fileID: 1470394910}
+  contentText: {fileID: 2145667558}
+  choicesContainer: {fileID: 674188477}
+  choiceButtonPrefab: {fileID: 8825540079217226074, guid: 1222bce4130981543aff4f45d2eba139, type: 3}
+  typeSpeed: 0.02
 --- !u!1 &457658670
 GameObject:
   m_ObjectHideFlags: 0
@@ -7460,7 +7479,6 @@ GameObject:
   - component: {fileID: 1181989515}
   - component: {fileID: 1181989517}
   - component: {fileID: 1181989516}
-  - component: {fileID: 1181989518}
   - component: {fileID: 1181989519}
   - component: {fileID: 1181989521}
   - component: {fileID: 1181989520}
@@ -7553,7 +7571,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1181989507}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: aa9ead89ac61e2e4d8b4686874ba3054, type: 3}
+  m_Script: {fileID: 11500000, guid: 01c4047600af96b4980bb9714d9dfcd4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!114 &1181989517
@@ -7568,24 +7586,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 92361eb073100694887a0de87ffb4d01, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &1181989518
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1181989507}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: aeecf2f146d55854aa1cf186d7211c8c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  root: {fileID: 925947737}
-  speakerText: {fileID: 1470394910}
-  contentText: {fileID: 2145667558}
-  choicesContainer: {fileID: 674188477}
-  choiceButtonPrefab: {fileID: 8825540079217226074, guid: 1222bce4130981543aff4f45d2eba139, type: 3}
-  typeSpeed: 0.02
 --- !u!114 &1181989519
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7634,16 +7634,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 1181989507}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e2f1f39b0fa731b40a8bb2e318ed6e47, type: 3}
+  m_Script: {fileID: 11500000, guid: 8eacc913850014b409a136defac287ff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  inspectorEntries:
-  - Key: LayerId
-    Type: 0
-    IntValue: 0
-    FloatValue: 0
-    StringValue: 
-    BoolValue: 0
+  inspectorEntries: []
 --- !u!114 &1181989523
 MonoBehaviour:
   m_ObjectHideFlags: 0

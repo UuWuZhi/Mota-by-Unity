@@ -8,30 +8,29 @@ public class ItemUIManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI textBluekey;    // 显示蓝钥匙的Text
     [SerializeField] private TextMeshProUGUI textRedkey;     // 显示红钥匙的Text
 
-    private PlayerInventory _playerInventory;
-
+    private IInventoryService _inventoryService;
 
     private void Awake()
     {
-        // 获取实例
-        _playerInventory = PlayerInventory.Instance;
-        if (_playerInventory == null)
+        // 仅使用注入/适配器提供的服务，删除对 PlayerInventory.Instance 的直接依赖
+        _inventoryService = InventoryAdapter.Current;
+        if (_inventoryService == null)
         {
-            Debug.LogError("场景中找不到PlayerInventory实例！");
+            Debug.LogError("ItemUIManager: 未配置 InventoryService（InventoryAdapter.Current 为 null）。请在 DiBootstrap 中注册 InventoryAdapter。");
+            enabled = false; // 禁用组件以避免后续空引用
             return;
         }
     }
 
     private void OnEnable()
     {
-        // 订阅属性变化事件：属性变了就更新UI
-        _playerInventory.OnItemChanged += UpdateUI;
+        _inventoryService.OnItemChanged += UpdateUI;
     }
 
     private void OnDisable()
     {
-        // 取消订阅（避免内存泄漏）
-        _playerInventory.OnItemChanged -= UpdateUI;
+        if (_inventoryService != null)
+            _inventoryService.OnItemChanged -= UpdateUI;
     }
 
     private void Start()
@@ -44,6 +43,8 @@ public class ItemUIManager : MonoBehaviour
     // 【核心】更新所有属性的UI显示
     private void UpdateUI(ItemType type)
     {
+        if (_inventoryService == null) return;
+
         switch (type)
         {
             case ItemType.All: // 全量更新（所有UI）
@@ -68,16 +69,19 @@ public class ItemUIManager : MonoBehaviour
     //单个UI的独立更新方法
     private void UpdateYellowkeyUI()
     {
-        textYellowkey.text = $"{_playerInventory.GetItemCount(ItemType.Key_Yellow)}";
+        int count = _inventoryService.GetItemCount(ItemType.Key_Yellow);
+        textYellowkey.text = $"{count}";
     }
 
     private void UpdateBluekeyUI()
     {
-        textBluekey.text = $"{_playerInventory.GetItemCount(ItemType.Key_Blue)}";
+        int count = _inventoryService.GetItemCount(ItemType.Key_Blue);
+        textBluekey.text = $"{count}";
     }
 
     private void UpdateRedkeyUI()
     {
-        textRedkey.text = $"{_playerInventory.GetItemCount(ItemType.Key_Red)}";
+        int count = _inventoryService.GetItemCount(ItemType.Key_Red);
+        textRedkey.text = $"{count}";
     }
 }

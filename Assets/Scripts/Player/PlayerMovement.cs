@@ -5,23 +5,23 @@ using System.Collections.Generic;
 public class PlayerMovement : MonoBehaviour
 {
     [Header("移动设置")]
-    public float moveSpeed = 5f; // 后续改这个值，动画Speed自动适配
-
+    public float moveSpeed = 5f; 
     [Header("组件引用")]
     [SerializeField] private Rigidbody2D rb;
-
     public static PlayerMovement Instance;
     private GridManager _gridManager;
     private EventCenter _eventCenter;
-    private Vector2 moveDir; //移动方向
+    private Vector2 moveDir; 
     private bool _isMoving = false;
-    public bool IsMoving => _isMoving; // 对外只读
-    private Coroutine moveCoroutine; // 用于控制移动协程
-    private Vector2 targetWorldPos; // 待处理的目标位置
-
-    // 当事件要求阻塞玩家直到事件完成时使用（EventNodeManager 会在完成时调用回调）
+    private Coroutine moveCoroutine; 
+    private Vector2 targetWorldPos; 
     private bool _waitingForEventExecution = false;
-
+    //==============================================================================//
+    //                                                                              //
+    //                                 生命周期                                     //
+    //                                                                              //
+    //==============================================================================//
+    #region 生命周期
     private void Awake()
     {
         if (Instance == null) Instance = this;
@@ -54,7 +54,13 @@ public class PlayerMovement : MonoBehaviour
         _eventCenter.OnPlayerMoveInput -= OnReceiveMoveInput;
         _eventCenter.OnLayerSwitched -= OnLayerSwitched;
     }
-
+    #endregion
+    //==============================================================================//
+    //                                                                              //
+    //                                 事件系统                                     //
+    //                                                                              //
+    //==============================================================================//
+    #region 事件系统
     private void OnLayerSwitched(object sender, LayerSwitchedEventArgs args)
     {
         TeleportToPosition(args.SpawnPos, triggerEvent: false);
@@ -136,7 +142,13 @@ public class PlayerMovement : MonoBehaviour
             null
         );
     }
-
+    #endregion
+    //==============================================================================//
+    //                                                                              //
+    //                                 玩家移动                                     //
+    //                                                                              //
+    //==============================================================================//
+    #region 玩家移动
     private void StartMoveProcess(Vector2 targetPos, Vector3Int cellPos, bool blockUntilComplete, System.Action onExecutionComplete)
     {
         float moveTime = _gridManager.tileSize / moveSpeed;
@@ -168,7 +180,6 @@ public class PlayerMovement : MonoBehaviour
             moveCoroutine = null;
         }));
     }
-
     private IEnumerator MoveToTarget(Vector2 targetPos, System.Action onComplete = null)
     {
         _isMoving = true;
@@ -220,4 +231,5 @@ public class PlayerMovement : MonoBehaviour
         });
         Debug.Log($"玩家已传送至: {targetPos}");
     }
+    #endregion
 }

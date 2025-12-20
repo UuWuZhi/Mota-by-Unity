@@ -7,4 +7,5 @@ public interface IInventoryService
     bool RemoveItem(ItemType type, int count = 1);
     bool HasItem(ItemType type, int count = 1);
     int GetItemCount(ItemType type);
+    void InitItemCounts();
 }

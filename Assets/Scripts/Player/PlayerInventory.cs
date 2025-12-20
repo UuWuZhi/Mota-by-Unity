@@ -1,18 +1,19 @@
+// 玩家背包管理器
 using UnityEngine;
 using System.Collections.Generic;
-using System; // 引入Action需要的命名空间
-
-/// <summary>
-/// 玩家背包管理器：仅负责道具数量管理，属性修改通过Player_Attribute完成
-/// </summary>
+using System;
 public class PlayerInventory : MonoBehaviour
 {
     public static PlayerInventory Instance;
 
-    // 核心：存储所有道具的数量（Key=道具类型，Value=数量）
     private Dictionary<ItemType, int> itemCounts = new Dictionary<ItemType, int>();
-    //物品数量更改
     public event Action<ItemType> OnItemChanged;
+    //==============================================================================//
+    //                                                                              //
+    //                                 生命周期                                     //
+    //                                                                              //
+    //==============================================================================//
+    #region 生命周期
     private void Awake()
     {
         // 单例初始化
@@ -27,7 +28,13 @@ public class PlayerInventory : MonoBehaviour
             return;
         }
     }
-
+    #endregion
+    //==============================================================================//
+    //                                                                              //
+    //                                 道具操作                                     //
+    //                                                                              //
+    //==============================================================================//
+    #region 道具操作
     /// <summary>
     /// 初始化所有道具数量为0，由GameInitializer调用
     /// </summary>
@@ -40,10 +47,8 @@ public class PlayerInventory : MonoBehaviour
         }
         OnItemChanged?.Invoke(ItemType.All); //初始化完更新一下UI
     }
-
-    #region 通用道具操作
     /// <summary>
-    /// 添加道具（通用）
+    /// 添加道具
     /// </summary>
     public void AddItem(ItemType type, int count = 1)
     {
@@ -53,7 +58,6 @@ public class PlayerInventory : MonoBehaviour
         OnItemChanged?.Invoke(type); //更新对应UI
         Debug.Log($"获得{type}×{count}！当前数量：{itemCounts[type]}");
     }
-
     /// <summary>
     /// 移除道具（返回是否成功）
     /// </summary>
@@ -66,7 +70,6 @@ public class PlayerInventory : MonoBehaviour
         OnItemChanged?.Invoke(type);
         return true;
     }
-
     /// <summary>
     /// 检查是否拥有指定数量的道具
     /// </summary>
@@ -74,9 +77,8 @@ public class PlayerInventory : MonoBehaviour
     {
         return itemCounts.ContainsKey(type) && itemCounts[type] >= count;
     }
-
     /// <summary>
-    /// 获取道具数量（供UI调用）
+    /// 获取道具数量
     /// </summary>
     public int GetItemCount(ItemType type)
     {

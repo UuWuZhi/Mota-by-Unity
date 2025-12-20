@@ -19,6 +19,12 @@ public class DiBootstrap : LifetimeScope
         if (PlayerInventory.Instance != null) builder.RegisterInstance(PlayerInventory.Instance).As<PlayerInventory>().AsSelf();
         if (DialogueManager.Instance != null) builder.RegisterInstance(DialogueManager.Instance).As<DialogueManager>().AsSelf();
 
+        // 注册适配器：把 PlayerInventory 暴露为 IInventoryService
+        builder.Register<InventoryAdapter>(Lifetime.Singleton).As<IInventoryService>();
+
+        // 注册 EntryPoint 用于演示容器注入
+        builder.RegisterEntryPoint<InventoryLogger>();
+
         // 示例：注册一个纯 C# 服务为单例
         // builder.Register<YourService>(Lifetime.Singleton);
     }

@@ -26,9 +26,10 @@ Thumbs.db
 *.mdb
 *.opendb
 *.VC.db
-/.vs/
+*.vsconfig
 
 # 其他
 /[Mm]emoryCaptures/
 /[Pp]rofiler/
 /[Rr]ecordings/
+/.vs/

@@ -1,5 +1,5 @@
 /// <summary>
-/// 全局事件变量键名常量
+/// 鍏ㄥ眬浜嬩欢鍙橀噺閿悕甯搁噺
 /// </summary>
 public static class GlobalEventKeys
 {

@@ -10,13 +10,13 @@ using UnityEngine;
 /// </summary>
 public class DialogueInputManager : MonoBehaviour
 {
-    private DialogueUI _ui;
+    private UIDialogue _ui;
     private DialogueManager _dm;
 
     private void Start()
     {
         _dm = DialogueManager.Instance;
-        _ui = GameObject.FindObjectOfType<DialogueUI>();
+        _ui = GameObject.FindObjectOfType<UIDialogue>();
         CacheReflection();
     }
 
@@ -29,7 +29,7 @@ public class DialogueInputManager : MonoBehaviour
     private void Update()
     {
         if (_dm == null) _dm = DialogueManager.Instance;
-        if (_ui == null) _ui = GameObject.FindObjectOfType<DialogueUI>();
+        if (_ui == null) _ui = GameObject.FindObjectOfType<UIDialogue>();
 
         if (_ui != null)
         {

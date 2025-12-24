@@ -11,7 +11,7 @@ using UnityEngine.EventSystems;
 /// - 将选项的显示延后到文字完全打出之后
 /// - 鼠标点击仍然可用，键盘输入由 InputManager 转发到本类的公有方法处理
 /// </summary>
-public class DialogueUI : MonoBehaviour
+public class UIDialogue : MonoBehaviour
 {
     [Header("UI 元素")]
     [Tooltip("对话根节点（用于整体显示/隐藏）")]

@@ -25,7 +25,11 @@ public class EventCenter : MonoBehaviour
     public event EventHandler<BattleCheckEventArgs> OnBattleCheckRequest; // 战斗检查请求
     public event EventHandler<AttributeChangedEventArgs> OnAttributeChanged; // 属性变化通知
     public event EventHandler<EntityAnimationEventArgs> OnEntityAnimationFinished; // 实体动画完成通知
-    
+
+    // UI 相关事件：用于控制 UI 的显示/隐藏
+    public event EventHandler<UIShowEventArgs> OnShowUI; // 请求显示特定 UI
+    public event EventHandler<UIHideEventArgs> OnHideUI; // 请求隐藏特定 UI
+    public event EventHandler<UIToggleEventArgs> OnToggleUI; // 请求切换特定 UI 显示状态
 
     private void Awake()
     {
@@ -55,4 +59,9 @@ public class EventCenter : MonoBehaviour
 
     // 新：触发事件层瓦片移动事件
     public void TriggerEventTileMoved(TileMovedEventArgs args) => OnEventTileMoved?.Invoke(this, args);
+
+    // UI 触发方法
+    public void TriggerShowUI(UIShowEventArgs args) => OnShowUI?.Invoke(this, args);
+    public void TriggerHideUI(UIHideEventArgs args) => OnHideUI?.Invoke(this, args);
+    public void TriggerToggleUI(UIToggleEventArgs args) => OnToggleUI?.Invoke(this, args);
 }

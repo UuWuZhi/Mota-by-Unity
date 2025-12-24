@@ -1,7 +1,9 @@
 using UnityEngine;
 using TMPro; // 引入TextMeshPro命名空间
+using System;
+using VContainer;
 
-public class ItemUIManager : MonoBehaviour
+public class UIItem : MonoBehaviour
 {
     [Header("关联UI文本组件")]
     [SerializeField] private TextMeshProUGUI textYellowkey;  // 显示黄钥匙的Text
@@ -10,24 +12,15 @@ public class ItemUIManager : MonoBehaviour
 
     private IInventoryService _inventoryService;
 
-    private void Awake()
+    // 使用构造注入（VContainer 会在场景组件注入时调用此方法）
+    [Inject]
+    public void Construct(IInventoryService inventory)
     {
-        // 仅使用注入/适配器提供的服务，删除对 PlayerInventory.Instance 的直接依赖
-        _inventoryService = InventoryAdapter.Current;
-        if (_inventoryService == null)
-        {
-            Debug.LogError("ItemUIManager: 未配置 InventoryService（InventoryAdapter.Current 为 null）。请在 DiBootstrap 中注册 InventoryAdapter。");
-            enabled = false; // 禁用组件以避免后续空引用
-            return;
-        }
-    }
-
-    private void OnEnable()
-    {
+        _inventoryService = inventory ?? throw new ArgumentNullException(nameof(inventory));
         _inventoryService.OnItemChanged += UpdateUI;
     }
 
-    private void OnDisable()
+    private void OnDestroy()
     {
         if (_inventoryService != null)
             _inventoryService.OnItemChanged -= UpdateUI;
@@ -52,15 +45,15 @@ public class ItemUIManager : MonoBehaviour
                 UpdateBluekeyUI();
                 UpdateRedkeyUI();
                 break;
-            
+
             case ItemType.Key_Yellow: // 仅更新黄钥匙UI
                 UpdateYellowkeyUI();
                 break;
-            
+
             case ItemType.Key_Blue: // 仅更新蓝钥匙UI
                 UpdateBluekeyUI();
                 break;
-            
+
             case ItemType.Key_Red: // 仅更新红钥匙UI
                 UpdateRedkeyUI();
                 break;

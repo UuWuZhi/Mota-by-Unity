@@ -1,6 +1,7 @@
 using UnityEngine;
 using VContainer.Unity;
 using VContainer;
+using System.Collections.Generic;
 
 /// <summary>
 /// Container-managed entrypoint to perform game initialization using injected services.
@@ -40,7 +41,21 @@ public class GameInitializationEntryPoint : IStartable
         _inventoryService.InitItemCounts();
         Debug.Log("背包道具初始化完成！（Container EntryPoint）");
 
-        // 4. 初始化动画速度: keep previous behavior in Game_Initializer MonoBehaviour (it still sets animator.speed)
+        //4. 初始化UI显示
+        try
+        {
+            if (_eventCenter != null)
+            {
+                _eventCenter.TriggerHideUI(new UIHideEventArgs { UINames = null });
+                _eventCenter.TriggerShowUI(new UIShowEventArgs {
+                    UINames = new List<string>{ "Left", "Right", "Top", "Bottom" } 
+                });
+            }
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogWarning($"UI 初始化时发生异常：{ex.Message}");
+        }
         _eventCenter.TriggerLayerSwitchRequest(new LayerSwitchRequestEventArgs
         {
             TargetLayerId = 1,

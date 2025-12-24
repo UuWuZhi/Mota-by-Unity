@@ -212,7 +212,7 @@ public class GridManager : MonoBehaviour
 
         // 同步实体（若存在）：告诉 EntityManager 更新键与位置
 
-        int layerId = MapManager.Instance != null ? MapManager.Instance.CurrentLayerId : 0;
+        int layerId = GlobalEventVariables.Instance.LayerId;
 
         // 通知系统瓦片已移动
         EventCenter.Instance?.TriggerEventTileMoved(new TileMovedEventArgs

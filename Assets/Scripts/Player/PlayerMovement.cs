@@ -119,7 +119,7 @@ public class PlayerMovement : MonoBehaviour
         }
 
         // 3) 最后委托给 EventNodeManager 决定是否允许进入以及是否在事件执行期间阻塞玩家
-        EventNodeManager.Instance.RequestEnterCell_PreMove(targetCell, MapManager.Instance.CurrentLayerId,
+        EventNodeManager.Instance.RequestEnterCell_PreMove(targetCell, GlobalEventVariables.Instance.LayerId,
             (allowEnter, blockUntilComplete) =>
             {
                 if (!allowEnter)

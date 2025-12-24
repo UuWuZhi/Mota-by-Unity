@@ -1,17 +1,17 @@
 using UnityEngine;
 
 // 输入管理器单例（仅负责检测输入，不关心移动逻辑）
-public class InputManager : MonoBehaviour
+public class MovementInputManager : MonoBehaviour
 {
-    private static InputManager _instance;
-    public static InputManager Instance //懒加载单例
+    private static MovementInputManager _instance;
+    public static MovementInputManager Instance //懒加载单例
     {
         get
         {
             if (_instance == null)
             {
                 GameObject obj = new GameObject("InputManager");
-                _instance = obj.AddComponent<InputManager>();
+                _instance = obj.AddComponent<MovementInputManager>();
                 DontDestroyOnLoad(obj);
             }
             return _instance;

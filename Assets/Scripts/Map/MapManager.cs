@@ -11,8 +11,7 @@ public class MapManager : MonoBehaviour
 
     [Header("地图配置")]
     public Grid mapRoot;                       // 所有层的根Grid
-    public int _currentLayerId = 1;             // 当前层数（默认1层）
-    public int CurrentLayerId => _currentLayerId;
+    public int _currentLayerId = 1;            // 当前层数（默认1层）
     public List<MapLayerInfo> allLayers = new List<MapLayerInfo>(); // 所有层的配置
 
     // 缓存各层的Tilemap和边界（键：楼层ID，值：(基础层, 事件层, 边界)）
@@ -20,7 +19,9 @@ public class MapManager : MonoBehaviour
         new Dictionary<int, (Tilemap, Tilemap, BoundsInt)>();
 
     //==============================================================================//
-    //                                 生命周期                                      //
+    //                                                                              //
+    //                                 生命周期                                     //
+    //                                                                              //
     //==============================================================================//
     #region 生命周期
     private void Awake()
@@ -55,7 +56,9 @@ public class MapManager : MonoBehaviour
     #endregion
 
     //==============================================================================//
-    //                                 事件处理                                      //
+    //                                                                              //
+    //                                 事件处理                                     //
+    //                                                                              //
     //==============================================================================//
     #region 事件处理
     /// <summary>
@@ -112,7 +115,9 @@ public class MapManager : MonoBehaviour
     #endregion
 
     //==============================================================================//
-    //                                 地图初始化                                    //
+    //                                                                              //
+    //                                 地图初始化                                   //
+    //                                                                              //
     //==============================================================================//
     #region 地图初始化
     /// <summary>
@@ -220,7 +225,9 @@ public class MapManager : MonoBehaviour
     #endregion
 
     //==============================================================================//
-    //                                 工具方法                                      //
+    //                                                                              //
+    //                                 工具方法                                     //
+    //                                                                              //
     //==============================================================================//
     #region 工具方法
     /// <summary>

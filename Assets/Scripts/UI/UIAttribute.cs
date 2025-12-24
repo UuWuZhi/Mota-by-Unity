@@ -1,7 +1,7 @@
 using UnityEngine;
 using TMPro; // 引入TextMeshPro命名空间
 
-public class AttributeUIManager : MonoBehaviour
+public class UIAttribute : MonoBehaviour
 {
     [Header("关联UI文本组件")]
     [SerializeField] private TextMeshProUGUI textHp;       // 显示血量的Text

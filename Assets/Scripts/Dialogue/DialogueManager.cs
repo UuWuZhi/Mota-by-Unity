@@ -88,7 +88,7 @@ public class DialogueManager : MonoBehaviour
             NextNodeId = null
         };
 
-        DialogueUI ui = GameObject.FindObjectOfType<DialogueUI>();
+        UIDialogue ui = GameObject.FindObjectOfType<UIDialogue>();
 
         Action uiContinueHandler = null;
         Action handler = null;

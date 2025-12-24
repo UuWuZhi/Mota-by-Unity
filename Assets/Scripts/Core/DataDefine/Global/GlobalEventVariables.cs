@@ -31,8 +31,6 @@ public class GlobalEventVariables : MonoBehaviour
     [Header("Inspector Variables (同步到运行时字典)")]
     public List<Entry> inspectorEntries = new List<Entry>();
 
-    // 当 LayerId 变化时触发 (oldValue, newValue)
-    public event Action<int, int> OnLayerIdChanged;
 
     private void Awake()
     {
@@ -103,15 +101,6 @@ public class GlobalEventVariables : MonoBehaviour
         _data[key] = value;
         SyncToInspector(key, value);
 
-        // 如果变更的是 layerId，触发专用事件
-        try
-        {
-            if (key == GlobalEventKeys.LayerId && old != value)
-            {
-                OnLayerIdChanged?.Invoke(old, value);
-            }
-        }
-        catch { /* 容错，不影响运行 */ }
     }
 
     public int GetInt(string key, int defaultValue = 0)

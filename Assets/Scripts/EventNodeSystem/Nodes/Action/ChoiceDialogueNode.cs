@@ -30,7 +30,7 @@ public class ChoiceDialogueNode : EventNode
     public override void Execute(EventNodeContext ctx, Action onComplete)
     {
         // 找到 UI
-        var ui = GameObject.FindObjectOfType<DialogueUI>();
+        var ui = GameObject.FindObjectOfType<UIDialogue>();
         var dm = DialogueManager.Instance;
 
         if (dm == null || ui == null)

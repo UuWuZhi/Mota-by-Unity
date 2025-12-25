@@ -50,6 +50,7 @@ public class GameInitializationEntryPoint : IStartable
                 _eventCenter.TriggerShowUI(new UIShowEventArgs {
                     UINames = new List<string>{ "Left", "Right", "Top", "Bottom" } 
                 });
+                GlobalEventVariables.Instance.UIState = "InGame";
             }
         }
         catch (System.Exception ex)

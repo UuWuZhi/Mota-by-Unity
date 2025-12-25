@@ -7,26 +7,28 @@ using UnityEngine;
 public class EnemyUnit : MonoBehaviour
 {
     [Header("基础战斗属性")]
-    public BattleUnitData BaseStats = new BattleUnitData
-    {
-        currentHP = 10,
-        attack = 5,
-        defense = 0
-    };
-    [Header("扩展字段")]
-    public int goldReward = 25;    // 击败后奖励金币
-
+    [Tooltip("关联的敌人数据（来自 EnemyDatabase 的 EnemyData 预制")]    
+    public EnemyData enemyData;
+    public int EnemyID => enemyData != null ? enemyData.id : -1;
     /// <summary>
     /// 获取用于 BattleManager 计算的基础 BattleUnitData（会复制一份）
     /// 将来可以把复杂的词条/逻辑在此方法中折算为最终的 BattleUnitData
     /// </summary>
     public BattleUnitData GetBattleUnitData()
     {
-        return new BattleUnitData
+        if (enemyData != null)
         {
-            currentHP = BaseStats.currentHP,
-            attack = BaseStats.attack,
-            defense = BaseStats.defense
-        };
+            return enemyData.ToBattleUnitData();
+        }
+        else
+        {
+            Debug.LogWarning("EnemyUnit 上未关联 EnemyData，返回默认 BattleUnitData");
+            return new BattleUnitData
+            {
+                currentHP = 10,
+                attack = 5,
+                defense = 0
+            };
+        }
     }
 }

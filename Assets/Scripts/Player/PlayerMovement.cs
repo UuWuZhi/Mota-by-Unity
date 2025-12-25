@@ -74,7 +74,7 @@ public class PlayerMovement : MonoBehaviour
         if (_waitingForEventExecution)
             return;
         // 如果正在对话，阻止移动输入
-        if (DialogueManager.Instance != null && DialogueManager.Instance.IsActive)
+        if (GlobalEventVariables.Instance.DialogueIsActive)
             return;
         // 移动中/输入无效/无方向 → 直接跳过
         if (_isMoving || !args.IsValidInput || args.MoveDirection == Vector2.zero)

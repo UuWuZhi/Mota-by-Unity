@@ -151,4 +151,18 @@ public class GlobalEventVariables : MonoBehaviour
         get => GetInt(GlobalEventKeys.LayerId, 0);
         set => SetInt(GlobalEventKeys.LayerId, value);
     }
+
+    // Dialogue active state helper
+    public bool DialogueIsActive
+    {
+        get => GetBool(GlobalEventKeys.DialogueIsActive, false);
+        set => SetBool(GlobalEventKeys.DialogueIsActive, value);
+    }
+
+    // UIState string helper
+    public string UIState
+    {
+        get => GetString(GlobalEventKeys.UIState, string.Empty);
+        set => SetString(GlobalEventKeys.UIState, value ?? string.Empty);
+    }
 }

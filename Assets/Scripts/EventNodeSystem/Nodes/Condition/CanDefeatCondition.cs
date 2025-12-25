@@ -25,7 +25,7 @@ public class CanDefeatCondition : ConditionNode
             {
                 canDefeat = true;
                 ctx.Vars["PlayerHPLoss"] = playerHPLoss;
-                ctx.Vars["GoldReward"] = enemyUnit.goldReward;
+                ctx.Vars["GoldReward"] = enemyUnit.enemyData.goldReward;
             }
             else 
             {

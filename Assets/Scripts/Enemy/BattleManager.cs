@@ -91,14 +91,24 @@ public class BattleManager : MonoBehaviour
         }
         else
         {
-            args.TotalPlayerHPLoss = int.MaxValue; // 无法打败时返回最大值
-            args.IsDefeatable = false;
+            // 只有在“无法造成伤害”（敌人防御>=玩家攻击）时标记为不可战斗并返回 int.MaxValue
+            // 其他失败情况仍然返回实际消耗的 HP（可能大于玩家当前 HP）以便 UI 显示预期损伤
+            if (playerCopy.attack <= enemyCopy.defense)
+            {
+                args.TotalPlayerHPLoss = int.MaxValue; // 无法打败时返回最大值
+                args.IsDefeatable = false;
+            }
+            else
+            {
+                args.TotalPlayerHPLoss = hpLoss;
+                args.IsDefeatable = false;
+            }
         }
     }
 
     /// <summary>
     /// 对外的战斗解析接口：传入玩家与敌人的战斗数据（会在内部复制以避免修改外部实例）
-    /// 返回战斗结果，并通过 out 参数返回玩家战斗中消耗的总 HP（若失败，返回 int.MaxValue）
+    /// 返回战斗结果，并通过 out 参数返回玩家战斗中消耗的总 HP（若失败且无法造成伤害返回 int.MaxValue）
     /// </summary>
     public BattleResult ResolveBattle(BattleUnitData playerData, BattleUnitData enemyData, out int totalPlayerHPLoss)
     {
@@ -116,19 +126,19 @@ public class BattleManager : MonoBehaviour
             defense = enemyData.defense
         };
 
-        int initialPlayerHP = player.currentHP;
-        bool isPlayerWin = SimulateBattle(player, enemy);
-
-        if (isPlayerWin)
-        {
-            totalPlayerHPLoss = initialPlayerHP - player.currentHP;
-            return BattleResult.PlayerWin;
-        }
-        else
+        // 如果玩家对敌人无法造成任何伤害，则视为无法战斗（直接返回失败并用 int.MaxValue 标记）
+        if (player.attack <= enemy.defense)
         {
             totalPlayerHPLoss = int.MaxValue;
             return BattleResult.PlayerLose;
         }
+
+        int initialPlayerHP = player.currentHP;
+        bool isPlayerWin = SimulateBattle(player, enemy);
+
+        // 无论胜负都返回实际消耗的HP（若失败也返回消耗值，而非 int.MaxValue），上层可以根据 IsDefeatable 判断是否可通过
+        totalPlayerHPLoss = initialPlayerHP - player.currentHP;
+        return isPlayerWin ? BattleResult.PlayerWin : BattleResult.PlayerLose;
     }
 
     /// <summary>
@@ -139,7 +149,7 @@ public class BattleManager : MonoBehaviour
         // 战斗循环：玩家先攻，轮流攻击直到一方死亡
         while (true)
         {
-            // 玩家攻击
+            // 玩家攻击（确保玩家能造成伤害时才会进入此方法）
             int playerDamage = Mathf.Max(player.attack - enemy.defense, 1);
             enemy.currentHP -= playerDamage;
             if (enemy.currentHP <= 0)

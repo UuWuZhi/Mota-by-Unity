@@ -418,7 +418,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 38613235138d8e04493dfcf5edfb965e, type: 3}
+  m_Sprite: {fileID: 21300000, guid: bf3cb37b646a91846b1ad91fba758f74, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -1128,7 +1128,7 @@ GameObject:
   - component: {fileID: 2383347777749874008}
   - component: {fileID: 8599069587811877198}
   m_Layer: 5
-  m_Name: EnemyHPText
+  m_Name: EnemyATKText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2460,6 +2460,7 @@ GameObject:
   - component: {fileID: 3246273677161799551}
   - component: {fileID: 666686674911757023}
   - component: {fileID: 7491459278313159907}
+  - component: {fileID: -6056580665435139109}
   m_Layer: 5
   m_Name: EnemyAttributeBar
   m_TagString: Untagged
@@ -2601,6 +2602,24 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!114 &-6056580665435139109
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8549299565461852415}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 656708f7dfea062449d4235ac06121a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  textName: {fileID: 9206091437183128233}
+  textHP: {fileID: 781841809034805195}
+  textAttack: {fileID: 8599069587811877198}
+  textDefense: {fileID: 3314862418939808609}
+  textGold: {fileID: 8380673120655914091}
+  textDamage: {fileID: 2816995302808807237}
 --- !u!1 &8690115695658195840
 GameObject:
   m_ObjectHideFlags: 0

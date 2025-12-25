@@ -5,6 +5,7 @@ using UnityEngine;
 public class UIManager : MonoBehaviour
 {
     public static UIManager Instance { get; private set; }
+    public List<string> RecordedUI = new List<string>();
     [SerializeField] private List<GameObject> uiRoots = new List<GameObject>();
     //==============================================================================//
     //                                                                              //
@@ -75,6 +76,31 @@ public class UIManager : MonoBehaviour
     {
         if (root == null) return;
         if (uiRoots.Contains(root)) uiRoots.Remove(root);
+    }
+    // 新增：提供对外读取 UI 根及其显示状态的接口
+    public List<string> GetActiveRootNames()
+    {
+        List<string> result = new List<string>();
+        foreach (var r in uiRoots)
+        {
+            if (r == null) continue;
+            if (r.activeSelf) result.Add(r.name);
+        }
+        return result;
+    }
+
+    public bool IsUIRootRegistered(string name)
+    {
+        if (string.IsNullOrEmpty(name)) return false;
+        foreach (var r in uiRoots) if (r != null && r.name == name) return true;
+        return false;
+    }
+
+    public bool IsUIRootActive(string name)
+    {
+        if (string.IsNullOrEmpty(name)) return false;
+        foreach (var r in uiRoots) if (r != null && r.name == name) return r.activeSelf;
+        return false;
     }
     #endregion
     //==============================================================================//
@@ -170,6 +196,35 @@ public class UIManager : MonoBehaviour
             return;
         }
         ToggleUI(new List<string> { name });
+    }
+    // 新增：封装 “隐藏并记录当前可见 UI” 与 “显示记录的 UI” 的方法
+    // HideAndRecordVisible: 返回被隐藏的 UI 名称列表（可能为空）
+    public List<string> HideAndRecordVisible()
+    {
+        var active = GetActiveRootNames();
+        if (active != null && active.Count > 0)
+        {
+            HideUI(active);
+        }
+        RecordedUI = active;
+        return active ?? new List<string>();
+    }
+
+    // ShowRecordedVisible: 传入先前记录的名称列表，尝试恢复显示其中注册过的 UI 根
+    public void ShowRecordedVisible(List<string> recordedNames)
+    {
+        if (recordedNames == null || recordedNames.Count == 0) return;
+        var restore = new List<string>();
+        foreach (var name in recordedNames)
+        {
+            if (string.IsNullOrEmpty(name)) continue;
+            if (IsUIRootRegistered(name)) restore.Add(name);
+        }
+        if (restore.Count > 0) ShowUI(restore);
+    }
+    public void ShowRecordedVisible()
+    {
+        ShowRecordedVisible(RecordedUI);
     }
     #endregion
 }

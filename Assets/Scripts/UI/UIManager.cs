@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using VContainer; // for [Inject]
 
 // 中央 UI 管理器：负责注册场景中所有可控制的 UI 根对象，并统一显示/隐藏
 public class UIManager : MonoBehaviour
@@ -7,6 +8,11 @@ public class UIManager : MonoBehaviour
     public static UIManager Instance { get; private set; }
     public List<string> RecordedUI = new List<string>();
     [SerializeField] private List<GameObject> uiRoots = new List<GameObject>();
+
+    // injected EventCenter (via VContainer)
+    private EventCenter _eventCenter;
+    private bool _subscribedToEvents = false;
+
     //==============================================================================//
     //                                                                              //
     //                                 生命周期                                     //
@@ -21,22 +27,43 @@ public class UIManager : MonoBehaviour
 
     private void OnEnable()
     {
-        if (EventCenter.Instance != null)
-        {
-            EventCenter.Instance.OnShowUI += OnShowUI;
-            EventCenter.Instance.OnHideUI += OnHideUI;
-            EventCenter.Instance.OnToggleUI += OnToggleUI;
-        }
+        // Try to subscribe; if DI hasn't injected EventCenter yet, Inject(...) will call TrySubscribe later
+        TrySubscribeEvents();
     }
 
     private void OnDisable()
     {
-        if (EventCenter.Instance != null)
+        TryUnsubscribeEvents();
+    }
+
+    [Inject]
+    public void Inject(EventCenter eventCenter)
+    {
+        _eventCenter = eventCenter;
+        // If this object is enabled, subscribe immediately
+        TrySubscribeEvents();
+    }
+
+    private void TrySubscribeEvents()
+    {
+        if (_subscribedToEvents) return;
+        if (_eventCenter == null) return;
+        _eventCenter.OnShowUI += OnShowUI;
+        _eventCenter.OnHideUI += OnHideUI;
+        _eventCenter.OnToggleUI += OnToggleUI;
+        _subscribedToEvents = true;
+    }
+
+    private void TryUnsubscribeEvents()
+    {
+        if (!_subscribedToEvents) return;
+        if (_eventCenter != null)
         {
-            EventCenter.Instance.OnShowUI -= OnShowUI;
-            EventCenter.Instance.OnHideUI -= OnHideUI;
-            EventCenter.Instance.OnToggleUI -= OnToggleUI;
+            _eventCenter.OnShowUI -= OnShowUI;
+            _eventCenter.OnHideUI -= OnHideUI;
+            _eventCenter.OnToggleUI -= OnToggleUI;
         }
+        _subscribedToEvents = false;
     }
     #endregion
     //==============================================================================//

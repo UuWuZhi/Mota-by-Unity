@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 
 /// <summary>
-/// 容器 EntryPoint 示例：构造时订阅 IInventoryService 事件并记录日志
+/// EntryPoint 用于在容器构建时记录 IInventoryService 事件（迁移：使用 EventCenter 订阅）
 /// </summary>
 public class InventoryLogger
 {
@@ -11,12 +11,16 @@ public class InventoryLogger
     public InventoryLogger(IInventoryService inventory)
     {
         _inventory = inventory ?? throw new ArgumentNullException(nameof(inventory));
-        _inventory.OnItemChanged += OnItemChanged;
-        Debug.Log("InventoryLogger 已构造并订阅事件（容器注入示例）");
+        // 订阅全局 EventCenter 的库存变更事件
+        if (EventCenter.Instance != null)
+            EventCenter.Instance.OnInventoryChanged += OnInventoryChanged;
+
+        Debug.Log("InventoryLogger 已注册库存变更监听（EventCenter）");
     }
 
-    private void OnItemChanged(ItemType t)
+    private void OnInventoryChanged(object sender, InventoryChangedEventArgs args)
     {
-        Debug.Log($"[InventoryLogger] OnItemChanged: {t}, Count: {_inventory.GetItemCount(t)}");
+        if (args == null) return;
+        Debug.Log($"[InventoryLogger] InventoryChanged: {args.ChangedType}, Delta: {args.Delta}, Count: {_inventory.GetItemCount(args.ChangedType)}");
     }
 }

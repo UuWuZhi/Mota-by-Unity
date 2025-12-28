@@ -2,33 +2,20 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System;
+using VContainer;
+
 public class PlayerInventory : MonoBehaviour
 {
-    public static PlayerInventory Instance;
-
     private Dictionary<ItemType, int> itemCounts = new Dictionary<ItemType, int>();
-    public event Action<ItemType> OnItemChanged;
-    //==============================================================================//
-    //                                                                              //
-    //                                 生命周期                                     //
-    //                                                                              //
-    //==============================================================================//
-    #region 生命周期
-    private void Awake()
+
+    private EventCenter _eventCenter;
+    [Inject]
+    public void Construct(EventCenter eventCenter)
     {
-        // 单例初始化
-        if (Instance == null)
-        {
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
-        }
-        else
-        {
-            Destroy(gameObject);
-            return;
-        }
+        _eventCenter = eventCenter;
+        DontDestroyOnLoad(this);
     }
-    #endregion
+
     //==============================================================================//
     //                                                                              //
     //                                 道具操作                                     //
@@ -45,7 +32,8 @@ public class PlayerInventory : MonoBehaviour
             if (type != ItemType.None)
                 itemCounts[type] = 0;
         }
-        OnItemChanged?.Invoke(ItemType.All); //初始化完更新一下UI
+        // 通过 EventCenter 广播全量更新
+        _eventCenter.TriggerInventoryChanged(new InventoryChangedEventArgs(ItemType.All));
     }
     /// <summary>
     /// 添加道具
@@ -55,7 +43,8 @@ public class PlayerInventory : MonoBehaviour
         if (!itemCounts.ContainsKey(type) || type == ItemType.None || count <= 0) return;
         
         itemCounts[type] += count;
-        OnItemChanged?.Invoke(type); //更新对应UI
+        // 使用 EventCenter 广播
+        _eventCenter.TriggerInventoryChanged(new InventoryChangedEventArgs(type, count));
         Debug.Log($"获得{type}×{count}！当前数量：{itemCounts[type]}");
     }
     /// <summary>
@@ -67,7 +56,7 @@ public class PlayerInventory : MonoBehaviour
             return false;
         
         itemCounts[type] -= count;
-        OnItemChanged?.Invoke(type);
+        _eventCenter.TriggerInventoryChanged(new InventoryChangedEventArgs(type, -count));
         return true;
     }
     /// <summary>

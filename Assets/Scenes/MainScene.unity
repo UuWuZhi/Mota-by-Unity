@@ -1159,7 +1159,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3bf9345d6a8f8f9469dbbe81007d0790, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  root: {fileID: 1999447866}
+  root: {fileID: 349912874}
   contentParent: {fileID: 1999447867}
   monsterBarPrefab: {fileID: 8549299565461852415, guid: 2b9e664f74ab48e499ed420c0cd037c1, type: 3}
 --- !u!1 &457658670
@@ -9922,7 +9922,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1181989507}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8eacc913850014b409a136defac287ff, type: 3}
+  m_Script: {fileID: 11500000, guid: 6931dc55088225a4b9f1fc66c789790b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   inspectorEntries: []
@@ -9942,6 +9942,8 @@ MonoBehaviour:
     TypeName: 
   autoRun: 1
   autoInjectGameObjects: []
+  _playerAttribute: {fileID: 983119902}
+  _playerMovement: {fileID: 983119894}
 --- !u!114 &1181989524
 MonoBehaviour:
   m_ObjectHideFlags: 0

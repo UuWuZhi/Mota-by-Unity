@@ -8,7 +8,7 @@ public class SwitchLayerAction : ActionNode
 
     public override void Execute(EventNodeContext ctx, Action onComplete)
     {
-        MapManager.Instance.GetLayerAndSpawnPosIDbyStairType(stairType, out int targetLayerId, out int spawnPointId);
+        ctx.MapManager.GetLayerAndSpawnPosIDbyStairType(stairType, out int targetLayerId, out int spawnPointId);
         ctx.EventCenter.TriggerLayerSwitchRequest(new LayerSwitchRequestEventArgs
         {
             TargetLayerId = targetLayerId,

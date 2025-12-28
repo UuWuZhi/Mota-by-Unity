@@ -1,60 +1,50 @@
 using UnityEngine;
 using UnityEngine.Tilemaps;
 using System.Collections.Generic;
+using VContainer;
 
 /// <summary>
 /// 地图管理系统（单例）：负责多楼层管理、楼层切换和数据缓存
 /// </summary>
 public class MapManager : MonoBehaviour
 {
-    public static MapManager Instance;
-
     [Header("地图配置")]
-    public Grid mapRoot;                       // 所有层的根Grid
-    public int _currentLayerId = 1;            // 当前层数（默认1层）
-    public List<MapLayerInfo> allLayers = new List<MapLayerInfo>(); // 所有层的配置
+    public Grid mapRoot;                                               // 所有层的根Grid
+    public int _currentLayerId = 1;                                    // 当前层数（默认1层）
+    public List<MapLayerInfo> allLayers = new List<MapLayerInfo>();    // 所有层的配置
 
     // 缓存各层的Tilemap和边界（键：楼层ID，值：(基础层, 事件层, 边界)）
     private Dictionary<int, (Tilemap groundWall, Tilemap eventTilemap, BoundsInt bounds)> _layerDataCache = 
         new Dictionary<int, (Tilemap, Tilemap, BoundsInt)>();
 
+    private GridManager _gridManager;
+    private EventCenter _eventCenter;
+    private IGlobalEventVariables _globalEventVariables;
+
+    private bool _eventSubscribed = false;
     //==============================================================================//
     //                                                                              //
     //                                 生命周期                                     //
     //                                                                              //
     //==============================================================================//
     #region 生命周期
-    private void Awake()
-    {
-        if (Instance == null)
-        {
-            Instance = this;
-        }
-        else
-        {
-            Destroy(gameObject);
-        }
-    }
-
     private void OnEnable()
     {
-        // 订阅楼层切换请求事件
-        if (EventCenter.Instance != null)
-        {
-            EventCenter.Instance.OnLayerSwitchRequested += OnLayerSwitchRequested;
-        }
+        SubscribeEventCenter();
     }
-
+    [Inject]
+    public void Construct(GridManager gridManager, EventCenter eventCenter, IGlobalEventVariables globalEventVariables)
+    {
+        _gridManager = gridManager;
+        _eventCenter = eventCenter;
+        _globalEventVariables = globalEventVariables;
+        SubscribeEventCenter();
+    }
     private void OnDisable()
     {
-        // 取消订阅
-        if (EventCenter.Instance != null)
-        {
-            EventCenter.Instance.OnLayerSwitchRequested -= OnLayerSwitchRequested;
-        }
+        UnsubscribeEventCenter();
     }
     #endregion
-
     //==============================================================================//
     //                                                                              //
     //                                 事件处理                                     //
@@ -96,21 +86,38 @@ public class MapManager : MonoBehaviour
         _currentLayerId = switchArgs.TargetLayerId;
 
         // 将当前楼层同步到全局事件变量存储
-        if (GlobalEventVariables.Instance != null)
+        if (_globalEventVariables != null)
         {
-            GlobalEventVariables.Instance.SetInt("layerId", _currentLayerId);
+            _globalEventVariables.SetInt(GlobalEventKey.LayerId, _currentLayerId);
         }
 
         // 4. 发布楼层切换完成事件（通知玩家移动到出生点）
-        EventCenter.Instance.TriggerLayerSwitched(new LayerSwitchedEventArgs
+        if (_eventCenter != null)
         {
-            GroundWallTilemap = targetData.groundWall,
-            EventTilemap = targetData.eventTilemap,
-            LayerBounds = targetData.bounds,
-            SpawnPos = spawnPos
-        });
-
+            _eventCenter.TriggerLayerSwitched(new LayerSwitchedEventArgs
+            {
+                GroundWallTilemap = targetData.groundWall,
+                EventTilemap = targetData.eventTilemap,
+                LayerBounds = targetData.bounds,
+                SpawnPos = spawnPos
+            });
+        }
         Debug.Log($"已切换到楼层{_currentLayerId}，出生点ID：{switchArgs.SpawnPointId}");
+    }
+    private void SubscribeEventCenter()
+    {
+        if (_eventCenter == null || _eventSubscribed) return;
+        _eventCenter.OnLayerSwitchRequested += OnLayerSwitchRequested;
+        _eventSubscribed = true;
+        //Debug.Log("MapManager已订阅EventCenter事件");
+    }
+
+    private void UnsubscribeEventCenter()
+    {
+        if (_eventCenter == null || !_eventSubscribed) return;
+        _eventCenter.OnLayerSwitchRequested -= OnLayerSwitchRequested;
+        _eventSubscribed = false;
+        //Debug.Log("MapManager已取消订阅EventCenter事件");
     }
     #endregion
 
@@ -131,13 +138,13 @@ public class MapManager : MonoBehaviour
 
         if (mapRoot == null)
             Debug.LogError("MapManager：mapRoot未配置！");
-        if (GridManager.Instance == null)
-            Debug.LogError("MapManager：GridManager未实例化！");
+        if (_gridManager == null)
+            Debug.LogError("MapManager：GridManager未注入！");
 
         // 同步当前层到全局变量存储
-        if (GlobalEventVariables.Instance != null)
+        if (_globalEventVariables != null)
         {
-            GlobalEventVariables.Instance.SetInt("layerId", _currentLayerId);
+            _globalEventVariables.SetInt(GlobalEventKey.LayerId, _currentLayerId);
         }
     }
 
@@ -210,7 +217,7 @@ public class MapManager : MonoBehaviour
             }
 
             // 处理边界（优先使用预存边界，否则临时计算）
-            BoundsInt bounds = GridManager.Instance.IsBoundsValid(layerInfo.layerBounds) 
+            BoundsInt bounds = _gridManager.IsBoundsValid(layerInfo.layerBounds) 
                 ? layerInfo.layerBounds 
                 : GetTilemapBounds(groundWall);
 

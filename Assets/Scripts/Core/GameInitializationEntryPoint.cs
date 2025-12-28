@@ -13,17 +13,19 @@ public class GameInitializationEntryPoint : IStartable
     private readonly MapManager _mapManager;
     private readonly PlayerAttribute _playerAttribute;
     private readonly EventCenter _eventCenter;
+    private readonly IGlobalEventVariables _globalEventVariables;
     private readonly PlayerMovement _playerMovement;
     private readonly GameObject _playerObject;
 
     // If you need the player GameObject reference, keep an inspector-assigned reference on a small MonoBehaviour and register its instance.
-    public GameInitializationEntryPoint(IInventoryService inventoryService, MapManager mapManager, PlayerAttribute playerAttribute, EventCenter eventCenter, PlayerMovement playerMovement)
+    public GameInitializationEntryPoint(IInventoryService inventoryService, MapManager mapManager, PlayerAttribute playerAttribute, EventCenter eventCenter, PlayerMovement playerMovement, IGlobalEventVariables globalEventVariables)
     {
         _inventoryService = inventoryService;
         _mapManager = mapManager;
         _playerAttribute = playerAttribute;
         _eventCenter = eventCenter;
         _playerMovement = playerMovement;
+        _globalEventVariables = globalEventVariables;
     }
 
     // IStartable.Start runs when the container builds and starts entrypoints
@@ -50,7 +52,7 @@ public class GameInitializationEntryPoint : IStartable
                 _eventCenter.TriggerShowUI(new UIShowEventArgs {
                     UINames = new List<string>{ "Left", "Right", "Top", "Bottom" } 
                 });
-                GlobalEventVariables.Instance.UIState = "InGame";
+                _globalEventVariables.SetString(GlobalEventKey.UIState, "InGame");
             }
         }
         catch (System.Exception ex)

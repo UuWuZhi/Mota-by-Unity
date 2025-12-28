@@ -17,13 +17,18 @@ public class UIItem : MonoBehaviour
     public void Construct(IInventoryService inventory)
     {
         _inventoryService = inventory ?? throw new ArgumentNullException(nameof(inventory));
-        _inventoryService.OnItemChanged += UpdateUI;
     }
 
-    private void OnDestroy()
+    private void OnEnable()
     {
-        if (_inventoryService != null)
-            _inventoryService.OnItemChanged -= UpdateUI;
+        if (EventCenter.Instance != null)
+            EventCenter.Instance.OnInventoryChanged += OnInventoryChanged_EventCenter;
+    }
+
+    private void OnDisable()
+    {
+        if (EventCenter.Instance != null)
+            EventCenter.Instance.OnInventoryChanged -= OnInventoryChanged_EventCenter;
     }
 
     private void Start()
@@ -32,6 +37,11 @@ public class UIItem : MonoBehaviour
         UpdateUI(ItemType.All);
     }
 
+    private void OnInventoryChanged_EventCenter(object sender, InventoryChangedEventArgs args)
+    {
+        if (args == null) return;
+        UpdateUI(args.ChangedType);
+    }
 
     // 【核心】更新所有属性的UI显示
     private void UpdateUI(ItemType type)

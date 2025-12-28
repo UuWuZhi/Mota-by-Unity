@@ -7,8 +7,6 @@ using System.Collections.Generic;
 /// </summary>
 public class PlayerAttribute : MonoBehaviour
 {
-    public static PlayerAttribute Instance;
-
     [Header("初始属性配置")]
     [Tooltip("初始HP")] public int initHP = 100;
     [Tooltip("初始攻击")] public int initAttack = 10;
@@ -23,19 +21,6 @@ public class PlayerAttribute : MonoBehaviour
     public int Attack => GetAttributeValue(AttributeType.Attack);
     public int Defense => GetAttributeValue(AttributeType.Defense);
     public int Gold => GetAttributeValue(AttributeType.Gold);
-
-    private void Awake()
-    {
-        if (Instance == null)
-        {
-            Instance = this;
-            DontDestroyOnLoad(gameObject); // 跨场景保留
-        }
-        else
-        {
-            Destroy(gameObject);
-        }
-    }
 
     /// <summary>
     /// 重置属性为初始值（新游戏/复活时调用）

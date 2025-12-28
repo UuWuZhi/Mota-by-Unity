@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using VContainer;
 
 // 负责识别与 UI 相关的按键（例如 F4 隐藏所有 UI）并通过 EventCenter 发布事件
 public class UIInputManager : MonoBehaviour
@@ -17,6 +18,19 @@ public class UIInputManager : MonoBehaviour
             }
             return _instance;
         }
+    }
+
+    // 注入（可选）
+    private UIManager _uiManager;
+    private EventCenter _eventCenter;
+    private IGlobalEventVariables _globalEventVariables;
+
+    [Inject]
+    public void Inject(UIManager uiManager, EventCenter eventCenter, IGlobalEventVariables globalEventVariables)
+    {
+        _uiManager = uiManager;
+        _eventCenter = eventCenter;
+        _globalEventVariables = globalEventVariables;
     }
 
     // 记录启动时哪些 UI 根是可见的（用于遵守“一开始就隐藏的不影响”）
@@ -40,30 +54,34 @@ public class UIInputManager : MonoBehaviour
         _instance = this;
 
         // 记录场景中一开始哪些 UI 是激活的（若 UIManager 可用）
-        if (UIManager.Instance != null)
+        var uiMgr = _uiManager ?? UIManager.Instance;
+        if (uiMgr != null)
         {
-            var active = UIManager.Instance.GetActiveRootNames();
+            var active = uiMgr.GetActiveRootNames();
             foreach (var n in active) if (!string.IsNullOrEmpty(n)) _initiallyVisible.Add(n);
         }
     }
 
     private void Update()
     {
+        var uiMgr = _uiManager ?? UIManager.Instance;
+        var ec = _eventCenter ?? EventCenter.Instance;
+
         // F4：隐藏全部并记住当前可见列表；再次按恢复（仅恢复先前可见的）
         if (Input.GetKeyDown(KeyCode.F4))
         {
             // toggle hide-all
             if (!_hideAllActive)
             {
-                UIManager.Instance.HideAndRecordVisible();
+                uiMgr.HideAndRecordVisible();
                 _hideAllActive = true;
-                GlobalEventVariables.Instance.UIState = "HideAll";
+                _globalEventVariables.SetString(GlobalEventKey.UIState, "HiddenAll");
             }
             else
             {
-                UIManager.Instance.ShowRecordedVisible();
+                uiMgr.ShowRecordedVisible();
                 _hideAllActive = false;
-                GlobalEventVariables.Instance.UIState = "InGame";
+                _globalEventVariables.SetString(GlobalEventKey.UIState, "InGame");
             }
         }
 
@@ -89,34 +107,37 @@ public class UIInputManager : MonoBehaviour
     {
         if (_hideAllActive) return; // 忽略
 
+        var uiMgr = _uiManager;
+        var ec = _eventCenter;
+
         // 第一次按 X：隐藏目前可见的全部 UI，然后显示 MonsterBook 与 SideMenu（仅当它们一开始不是隐藏的）
         if (!_xModeActive)
         {
-            UIManager.Instance.HideAndRecordVisible();
+            uiMgr?.HideAndRecordVisible();
             var toShow = new List<string>();
             foreach (var n in _xTargetNames)
             {
-                if (!string.IsNullOrEmpty(n) && UIManager.Instance != null && UIManager.Instance.IsUIRootRegistered(n))
+                if (!string.IsNullOrEmpty(n) && uiMgr != null && uiMgr.IsUIRootRegistered(n))
                     toShow.Add(n);
             }
             if (toShow.Count > 0)
-                EventCenter.Instance?.TriggerShowUI(new UIShowEventArgs { UINames = toShow });
+                ec?.TriggerShowUI(new UIShowEventArgs { UINames = toShow });
 
             _xModeActive = true;
         }
         else
         {
             // 之后按 X：切换 MonsterBook 与 SideMenu 的显示状态（仅针对那些一开始不是隐藏的）
-            UIManager.Instance.ShowRecordedVisible();
+            uiMgr?.ShowRecordedVisible();
             var toHide = new List<string>();
             foreach (var n in _xTargetNames)
             {
-                if (!string.IsNullOrEmpty(n) && UIManager.Instance != null && UIManager.Instance.IsUIRootRegistered(n))
+                if (!string.IsNullOrEmpty(n) && uiMgr != null && uiMgr.IsUIRootRegistered(n))
                     toHide.Add(n);
             }
             if (toHide.Count > 0)
             {
-                EventCenter.Instance?.TriggerHideUI(new UIHideEventArgs { UINames = toHide });
+                ec?.TriggerHideUI(new UIHideEventArgs { UINames = toHide });
             }
 
             _xModeActive = false;

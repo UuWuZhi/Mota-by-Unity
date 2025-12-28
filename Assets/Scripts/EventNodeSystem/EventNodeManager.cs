@@ -12,6 +12,11 @@ public class EventNodeManager : MonoBehaviour
     private readonly Dictionary<Vector3Int, EventNodeTile> _nodesByCell = new Dictionary<Vector3Int, EventNodeTile>();
 
     private IInventoryService _inventoryService;
+    private IGlobalEventVariables _globalEventVariables;
+    private MapManager _mapManager;
+    private GridManager _gridManager;
+    private EventCenter _eventCenter;
+    private PlayerAttribute _playerAttribute;
     //==============================================================================//
     //                                                                              //
     //                                 生命周期                                     //
@@ -26,9 +31,15 @@ public class EventNodeManager : MonoBehaviour
 
     // Constructor-style injection for MonoBehaviour: VContainer will call this after injection
     [Inject]
-    public void Construct(IInventoryService inventory)
+    public void Construct(IInventoryService inventory, IGlobalEventVariables globalEventVariables, MapManager mapManager, GridManager gridManager, PlayerAttribute playerAttribute, EventCenter eventCenter)
     {
-        _inventoryService = inventory; // may be null if not registered; callers should handle null
+        _inventoryService = inventory;
+        _globalEventVariables = globalEventVariables;
+        _mapManager = mapManager;
+        _gridManager = gridManager;
+        _playerAttribute = playerAttribute;
+        _eventCenter = eventCenter;
+        if (_gridManager == null) Debug.LogError("EventNodeManager: GridManager 注入失败！");
     }
 
     private void OnEnable()
@@ -66,8 +77,8 @@ public class EventNodeManager : MonoBehaviour
         try
         {
             if (args.TriggerEvent == false) return;
-            Vector3Int cellPos = GridManager.Instance.MapGrid.WorldToCell(args.TargetWorldPos);
-            int layerId = GlobalEventVariables.Instance.LayerId;
+            Vector3Int cellPos = _gridManager.MapGrid.WorldToCell(args.TargetWorldPos);
+            int layerId = _globalEventVariables.GetInt(GlobalEventKey.LayerId);
             TryTriggerEventTile(cellPos, layerId);
         }
         catch (Exception ex)
@@ -83,7 +94,7 @@ public class EventNodeManager : MonoBehaviour
         try
         {
             // 触发所有注册且 triggerMode == OnLoad 的节点（传入 layerId）
-            int layerId = GlobalEventVariables.Instance.LayerId;
+            int layerId = _globalEventVariables.GetInt(GlobalEventKey.LayerId);
 
             // 迭代时复制 keys 防止并发修改
             var keys = new List<Vector3Int>(_nodesByCell.Keys);
@@ -152,7 +163,11 @@ public class EventNodeManager : MonoBehaviour
                 LayerId = layerId,
                 TileObject = tileMono.gameObject,
                 OwnerMono = this,
-                InventoryService = _inventoryService
+                InventoryService = _inventoryService,
+                MapManager = _mapManager,
+                GridManager = _gridManager,
+                EventCenter = _eventCenter,
+                PlayerAttribute = _playerAttribute
             };
             // 非阻塞触发：一般通过事件或到达触发调用，传入 null 回调（事件内部自管理完成时机）
             tileMono.Run(ctx, null);
@@ -195,7 +210,18 @@ public class EventNodeManager : MonoBehaviour
             onExecutionComplete?.Invoke();
             return;
         }
-        var ctx = new EventNodeContext { CellPos = cellPos, LayerId = layerId, TileObject = tileMono.gameObject, OwnerMono = this, InventoryService = _inventoryService };
+        var ctx = new EventNodeContext 
+        { 
+            CellPos = cellPos, 
+            LayerId = layerId,
+            TileObject = tileMono.gameObject, 
+            OwnerMono = this,
+            InventoryService = _inventoryService,
+            MapManager = _mapManager,
+            GridManager = _gridManager,
+            EventCenter = _eventCenter,
+            PlayerAttribute = _playerAttribute
+        };
 
         switch (tileMono.movementControl)
         {

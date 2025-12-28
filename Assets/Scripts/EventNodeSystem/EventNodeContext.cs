@@ -13,11 +13,10 @@ public class EventNodeContext
     public Dictionary<string, object> Vars = new Dictionary<string, object>(); // 临时/扩展数据
 
     // 兼容现有单例访问（逐步移除）
-    public PlayerAttribute PlayerAttribute => PlayerAttribute.Instance;
-    public GridManager GridManager => GridManager.Instance;
-    public EventCenter EventCenter => EventCenter.Instance;
-
-    // 提供基于接口的背包访问，支持由外部注入（EventNodeManager 在创建上下文时应设置该属性）
+    public PlayerAttribute PlayerAttribute { get; set; }
+    public GridManager GridManager { get; set; }
+    public EventCenter EventCenter { get; set; }
+    public MapManager MapManager { get; set; }
     public IInventoryService InventoryService { get; set; }
 
     public EventNodeContext() { }

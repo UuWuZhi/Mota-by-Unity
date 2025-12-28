@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using VContainer;
 
 /// <summary>
 /// 简化的对话管理器：仅负责展示对话数据并广播当前节点变更/对话开始/结束事件。
@@ -15,6 +16,8 @@ public class DialogueManager : MonoBehaviour
     public event Action<DialogueNode> OnNodeChanged;
     public event Action OnDialogueEnded;
 
+    private IGlobalEventVariables _globalEventVariables;
+
     //==============================================================================//
     //                                                                              //
     //                                 生命周期                                     //
@@ -28,13 +31,11 @@ public class DialogueManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
     }
 
-    private void Start()
+    [Inject]
+    public void Construct(IGlobalEventVariables globalEventVariables)
     {
-        // 同步初始 IsActive 到全局变量（防止未被初始化）
-        if (GlobalEventVariables.Instance != null)
-        {
-            GlobalEventVariables.Instance.DialogueIsActive = IsActive;
-        }
+        _globalEventVariables = globalEventVariables;
+        _globalEventVariables.SetBool(GlobalEventKey.DialogueIsActive, IsActive);
     }
     #endregion
     //==============================================================================//
@@ -53,9 +54,9 @@ public class DialogueManager : MonoBehaviour
         _currentNode = startNode;
         IsActive = true;
         // 同步到全局变量
-        if (GlobalEventVariables.Instance != null)
+        if (_globalEventVariables != null)
         {
-            GlobalEventVariables.Instance.DialogueIsActive = true;
+            _globalEventVariables.SetBool(GlobalEventKey.DialogueIsActive, true);
         }
         OnDialogueStarted?.Invoke();
         PublishCurrentNode();
@@ -67,9 +68,9 @@ public class DialogueManager : MonoBehaviour
     {
         IsActive = false;
         // 同步到全局变量
-        if (GlobalEventVariables.Instance != null)
+        if (_globalEventVariables != null)
         {
-            GlobalEventVariables.Instance.DialogueIsActive = false;
+            _globalEventVariables.SetBool(GlobalEventKey.DialogueIsActive, false);
         }
         OnDialogueEnded?.Invoke();
         _currentNode = null;

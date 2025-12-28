@@ -26,6 +26,9 @@ public class EventCenter : MonoBehaviour
     public event EventHandler<AttributeChangedEventArgs> OnAttributeChanged; // 属性变化通知
     public event EventHandler<EntityAnimationEventArgs> OnEntityAnimationFinished; // 实体动画完成通知
 
+    // Inventory 相关事件
+    public event EventHandler<InventoryChangedEventArgs> OnInventoryChanged; // 背包更新通知
+
     // UI 相关事件：用于控制 UI 的显示/隐藏
     public event EventHandler<UIShowEventArgs> OnShowUI; // 请求显示特定 UI
     public event EventHandler<UIHideEventArgs> OnHideUI; // 请求隐藏特定 UI
@@ -59,6 +62,9 @@ public class EventCenter : MonoBehaviour
 
     // 新：触发事件层瓦片移动事件
     public void TriggerEventTileMoved(TileMovedEventArgs args) => OnEventTileMoved?.Invoke(this, args);
+
+    // 新：触发背包变化
+    public void TriggerInventoryChanged(InventoryChangedEventArgs args) => OnInventoryChanged?.Invoke(this, args);
 
     // UI 触发方法
     public void TriggerShowUI(UIShowEventArgs args) => OnShowUI?.Invoke(this, args);

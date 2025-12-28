@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.EventSystems;
+using VContainer;
 
 /// <summary>
 /// TextMeshPro 版对话 UI 显示与交互
@@ -46,27 +47,71 @@ public class UIDialogue : MonoBehaviour
     public event Action<int> OnChoiceClicked;
     public event Action OnContinueClicked;
 
+    // injected
+    private UIManager _uiManager;
+
+    private bool _registeredRoot = false;
+
     private void Start()
     {
-        _dm = DialogueManager.Instance;
+        // previous approach used DialogueManager.Instance; we'll rely on injected _dm when available
+        if (_dm == null)
+        {
+            _dm = DialogueManager.Instance; // fallback to existing singleton
+            Debug.Log("DialogueUI: 使用 DialogueManager.Instance 作为备用注入。");
+        }
+
         if (_dm == null)
         {
             Debug.LogWarning("DialogueUI: 未找到 DialogueManager，UI 将不会工作。");
-            return;
         }
-        _dm.OnDialogueStarted += OnDialogueStarted;
-        _dm.OnNodeChanged += OnNodeChanged;
-        _dm.OnDialogueEnded += OnDialogueEnded;
+        else
+        {
+            _dm.OnDialogueStarted += OnDialogueStarted;
+            _dm.OnNodeChanged += OnNodeChanged;
+            _dm.OnDialogueEnded += OnDialogueEnded;
+        }
+
+        TryRegisterRoot();
 
         if (root != null) root.SetActive(false);
     }
 
     private void OnDestroy()
     {
-        if (_dm == null) return;
-        _dm.OnDialogueStarted -= OnDialogueStarted;
-        _dm.OnNodeChanged -= OnNodeChanged;
-        _dm.OnDialogueEnded -= OnDialogueEnded;
+        if (_dm != null)
+        {
+            _dm.OnDialogueStarted -= OnDialogueStarted;
+            _dm.OnNodeChanged -= OnNodeChanged;
+            _dm.OnDialogueEnded -= OnDialogueEnded;
+        }
+    }
+
+    [Inject]
+    public void Inject(DialogueManager dm, UIManager uiManager)
+    {
+        //Debug.Log("DialogueUI: 收到注入的 DialogueManager 和 UIManager。");
+        // receive injected DialogueManager and UIManager
+        _dm = dm ?? _dm; // prefer injected if available
+        _uiManager = uiManager ?? _uiManager;
+
+        // ensure subscriptions are set
+        if (_dm != null)
+        {
+            _dm.OnDialogueStarted += OnDialogueStarted;
+            _dm.OnNodeChanged += OnNodeChanged;
+            _dm.OnDialogueEnded += OnDialogueEnded;
+        }
+
+        TryRegisterRoot();
+    }
+
+    private void TryRegisterRoot()
+    {
+        if (_registeredRoot) return;
+        if (_uiManager == null || root == null) return;
+        _uiManager.RegisterUIRoot(root);
+        _registeredRoot = true;
     }
 
     // 暴露给 InputManager 的只读状态/控制方法

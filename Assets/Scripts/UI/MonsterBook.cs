@@ -30,6 +30,7 @@ public class MonsterBook : MonoBehaviour
 
     public void MarkSeen(int layerId, int enemyId)
     {
+        Debug.Log($"标记已见怪物：层 {layerId}, 怪物ID {enemyId}");
         if (!_seenByLayer.TryGetValue(layerId, out var set))
         {
             set = new HashSet<int>();
@@ -78,13 +79,13 @@ public class MonsterBook : MonoBehaviour
 
     public void SetPlayerSnapshot(int layerId, int attack, int defense)
     {
-        Debug.Log("设置玩家属性快照: 层 " + layerId + ", 攻击 " + attack + ", 防御 " + defense);
+        //Debug.Log("设置玩家属性快照: 层 " + layerId + ", 攻击 " + attack + ", 防御 " + defense);
         _playerSnapshotByLayer[layerId] = new PlayerSnapshot { attack = attack, defense = defense };
     }
 
     public bool IsPlayerSnapshotSame(int layerId, int attack, int defense)
     {
-        Debug.Log("检查玩家属性快照: 层 " + layerId + ", 攻击 " + attack + ", 防御 " + defense);
+        //Debug.Log("检查玩家属性快照: 层 " + layerId + ", 攻击 " + attack + ", 防御 " + defense);
         if (!_playerSnapshotByLayer.TryGetValue(layerId, out var snap) || snap == null) return false;
         return snap.attack == attack && snap.defense == defense;
     }

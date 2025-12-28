@@ -1,5 +1,6 @@
 using UnityEngine;
 using TMPro; // 引入TextMeshPro命名空间
+using VContainer;
 
 public class UIAttribute : MonoBehaviour
 {
@@ -10,29 +11,34 @@ public class UIAttribute : MonoBehaviour
     [SerializeField] private TextMeshProUGUI textGold;     // 显示金币的Text
 
     private PlayerAttribute _playerAttribute;
+    private EventCenter _eventCenter;
 
-
-    private void Awake()
-    {
-        // 获取实例
-        _playerAttribute = PlayerAttribute.Instance;
-        if (_playerAttribute == null)
-        {
-            Debug.LogError("场景中找不到PlayerAttribute实例！");
-            return;
-        }
-    }
     private void OnEnable()
     {
-        // 改为订阅事件中心的属性变化事件
-        EventCenter.Instance.OnAttributeChanged += OnAttributeChanged;
+        // 改为订阅注入的事件中心（若未注入则回退到单例）
+        var ec = _eventCenter ?? EventCenter.Instance;
+        if (ec != null)
+        {
+            ec.OnAttributeChanged += OnAttributeChanged;
+        }
     }
 
     private void OnDisable()
     {
-        // 取消订阅
-        EventCenter.Instance.OnAttributeChanged -= OnAttributeChanged;
+        var ec = _eventCenter ?? EventCenter.Instance;
+        if (ec != null)
+        {
+            ec.OnAttributeChanged -= OnAttributeChanged;
+        }
     }
+
+    [Inject]
+    public void Inject(PlayerAttribute playerAttribute, EventCenter eventCenter)
+    {
+        _playerAttribute = playerAttribute ?? _playerAttribute;
+        _eventCenter = eventCenter ?? _eventCenter;
+    }
+
     private void OnAttributeChanged(object sender, AttributeChangedEventArgs args)
     {
         UpdateUI(args.ChangedType);
@@ -53,11 +59,11 @@ public class UIAttribute : MonoBehaviour
             case AttributeType.HP: // 仅更新血量UI
                 UpdateHpUI();
                 break;
-            
+
             case AttributeType.Attack: // 仅更新攻击UI
                 UpdateAttackUI();
                 break;
-            
+
             case AttributeType.Defense: // 仅更新防御UI
                 UpdateDefenseUI();
                 break;
@@ -72,23 +78,27 @@ public class UIAttribute : MonoBehaviour
     private void UpdateHpUI()
     {
         // 把“当前HP/最大HP”赋值给textHp文本
-        textHp.text = $"{_playerAttribute.CurrentHP}";
+        if (textHp != null)
+            textHp.text = $"{_playerAttribute.CurrentHP}";
     }
 
     private void UpdateAttackUI()
     {
         // 把“攻击数值”赋值给textAttack文本
-        textAttack.text = $"{_playerAttribute.Attack}";
+        if (textAttack != null)
+            textAttack.text = $"{_playerAttribute.Attack}";
     }
 
     private void UpdateDefenseUI()
     {
         // 把“防御数值”赋值给textDefense文本
-        textDefense.text = $"{_playerAttribute.Defense}";
+        if (textDefense != null)
+            textDefense.text = $"{_playerAttribute.Defense}";
     }
     private void UpdateGoldUI()
     {
         // 把“防御数值”赋值给textDefense文本
-        textGold.text = $"{_playerAttribute.Gold}";
+        if (textGold != null)
+            textGold.text = $"{_playerAttribute.Gold}";
     }
 }

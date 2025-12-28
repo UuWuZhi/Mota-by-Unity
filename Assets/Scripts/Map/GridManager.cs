@@ -1,55 +1,47 @@
 // GridManager：基础网格管理系统
 using UnityEngine;
 using UnityEngine.Tilemaps;
+using System;
 using System.Collections.Generic;
+using VContainer;
+using System.Security.Cryptography.X509Certificates;
 
 public class GridManager : MonoBehaviour
 {
-    public static GridManager Instance;
-    public float tileSize = 1f; // 单个格子尺寸（和Tilemap的cell size一致）
-    public Grid MapGrid; // 由外部注入，不再从MapManager获取
-    private GridType[,] _baseGridData;  // 基础层格子类型存储
-    private BoundsInt _currentLayerBounds; // 缓存当前层边界
-    private Tilemap _currentGroundWallTilemap; //当前层基础层引用
-    private Tilemap _currentEventTilemap; //当前层事件层引用
+    public float tileSize = 1f;                 // 单个格子尺寸（和Tilemap的cell size一致）
+    public Grid MapGrid;                        // 由外部注入，不再从MapManager获取
+    private GridType[,] _baseGridData;          // 基础层格子类型存储
+    private BoundsInt _currentLayerBounds;      // 缓存当前层边界
+    private Tilemap _currentGroundWallTilemap;  //当前层基础层引用
+    private Tilemap _currentEventTilemap;       //当前层事件层引用
     public Tilemap CurrentEventTilemap => _currentEventTilemap;
+
+    private IGlobalEventVariables _globalEventVariables;
+    private EventNodeManager _eventNodeManager;
+    private EventCenter _eventCenter;
+
+    private bool _eventSubscribed = false;
     //==============================================================================//
     //                                                                              //
     //                                 生命周期                                     //
     //                                                                              //
     //==============================================================================//
     #region 生命周期
-    private void Awake()
+    [Inject]
+    public void Construct(IGlobalEventVariables globalEventVariables, EventNodeManager eventNodeManager, EventCenter eventCenter)
     {
-        if (Instance == null)
-        {
-            Instance = this;
-            DontDestroyOnLoad(gameObject); // 确保跨场景存在
-        }
-        else
-        {
-            Debug.LogWarning($"重复创建GridManager实例，已销毁多余实例：{gameObject.name}");
-            Destroy(gameObject);
-        }
+        _globalEventVariables = globalEventVariables;
+        _eventNodeManager = eventNodeManager;
+        _eventCenter = eventCenter;
+        SubscribeEventCenter();
     }
     private void OnEnable()
     {
-        if (EventCenter.Instance != null)
-        {
-            EventCenter.Instance.OnLayerSwitched += OnLayerSwitchedHandler; //层数切换确认
-        }
-        else
-        {
-            Debug.LogError("GridManager启用失败：EventCenter.Instance为null");
-        }
+        SubscribeEventCenter();
     }
-
     private void OnDisable()
     {
-        if (EventCenter.Instance != null)
-        {
-            EventCenter.Instance.OnLayerSwitched -= OnLayerSwitchedHandler;
-        }
+        UnsubscribeEventCenter();
     }
     #endregion
     //==============================================================================//
@@ -68,6 +60,18 @@ public class GridManager : MonoBehaviour
         }
         // 更新当前层数据
         UpdateCurrentLayerData(layerArgs.GroundWallTilemap, layerArgs.EventTilemap, layerArgs.LayerBounds);
+    }
+    private void SubscribeEventCenter()
+    {
+        if (_eventCenter == null || _eventSubscribed) return;
+        _eventCenter.OnLayerSwitched += OnLayerSwitchedHandler;
+        _eventSubscribed = true;
+    }
+    private void UnsubscribeEventCenter()
+    {
+        if (_eventCenter == null || !_eventSubscribed) return;
+        _eventCenter.OnLayerSwitched -= OnLayerSwitchedHandler;
+        _eventSubscribed = false;
     }
     #endregion
     //==============================================================================//
@@ -212,10 +216,10 @@ public class GridManager : MonoBehaviour
 
         // 同步实体（若存在）：告诉 EntityManager 更新键与位置
 
-        int layerId = GlobalEventVariables.Instance.LayerId;
+        int layerId = _globalEventVariables.GetInt(GlobalEventKey.LayerId);
 
         // 通知系统瓦片已移动
-        EventCenter.Instance?.TriggerEventTileMoved(new TileMovedEventArgs
+        _eventCenter.TriggerEventTileMoved(new TileMovedEventArgs
         {
             FromCell = fromCell,
             ToCell = toCell,
@@ -224,12 +228,12 @@ public class GridManager : MonoBehaviour
         });
 
         // Update EventNodeManager registration if any Mono existed at cell
-        if (EventNodeManager.Instance != null)
+        if (_eventNodeManager != null)
         {
-            if (EventNodeManager.Instance.TryGetEventNodeAtCell(fromCell, out var node) && node != null)
+            if (_eventNodeManager.TryGetEventNodeAtCell(fromCell, out var node) && node != null)
             {
-                EventNodeManager.Instance.UnregisterEventNodeAtCell(fromCell);
-                EventNodeManager.Instance.RegisterEventNodeAtCell(toCell, node);
+                _eventNodeManager.UnregisterEventNodeAtCell(fromCell);
+                _eventNodeManager.RegisterEventNodeAtCell(toCell, node);
                 node.CellPos = toCell;
                 node.transform.position = MapGrid.GetCellCenterWorld(toCell);
             }
@@ -275,9 +279,9 @@ public class GridManager : MonoBehaviour
         _currentEventTilemap.SetTile(cellPos, null);
 
         // If there is an EventNode Mono at this cell, unregister and destroy it
-        if (EventNodeManager.Instance != null && EventNodeManager.Instance.TryGetEventNodeAtCell(cellPos, out var node) && node != null)
+        if (_eventNodeManager != null && _eventNodeManager.TryGetEventNodeAtCell(cellPos, out var node) && node != null)
         {
-            EventNodeManager.Instance.UnregisterEventNodeAtCell(cellPos);
+            _eventNodeManager.UnregisterEventNodeAtCell(cellPos);
             GameObject.Destroy(node.gameObject);
         }
     }

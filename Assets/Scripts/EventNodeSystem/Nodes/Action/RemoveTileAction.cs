@@ -11,7 +11,7 @@ public class RemoveTileAction : ActionNode
         {
             Vector3Int cell = ctx.CellPos;
             // 使用 GridManager 提供的移除接口（移除 Tilemap 上的瓦片）
-            GridManager.Instance.RemoveEventTile(cell);
+            ctx.GridManager.RemoveEventTile(cell);
 
             // 如果存在运行时创建或手动创建的承载 GameObject，注销并销毁它
             if (EventNodeManager.Instance != null && EventNodeManager.Instance.TryGetEventNodeAtCell(cell, out var node))

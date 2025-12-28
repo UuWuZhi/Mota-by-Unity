@@ -1,4 +1,5 @@
 using UnityEngine;
+using VContainer;
 
 /// <summary>
 /// 事件挂载点（放在场景中代表某个事件格）
@@ -7,6 +8,9 @@ using UnityEngine;
 public class EventNodeTile : MonoBehaviour
 {
     public EventNode rootNode;
+
+    private GridManager _gridManager;
+    private bool _isRegistered = false;
 
     public enum TriggerMode 
     { 
@@ -38,17 +42,31 @@ public class EventNodeTile : MonoBehaviour
         rootNode.Execute(ctx, onComplete);
     }
 
-    private void OnEnable()
+    private void TryRegister()
     {
-        // 自动注册（仅在运行时且 GridManager & EventNodeManager 可用时）
-        if (Application.isPlaying && EventNodeManager.Instance != null && GridManager.Instance != null)
+        if (!_isRegistered && Application.isPlaying && EventNodeManager.Instance != null && _gridManager != null)
         {
-            if (GridManager.Instance.MapGrid != null)
+            if (_gridManager.MapGrid != null)
             {
-                CellPos = GridManager.Instance.MapGrid.WorldToCell(transform.position);
+                CellPos = _gridManager.MapGrid.WorldToCell(transform.position);
             }
             EventNodeManager.Instance.RegisterEventNodeAtCell(CellPos, this);
+            _isRegistered = true;
+            //Debug.Log($"EventNodeTile 注册成功 at {CellPos}");
         }
+    }
+
+    private void OnEnable()
+    {
+        TryRegister();
+        //Debug.Log("以上为OnEnable注册");
+    }
+    [Inject]
+    public void Construct(GridManager gridManager)
+    {
+        _gridManager = gridManager;
+        TryRegister();
+        //Debug.Log("以上为Construct注册");
     }
 
     private void OnDisable()
@@ -56,6 +74,8 @@ public class EventNodeTile : MonoBehaviour
         if (Application.isPlaying && EventNodeManager.Instance != null)
         {
             EventNodeManager.Instance.UnregisterEventNodeAtCell(CellPos);
+            _isRegistered = false;
+            //Debug.Log($"EventNodeTile 注销成功 at {CellPos}");
         }
     }
 }

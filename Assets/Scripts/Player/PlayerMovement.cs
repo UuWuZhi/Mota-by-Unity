@@ -1,20 +1,27 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using VContainer;
 
 public class PlayerMovement : MonoBehaviour
 {
     [Header("移动设置")]
-    public float moveSpeed = 5f; 
+    public float moveSpeed = 5f;
     [Header("组件引用")]
     [SerializeField] private Rigidbody2D rb;
-    public static PlayerMovement Instance;
-    private GridManager _gridManager;
-    private EventCenter _eventCenter;
+
+
     private Vector2 moveDir; 
-    private bool _isMoving = false;
     private Coroutine moveCoroutine; 
     private Vector2 targetWorldPos; 
+    
+    private IGlobalEventVariables _globalEventVariables;
+    private EventNodeManager _eventNodeManager;
+    private GridManager _gridManager;
+    private EventCenter _eventCenter;
+
+    private bool _eventSubscribed = false;
+    private bool _isMoving = false;
     private bool _waitingForEventExecution = false;
     //==============================================================================//
     //                                                                              //
@@ -22,37 +29,23 @@ public class PlayerMovement : MonoBehaviour
     //                                                                              //
     //==============================================================================//
     #region 生命周期
-    private void Awake()
-    {
-        if (Instance == null) Instance = this;
-        else Destroy(gameObject);
-        rb ??= GetComponent<Rigidbody2D>();
-        _gridManager = GridManager.Instance;
-        if (_gridManager == null)
-        {
-            Debug.LogError("场景中未找到GridManager单例！");
-            return;
-        }
-        _eventCenter = EventCenter.Instance;
-        if (_eventCenter == null)
-        {
-            Debug.LogError("场景中未找到EventCenter单例！");
-            return;
-        }
-    }
-
     private void OnEnable()
     {
-        // 订阅输入事件（启用时订阅，防止内存泄漏）
-        _eventCenter.OnPlayerMoveInput += OnReceiveMoveInput;
-        _eventCenter.OnLayerSwitched += OnLayerSwitched;
+        SubscribeEventCenter();
+    }
+    [Inject]
+    public void Construct(IGlobalEventVariables globalEventVariables, EventCenter eventCenter, GridManager gridManager, EventNodeManager eventNodeManager)
+    {
+        _globalEventVariables = globalEventVariables;
+        _eventCenter = eventCenter;
+        _gridManager = gridManager;
+        _eventNodeManager = eventNodeManager;
+        SubscribeEventCenter();
     }
 
     private void OnDisable()
     {
-        // 取消订阅（禁用/销毁时取消）
-        _eventCenter.OnPlayerMoveInput -= OnReceiveMoveInput;
-        _eventCenter.OnLayerSwitched -= OnLayerSwitched;
+        UnsubscribeEventCenter();
     }
     #endregion
     //==============================================================================//
@@ -74,7 +67,7 @@ public class PlayerMovement : MonoBehaviour
         if (_waitingForEventExecution)
             return;
         // 如果正在对话，阻止移动输入
-        if (GlobalEventVariables.Instance.DialogueIsActive)
+        if (_globalEventVariables.GetBool(GlobalEventKey.DialogueIsActive))
             return;
         // 移动中/输入无效/无方向 → 直接跳过
         if (_isMoving || !args.IsValidInput || args.MoveDirection == Vector2.zero)
@@ -119,7 +112,7 @@ public class PlayerMovement : MonoBehaviour
         }
 
         // 3) 最后委托给 EventNodeManager 决定是否允许进入以及是否在事件执行期间阻塞玩家
-        EventNodeManager.Instance.RequestEnterCell_PreMove(targetCell, GlobalEventVariables.Instance.LayerId,
+        _eventNodeManager.RequestEnterCell_PreMove(targetCell, _globalEventVariables.GetInt(GlobalEventKey.LayerId),
             (allowEnter, blockUntilComplete) =>
             {
                 if (!allowEnter)
@@ -141,6 +134,20 @@ public class PlayerMovement : MonoBehaviour
             // onExecutionComplete: 当 EventNodeManager 在后台执行完成时会调用此回调（仅在需要时）
             null
         );
+    }
+    private void SubscribeEventCenter()
+    {
+        if (_eventCenter == null || _eventSubscribed) return;
+        _eventCenter.OnPlayerMoveInput += OnReceiveMoveInput;
+        _eventCenter.OnLayerSwitched += OnLayerSwitched;
+        _eventSubscribed = true;
+    }
+    private void UnsubscribeEventCenter()
+    {
+        if (_eventCenter == null || !_eventSubscribed) return;
+        _eventCenter.OnPlayerMoveInput -= OnReceiveMoveInput;
+        _eventCenter.OnLayerSwitched -= OnLayerSwitched;
+        _eventSubscribed = false;
     }
     #endregion
     //==============================================================================//

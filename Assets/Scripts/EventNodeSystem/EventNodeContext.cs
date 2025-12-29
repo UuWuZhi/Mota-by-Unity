@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -17,7 +18,25 @@ public class EventNodeContext
     public GridManager GridManager { get; set; }
     public EventCenter EventCenter { get; set; }
     public MapManager MapManager { get; set; }
+    public EventNodeManager EventNodeManager { get; set; }
     public IInventoryService InventoryService { get; set; }
 
     public EventNodeContext() { }
+
+    // 新增：通用 Get/Set 方法，用于把容器创建的单例或运行时服务通过字符串键放入上下文
+    public void Set<T>(string key, T value) where T : class
+    {
+        if (string.IsNullOrEmpty(key)) return;
+        Vars[key] = value;
+    }
+
+    public T Get<T>(string key) where T : class
+    {
+        if (string.IsNullOrEmpty(key)) return null;
+        if (Vars.TryGetValue(key, out var o))
+        {
+            return o as T;
+        }
+        return null;
+    }
 }

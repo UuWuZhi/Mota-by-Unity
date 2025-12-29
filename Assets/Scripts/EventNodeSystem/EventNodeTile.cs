@@ -10,6 +10,7 @@ public class EventNodeTile : MonoBehaviour
     public EventNode rootNode;
 
     private GridManager _gridManager;
+    private EventNodeManager _eventNodeManager;
     private bool _isRegistered = false;
 
     public enum TriggerMode 
@@ -44,13 +45,13 @@ public class EventNodeTile : MonoBehaviour
 
     private void TryRegister()
     {
-        if (!_isRegistered && Application.isPlaying && EventNodeManager.Instance != null && _gridManager != null)
+        if (!_isRegistered && Application.isPlaying && _eventNodeManager != null && _gridManager != null)
         {
             if (_gridManager.MapGrid != null)
             {
                 CellPos = _gridManager.MapGrid.WorldToCell(transform.position);
             }
-            EventNodeManager.Instance.RegisterEventNodeAtCell(CellPos, this);
+            _eventNodeManager.RegisterEventNodeAtCell(CellPos, this);
             _isRegistered = true;
             //Debug.Log($"EventNodeTile 注册成功 at {CellPos}");
         }
@@ -62,18 +63,19 @@ public class EventNodeTile : MonoBehaviour
         //Debug.Log("以上为OnEnable注册");
     }
     [Inject]
-    public void Construct(GridManager gridManager)
+    public void Construct(GridManager gridManager, EventNodeManager eventNodeManager)
     {
         _gridManager = gridManager;
+        _eventNodeManager = eventNodeManager;
         TryRegister();
         //Debug.Log("以上为Construct注册");
     }
 
     private void OnDisable()
     {
-        if (Application.isPlaying && EventNodeManager.Instance != null)
+        if (Application.isPlaying && _eventNodeManager != null)
         {
-            EventNodeManager.Instance.UnregisterEventNodeAtCell(CellPos);
+            _eventNodeManager.UnregisterEventNodeAtCell(CellPos);
             _isRegistered = false;
             //Debug.Log($"EventNodeTile 注销成功 at {CellPos}");
         }

@@ -7,7 +7,6 @@ using VContainer;
 
 public class EventNodeManager : MonoBehaviour
 {
-    public static EventNodeManager Instance { get; private set; }
     // 基于格子的 EventNodeTile 注册表
     private readonly Dictionary<Vector3Int, EventNodeTile> _nodesByCell = new Dictionary<Vector3Int, EventNodeTile>();
 
@@ -17,21 +16,17 @@ public class EventNodeManager : MonoBehaviour
     private GridManager _gridManager;
     private EventCenter _eventCenter;
     private PlayerAttribute _playerAttribute;
+    private DialogueManager _dialogueManager;
+
+    private bool _eventSubscribed = false;
     //==============================================================================//
     //                                                                              //
     //                                 生命周期                                     //
     //                                                                              //
     //==============================================================================//
     #region 生命周期
-    private void Awake()
-    {
-        if (Instance == null) Instance = this;
-        else Destroy(gameObject);
-    }
-
-    // Constructor-style injection for MonoBehaviour: VContainer will call this after injection
     [Inject]
-    public void Construct(IInventoryService inventory, IGlobalEventVariables globalEventVariables, MapManager mapManager, GridManager gridManager, PlayerAttribute playerAttribute, EventCenter eventCenter)
+    public void Construct(IInventoryService inventory, IGlobalEventVariables globalEventVariables, MapManager mapManager, GridManager gridManager, PlayerAttribute playerAttribute, EventCenter eventCenter, DialogueManager dialogueManager)
     {
         _inventoryService = inventory;
         _globalEventVariables = globalEventVariables;
@@ -39,26 +34,17 @@ public class EventNodeManager : MonoBehaviour
         _gridManager = gridManager;
         _playerAttribute = playerAttribute;
         _eventCenter = eventCenter;
-        if (_gridManager == null) Debug.LogError("EventNodeManager: GridManager 注入失败！");
+        _dialogueManager = dialogueManager;
+        SubscribeEventCenter();
     }
-
     private void OnEnable()
     {
-        // 订阅 EventCenter 事件（若可用）
-        if (EventCenter.Instance != null)
-        {
-            EventCenter.Instance.OnPlayerArrived += OnPlayerArrived_EventCenter;
-            EventCenter.Instance.OnGridLoaded += OnGridLoaded_EventCenter;
-        }
+        SubscribeEventCenter();
     }
 
     private void OnDisable()
     {
-        if (EventCenter.Instance != null)
-        {
-            EventCenter.Instance.OnPlayerArrived -= OnPlayerArrived_EventCenter;
-            EventCenter.Instance.OnGridLoaded -= OnGridLoaded_EventCenter;
-        }
+        UnsubscribeEventCenter();
     }
     #endregion
     //==============================================================================//
@@ -110,6 +96,69 @@ public class EventNodeManager : MonoBehaviour
             Debug.LogException(ex);
         }
     }
+
+    // 处理：事件层瓦片移动（由 GridManager 触发）
+    private void OnEventTileMoved_Handler(object sender, TileMovedEventArgs args)
+    {
+        if (args == null) return;
+        try
+        {
+            // 如果有注册的 EventNode 在源格子上，移动注册并更新 Mono 的位置
+            if (args.FromCell == args.ToCell) return;
+            if (_nodesByCell.TryGetValue(args.FromCell, out var node) && node != null)
+            {
+                // 移除旧注册并注册到新格子
+                _nodesByCell.Remove(args.FromCell);
+                _nodesByCell[args.ToCell] = node;
+                node.CellPos = args.ToCell;
+                if (_gridManager != null && _gridManager.MapGrid != null)
+                {
+                    node.transform.position = _gridManager.MapGrid.GetCellCenterWorld(args.ToCell);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogException(ex);
+        }
+    }
+
+    // 处理：事件层瓦片移除（由 GridManager 触发）
+    private void OnEventTileRemoved_Handler(object sender, TileRemovedEventArgs args)
+    {
+        if (args == null) return;
+        try
+        {
+            if (_nodesByCell.TryGetValue(args.Cell, out var node) && node != null)
+            {
+                _nodesByCell.Remove(args.Cell);
+                GameObject.Destroy(node.gameObject);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogException(ex);
+        }
+    }
+
+    private void SubscribeEventCenter()
+    {
+        if (_eventCenter == null || _eventSubscribed) return;
+        _eventCenter.OnPlayerArrived += OnPlayerArrived_EventCenter;
+        _eventCenter.OnGridLoaded += OnGridLoaded_EventCenter;
+        _eventCenter.OnEventTileMoved += OnEventTileMoved_Handler;
+        _eventCenter.OnEventTileRemoved += OnEventTileRemoved_Handler;
+        _eventSubscribed = true;
+    }
+    private void UnsubscribeEventCenter()
+    {
+        if (_eventCenter == null || !_eventSubscribed) return;
+        _eventCenter.OnPlayerArrived -= OnPlayerArrived_EventCenter;
+        _eventCenter.OnGridLoaded -= OnGridLoaded_EventCenter;
+        _eventCenter.OnEventTileMoved -= OnEventTileMoved_Handler;
+        _eventCenter.OnEventTileRemoved -= OnEventTileRemoved_Handler;
+        _eventSubscribed = false;
+    }
     #endregion
     //==============================================================================//
     //                                                                              //
@@ -150,7 +199,6 @@ public class EventNodeManager : MonoBehaviour
     /// </summary>
     public bool TryTriggerEventTile(Vector3Int cellPos, int layerId)
     {
-        if (Instance == null) return false;
         if (!_nodesByCell.TryGetValue(cellPos, out var tileMono) || tileMono == null) return false;
         // 不在此处处理 OnPlayerEnter（该类型由预移动协商处理）
         if (tileMono.triggerMode == EventNodeTile.TriggerMode.OnPlayerEnter) return false;
@@ -167,8 +215,10 @@ public class EventNodeManager : MonoBehaviour
                 MapManager = _mapManager,
                 GridManager = _gridManager,
                 EventCenter = _eventCenter,
-                PlayerAttribute = _playerAttribute
+                PlayerAttribute = _playerAttribute,
+                EventNodeManager = this
             };
+            ctx.Set("DialogueManager", _dialogueManager);
             // 非阻塞触发：一般通过事件或到达触发调用，传入 null 回调（事件内部自管理完成时机）
             tileMono.Run(ctx, null);
             return true;
@@ -187,13 +237,6 @@ public class EventNodeManager : MonoBehaviour
     /// </summary>
     public void RequestEnterCell_PreMove(Vector3Int cellPos, int layerId, Action<bool, bool> callback, Action onExecutionComplete = null)
     {
-        //Debug.Log("接收到PreMove");
-        if (Instance == null)
-        {
-            callback?.Invoke(true, false);
-            onExecutionComplete?.Invoke();
-            return;
-        }
         //Debug.Log("开始查找EventNodeTile");
         // 优先使用基于格子的注册表查找 EventNodeTile —— 避免依赖物理 Overlap
         if (!TryGetEventNodeAtCell(cellPos, out var tileMono) || tileMono == null)
@@ -220,8 +263,10 @@ public class EventNodeManager : MonoBehaviour
             MapManager = _mapManager,
             GridManager = _gridManager,
             EventCenter = _eventCenter,
-            PlayerAttribute = _playerAttribute
+            PlayerAttribute = _playerAttribute,
+            EventNodeManager = this
         };
+        ctx.Set("DialogueManager", _dialogueManager);
 
         switch (tileMono.movementControl)
         {

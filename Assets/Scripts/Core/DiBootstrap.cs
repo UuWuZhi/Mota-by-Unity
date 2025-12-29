@@ -12,20 +12,22 @@ using VContainer.Unity;
 public class DiBootstrap : LifetimeScope
 {
     [SerializeField] private PlayerAttribute _playerAttribute;
-    [SerializeField] private PlayerMovement _playerMovement;
+    [SerializeField] private PlayerMovement _playerMovement; 
+
     protected override void Configure(IContainerBuilder builder)
     {
-        if (EventNodeManager.Instance != null) builder.RegisterInstance(EventNodeManager.Instance).As<EventNodeManager>().AsSelf();
+        //if (EventNodeManager.Instance != null) builder.RegisterInstance(EventNodeManager.Instance).As<EventNodeManager>().AsSelf();
         if (EventCenter.Instance != null) builder.RegisterInstance(EventCenter.Instance).As<EventCenter>().AsSelf();
-        if (DialogueManager.Instance != null) builder.RegisterInstance(DialogueManager.Instance).As<DialogueManager>().AsSelf();
-        //if (PlayerAttribute.Instance != null) builder.RegisterInstance(PlayerAttribute.Instance).As<PlayerAttribute>().AsSelf();
+
+        builder.Register<DialogueManager>(Lifetime.Singleton).AsSelf();
 
         // Register GlobalEventVariablesService as the IGlobalEventVariables implementation
         builder.Register<GlobalEventVariablesService>(Lifetime.Singleton).As<IGlobalEventVariables>().AsSelf();
+        builder.Register<InventoryAdapter>(Lifetime.Singleton).As<IInventoryService>().AsSelf();
 
-        //builder.RegisterComponentInHierarchy<PlayerMovement>().AsSelf();
         builder.RegisterComponentInHierarchy<MapManager>().AsSelf();
         builder.RegisterComponentInHierarchy<GridManager>().AsSelf();
+        builder.RegisterComponentInHierarchy<EventNodeManager>().AsSelf();
         builder.RegisterComponent(_playerAttribute).AsSelf();
         builder.RegisterComponent(_playerMovement).AsSelf();
         //builder.RegisterComponentInHierarchy<PlayerInventory>().AsSelf(); 我们暂时不使用这种方式注入 PlayerInventory
@@ -38,9 +40,7 @@ public class DiBootstrap : LifetimeScope
             // we register a build callback to inject the scene object
             builder.RegisterBuildCallback(container => container.InjectGameObject(gev.gameObject));
         }
-        builder.Register<InventoryAdapter>(Lifetime.Singleton).As<IInventoryService>().AsSelf();
-
-
+        
         if (UIManager.Instance != null) builder.RegisterInstance(UIManager.Instance).As<UIManager>().AsSelf();
         if (BattleManager.Instance != null) builder.RegisterInstance(BattleManager.Instance).As<BattleManager>().AsSelf();
 
@@ -51,10 +51,10 @@ public class DiBootstrap : LifetimeScope
         builder.RegisterBuildCallback(container =>
         {
             // 注入单例实例（使其 [Inject] 方法/属性 被调用）
-            if (EventNodeManager.Instance != null) container.Inject(EventNodeManager.Instance);
+            //if (EventNodeManager.Instance != null) container.Inject(EventNodeManager.Instance);
             if (EventCenter.Instance != null) container.Inject(EventCenter.Instance);
             if (UIManager.Instance != null) container.Inject(UIManager.Instance);
-            if (DialogueManager.Instance != null) container.Inject(DialogueManager.Instance);
+            // DialogueManager is container-created, no scene Instance to inject
 
             // 注入场景中所有 PlayerInventory 组件（替代原先的 Instance 注入方式）
             foreach (var inv in GameObject.FindObjectsOfType<PlayerInventory>())

@@ -17,7 +17,6 @@ public class GridManager : MonoBehaviour
     public Tilemap CurrentEventTilemap => _currentEventTilemap;
 
     private IGlobalEventVariables _globalEventVariables;
-    private EventNodeManager _eventNodeManager;
     private EventCenter _eventCenter;
 
     private bool _eventSubscribed = false;
@@ -28,10 +27,9 @@ public class GridManager : MonoBehaviour
     //==============================================================================//
     #region 生命周期
     [Inject]
-    public void Construct(IGlobalEventVariables globalEventVariables, EventNodeManager eventNodeManager, EventCenter eventCenter)
+    public void Construct(IGlobalEventVariables globalEventVariables, EventCenter eventCenter)
     {
         _globalEventVariables = globalEventVariables;
-        _eventNodeManager = eventNodeManager;
         _eventCenter = eventCenter;
         SubscribeEventCenter();
     }
@@ -227,17 +225,7 @@ public class GridManager : MonoBehaviour
             TileAsset = sourceTile
         });
 
-        // Update EventNodeManager registration if any Mono existed at cell
-        if (_eventNodeManager != null)
-        {
-            if (_eventNodeManager.TryGetEventNodeAtCell(fromCell, out var node) && node != null)
-            {
-                _eventNodeManager.UnregisterEventNodeAtCell(fromCell);
-                _eventNodeManager.RegisterEventNodeAtCell(toCell, node);
-                node.CellPos = toCell;
-                node.transform.position = MapGrid.GetCellCenterWorld(toCell);
-            }
-        }
+        // EventNodeManager will handle updating registrations when it receives the TileMoved event
 
         return true;
     }
@@ -276,14 +264,20 @@ public class GridManager : MonoBehaviour
     {
         if (MapGrid == null || _currentEventTilemap == null)
             return;
+        // 获取当前瓦片引用以放入事件参数
+        EventTile removed = _currentEventTilemap.GetTile(cellPos) as EventTile;
         _currentEventTilemap.SetTile(cellPos, null);
 
-        // If there is an EventNode Mono at this cell, unregister and destroy it
-        if (_eventNodeManager != null && _eventNodeManager.TryGetEventNodeAtCell(cellPos, out var node) && node != null)
+        int layerId = _globalEventVariables.GetInt(GlobalEventKey.LayerId);
+        // 触发事件层瓦片移除事件
+        _eventCenter.TriggerEventTileRemoved(new TileRemovedEventArgs
         {
-            _eventNodeManager.UnregisterEventNodeAtCell(cellPos);
-            GameObject.Destroy(node.gameObject);
-        }
+            Cell = cellPos,
+            LayerId = layerId,
+            TileAsset = removed
+        });
+
+        // 不直接处理 EventNodeManager 的注销/销毁，交由 EventNodeManager 监听 TileRemoved 事件处理
     }
     #endregion
     //==============================================================================//

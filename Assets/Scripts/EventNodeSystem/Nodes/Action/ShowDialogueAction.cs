@@ -19,9 +19,17 @@ public class ShowDialogueAction : ActionNode
             return;
         }
 
-        // 利用现有DialogueManager的Show方法显示文本
-        // 并在对话结束后调用onComplete继续节点流程
-        DialogueManager.Instance.Show(text,speaker, () =>
+        // 尝试从 ctx 获取 DialogueManager（在迁移时，EventNodeContext 里会保存引用）
+        var dm = ctx != null ? ctx.Get<DialogueManager>("DialogueManager") : null;
+        if (dm == null)
+        {
+            // 回退：尝试通过容器注入的单例（如果容器已注册并注入到调用者）
+            Debug.LogWarning("ShowDialogueAction: DialogueManager 未在 EventNodeContext 中提供，无法显示对话");
+            onComplete?.Invoke();
+            return;
+        }
+
+        dm.Show(text, speaker, () =>
         {
             onComplete?.Invoke();
         });

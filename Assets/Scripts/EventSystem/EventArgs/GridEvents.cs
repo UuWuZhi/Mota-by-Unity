@@ -58,3 +58,14 @@ public class TileMovedEventArgs : EventArgs
     public int LayerId { get; set; }
     public EventTile TileAsset { get; set; } // 被移动的瓦片资源引用（可为 null）
 }
+
+/// <summary>
+/// 事件层瓦片移除事件参数
+/// </summary>
+public class TileRemovedEventArgs : EventArgs
+{
+    public GridType TileType { get; set; }
+    public Vector3Int Cell { get; set; }
+    public int LayerId { get; set; }
+    public EventTile TileAsset { get; set; } // 被移除的瓦片资源引用（可为 null）
+}

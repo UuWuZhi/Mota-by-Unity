@@ -21,6 +21,7 @@ public class EventCenter : MonoBehaviour
     //网格事件相关
     public event EventHandler<GridEventTriggerEventArgs> OnGridEventTrigger; // 网格事件触发
     public event EventHandler<TileMovedEventArgs> OnEventTileMoved; // 事件层瓦片移动通知
+    public event EventHandler<TileRemovedEventArgs> OnEventTileRemoved; // 事件层瓦片移除通知
     //战斗相关
     public event EventHandler<BattleCheckEventArgs> OnBattleCheckRequest; // 战斗检查请求
     public event EventHandler<AttributeChangedEventArgs> OnAttributeChanged; // 属性变化通知
@@ -62,6 +63,9 @@ public class EventCenter : MonoBehaviour
 
     // 新：触发事件层瓦片移动事件
     public void TriggerEventTileMoved(TileMovedEventArgs args) => OnEventTileMoved?.Invoke(this, args);
+
+    // 新：触发事件层瓦片移除事件
+    public void TriggerEventTileRemoved(TileRemovedEventArgs args) => OnEventTileRemoved?.Invoke(this, args);
 
     // 新：触发背包变化
     public void TriggerInventoryChanged(InventoryChangedEventArgs args) => OnInventoryChanged?.Invoke(this, args);

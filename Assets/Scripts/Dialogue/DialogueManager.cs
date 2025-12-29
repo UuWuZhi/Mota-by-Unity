@@ -1,66 +1,52 @@
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 using VContainer;
 
 /// <summary>
 /// 简化的对话管理器：仅负责展示对话数据并广播当前节点变更/对话开始/结束事件。
-/// 对话的推进与选项处理由外部系统（Node 系统 / 控制器）负责调用 SetCurrentNode / EndDialogue。
+/// 对话的推进与选项处理由外部系统（Node 系统 / 控制器）负责调用 SetCurrentDialogue / EndDialogue。
+/// 现在为纯 C# 类，由容器管理单例生命周期。
 /// </summary>
-public class DialogueManager : MonoBehaviour
+public class DialogueManager
 {
-    public static DialogueManager Instance { get; private set; }
-    public bool IsActive { get; private set; } = false;
-    private DialogueNode _currentNode;
+    private DialogueData _currentDialogue;
+
     public event Action OnDialogueStarted;
-    public event Action<DialogueNode> OnNodeChanged;
+    public event Action<DialogueData> OnDialogueChanged;
     public event Action OnDialogueEnded;
+    public event Action<int> OnUIChoiceSelected;
 
-    private IGlobalEventVariables _globalEventVariables;
+    private readonly IGlobalEventVariables _globalEventVariables;
 
-    //==============================================================================//
-    //                                                                              //
-    //                                 生命周期                                     //
-    //                                                                              //
-    //==============================================================================//
-    #region 生命周期
-    private void Awake()
-    {
-        if (Instance == null) Instance = this;
-        else Destroy(gameObject);
-        DontDestroyOnLoad(gameObject);
-    }
+    private bool _captureNextContinue = false;
+    public bool IsActive { get; private set; } = false;
 
     [Inject]
-    public void Construct(IGlobalEventVariables globalEventVariables)
+    public DialogueManager(IGlobalEventVariables globalEventVariables)
     {
         _globalEventVariables = globalEventVariables;
-        _globalEventVariables.SetBool(GlobalEventKey.DialogueIsActive, IsActive);
+        _globalEventVariables?.SetBool(GlobalEventKey.DialogueIsActive, IsActive);
     }
-    #endregion
+
     //==============================================================================//
-    //                                                                              //
     //                                 对话进程                                     //
-    //                                                                              //
     //==============================================================================//
-    #region 对话进程
+
     /// <summary>
     /// 启动对话（直接传入起始 DialogueNode）。
     /// 对话推进仍由外部控制（通常通过 SetCurrentNode 或 EndDialogue）。
     /// </summary>
-    public void StartDialogue(DialogueNode startNode)
+    public void StartDialogue(DialogueData startData)
     {
-        if (startNode == null) return;
-        _currentNode = startNode;
+        if (startData == null) return;
+        _currentDialogue = startData;
         IsActive = true;
         // 同步到全局变量
-        if (_globalEventVariables != null)
-        {
-            _globalEventVariables.SetBool(GlobalEventKey.DialogueIsActive, true);
-        }
+        _globalEventVariables?.SetBool(GlobalEventKey.DialogueIsActive, true);
         OnDialogueStarted?.Invoke();
-        PublishCurrentNode();
+        PublishCurrentDialogue();
     }
+
     /// <summary>
     /// 结束当前对话（外部可调用）
     /// </summary>
@@ -68,29 +54,38 @@ public class DialogueManager : MonoBehaviour
     {
         IsActive = false;
         // 同步到全局变量
-        if (_globalEventVariables != null)
-        {
-            _globalEventVariables.SetBool(GlobalEventKey.DialogueIsActive, false);
-        }
+        _globalEventVariables?.SetBool(GlobalEventKey.DialogueIsActive, false);
         OnDialogueEnded?.Invoke();
-        _currentNode = null;
+        _currentDialogue = null;
     }
-    private void PublishCurrentNode()
+
+    private void PublishCurrentDialogue()
     {
-        OnNodeChanged?.Invoke(_currentNode);
+        OnDialogueChanged?.Invoke(_currentDialogue);
     }
-    #endregion
+
+    /// <summary>
+    /// 外部主动设置当前节点（例如 Node 系统在执行动作后调用以推进到指定节点）
+    /// 返回 true 表示成功设置并已广播节点变更。
+    /// </summary>
+    public bool SetCurrentDialogue(DialogueData data)
+    {
+        if (data == null) return false;
+        _currentDialogue = data;
+        PublishCurrentDialogue();
+        return true;
+    }
+
     //==============================================================================//
-    //                                                                              //
     //                                 外部接口                                     //
-    //                                                                              //
     //==============================================================================//
-    #region 外部接口
+
     /// <summary>
     /// 运行时简便 API：显示单段文字并在结束时回调（内部创建临时 DialogueNode）。
     /// 对话结束回调由 onComplete 接收；对话推进仍由外部控制（通常临时对话无选项，结束即回调）。
-    /// 现在会监听场景中的 DialogueUI 的 OnContinueClicked 并在玩家点击继续时调用 EndDialogue，
-    /// 以保证 OnDialogueEnded 被触发从而执行 onComplete。
+    /// 现在不会再通过查找 UIDialogue 并订阅它的事件来控制流程，
+    /// 而是通过内部标志捕获下一次 UI 的 Continue 操作（由 UIDialogue 调用 NotifyUIContinue），
+    /// 并在对话结束时触发 onComplete。
     /// </summary>
     public void Show(string text, string speaker, Action onComplete)
     {
@@ -100,59 +95,47 @@ public class DialogueManager : MonoBehaviour
             return;
         }
 
-        var node = new DialogueNode
+        var data = new DialogueData
         {
             Id = "tmp_0",
             Speaker = speaker,
             Text = text,
-            Choices = new List<DialogueChoice>(),
-            NextNodeId = null
+            Options = new List<DialogueOption>()
         };
 
-        UIDialogue ui = GameObject.FindObjectOfType<UIDialogue>();
+        // 标记捕获下一次 UI 的 Continue 操作，UI 会通过 NotifyUIContinue 调用 EndDialogue
+        _captureNextContinue = true;
 
-        Action uiContinueHandler = null;
         Action handler = null;
 
         handler = () =>
         {
-            // 当对话结束时，取消两端订阅并执行回调
+            // 当对话结束时，取消订阅并执行回调
             OnDialogueEnded -= handler;
-            if (ui != null && uiContinueHandler != null)
-                ui.OnContinueClicked -= uiContinueHandler;
-
+            _captureNextContinue = false;
             onComplete?.Invoke();
         };
         OnDialogueEnded += handler;
 
-        // 如果有 UI，则让 DialogueManager 监听一次 OnContinueClicked，
-        // 在用户点击继续时由 DialogueManager 调用 EndDialogue()
-        if (ui != null)
-        {
-            uiContinueHandler = () =>
-            {
-                // 防止重复调用，先取消订阅再结束对话
-                if (ui != null && uiContinueHandler != null)
-                    ui.OnContinueClicked -= uiContinueHandler;
+        StartDialogue(data);
+    }
 
-                EndDialogue();
-            };
-            ui.OnContinueClicked += uiContinueHandler;
-        }
-
-        StartDialogue(node);
+    // ===== UI -> Manager 回调接口 =====
+    /// <summary>
+    /// 由 UI 在用户点击 Continue 时调用。仅在内部要求捕获下一次 Continue 时会触发 EndDialogue。
+    /// </summary>
+    public void NotifyUIContinue()
+    {
+        if (!_captureNextContinue) return;
+        _captureNextContinue = false;
+        EndDialogue();
     }
 
     /// <summary>
-    /// 外部主动设置当前节点（例如 Node 系统在执行动作后调用以推进到指定节点）
-    /// 返回 true 表示成功设置并已广播节点变更。
+    /// 由 UI 在用户点击选项时调用。会将选择通过 OnUIChoiceSelected 事件广播给外部订阅者（如 Node 系统）。
     /// </summary>
-    public bool SetCurrentNode(DialogueNode node)
+    public void NotifyUIChoiceSelected(int index)
     {
-        if (node == null) return false;
-        _currentNode = node;
-        PublishCurrentNode();
-        return true;
+        OnUIChoiceSelected?.Invoke(index);
     }
-    #endregion
 }

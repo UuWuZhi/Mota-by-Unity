@@ -1,4 +1,5 @@
 using UnityEngine;
+using VContainer;
 
 /// <summary>
 /// 简单的输入路由器：把键盘输入转发给 DialogueUI
@@ -13,9 +14,14 @@ public class DialogueInputManager : MonoBehaviour
     private UIDialogue _ui;
     private DialogueManager _dm;
 
+    [Inject]
+    public void Inject(DialogueManager dialogueManager)
+    {
+        _dm = dialogueManager;
+    }
+
     private void Start()
     {
-        _dm = DialogueManager.Instance;
         _ui = GameObject.FindObjectOfType<UIDialogue>();
         CacheReflection();
     }
@@ -28,7 +34,6 @@ public class DialogueInputManager : MonoBehaviour
 
     private void Update()
     {
-        if (_dm == null) _dm = DialogueManager.Instance;
         if (_ui == null) _ui = GameObject.FindObjectOfType<UIDialogue>();
 
         if (_ui != null)

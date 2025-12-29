@@ -14,11 +14,11 @@ public class RemoveTileAction : ActionNode
             ctx.GridManager.RemoveEventTile(cell);
 
             // 如果存在运行时创建或手动创建的承载 GameObject，注销并销毁它
-            if (EventNodeManager.Instance != null && EventNodeManager.Instance.TryGetEventNodeAtCell(cell, out var node))
+            if (ctx.EventNodeManager != null && ctx.EventNodeManager.TryGetEventNodeAtCell(cell, out var node))
             {
                 try
                 {
-                    EventNodeManager.Instance.UnregisterEventNodeAtCell(cell);
+                    ctx.EventNodeManager.UnregisterEventNodeAtCell(cell);
                     if (node != null)
                     {
                         GameObject.Destroy(node.gameObject);

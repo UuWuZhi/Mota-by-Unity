@@ -19,7 +19,7 @@ public class DialogueManager
     private readonly IGlobalEventVariables _globalEventVariables;
 
     private bool _captureNextContinue = false;
-    public bool IsActive { get; private set; } = false;
+    public bool IsActive = false;
 
     [Inject]
     public DialogueManager(IGlobalEventVariables globalEventVariables)
@@ -29,9 +29,11 @@ public class DialogueManager
     }
 
     //==============================================================================//
+    //                                                                              //
     //                                 对话进程                                     //
+    //                                                                              //
     //==============================================================================//
-
+    #region 对话进程
     /// <summary>
     /// 启动对话（直接传入起始 DialogueNode）。
     /// 对话推进仍由外部控制（通常通过 SetCurrentNode 或 EndDialogue）。
@@ -41,8 +43,7 @@ public class DialogueManager
         if (startData == null) return;
         _currentDialogue = startData;
         IsActive = true;
-        // 同步到全局变量
-        _globalEventVariables?.SetBool(GlobalEventKey.DialogueIsActive, true);
+        SyncGlobalDialogueActive();
         OnDialogueStarted?.Invoke();
         PublishCurrentDialogue();
     }
@@ -53,8 +54,7 @@ public class DialogueManager
     public void EndDialogue()
     {
         IsActive = false;
-        // 同步到全局变量
-        _globalEventVariables?.SetBool(GlobalEventKey.DialogueIsActive, false);
+        SyncGlobalDialogueActive();
         OnDialogueEnded?.Invoke();
         _currentDialogue = null;
     }
@@ -75,11 +75,13 @@ public class DialogueManager
         PublishCurrentDialogue();
         return true;
     }
-
+    #endregion
     //==============================================================================//
+    //                                                                              //
     //                                 外部接口                                     //
+    //                                                                              //
     //==============================================================================//
-
+    #region 外部接口
     /// <summary>
     /// 运行时简便 API：显示单段文字并在结束时回调（内部创建临时 DialogueNode）。
     /// 对话结束回调由 onComplete 接收；对话推进仍由外部控制（通常临时对话无选项，结束即回调）。
@@ -119,8 +121,13 @@ public class DialogueManager
 
         StartDialogue(data);
     }
-
-    // ===== UI -> Manager 回调接口 =====
+    #endregion
+    //==============================================================================//
+    //                                                                              //
+    //                                 回调接口                                     //
+    //                                                                              //
+    //==============================================================================//
+    #region 回调接口
     /// <summary>
     /// 由 UI 在用户点击 Continue 时调用。仅在内部要求捕获下一次 Continue 时会触发 EndDialogue。
     /// </summary>
@@ -138,4 +145,16 @@ public class DialogueManager
     {
         OnUIChoiceSelected?.Invoke(index);
     }
+    #endregion
+    //==============================================================================//
+    //                                                                              //
+    //                                 简单方法                                     //
+    //                                                                              //
+    //==============================================================================//
+    #region 简单方法
+    private void SyncGlobalDialogueActive()
+    {
+        _globalEventVariables?.SetBool(GlobalEventKey.DialogueIsActive, IsActive);
+    }
+    #endregion
 }

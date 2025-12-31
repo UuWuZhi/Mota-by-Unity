@@ -9,7 +9,6 @@ using UnityEngine;
 public class DialogueOption
 {
     public string Text;
-    public string ActionName; // 可选：选择触发的动作名（由 DialogueManager 处理）
 }
 
 /// <summary>
@@ -25,5 +24,8 @@ public class DialogueData
     public string Text;
     public List<DialogueOption> Options = new List<DialogueOption>();
 
-    public bool IsEnd => Options == null || Options.Count == 0;
+    public bool IsEnd()
+    {
+        return Options == null || Options.Count == 0;
+    }
 }

@@ -9931,6 +9931,7 @@ MonoBehaviour:
   autoInjectGameObjects: []
   _playerAttribute: {fileID: 983119902}
   _playerMovement: {fileID: 983119894}
+  _uiDialogue: {fileID: 430610166}
 --- !u!114 &1181989524
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -12,7 +12,8 @@ using VContainer.Unity;
 public class DiBootstrap : LifetimeScope
 {
     [SerializeField] private PlayerAttribute _playerAttribute;
-    [SerializeField] private PlayerMovement _playerMovement; 
+    [SerializeField] private PlayerMovement _playerMovement;
+    [SerializeField] private UIDialogue _uiDialogue;
 
     protected override void Configure(IContainerBuilder builder)
     {
@@ -24,14 +25,16 @@ public class DiBootstrap : LifetimeScope
         // Register GlobalEventVariablesService as the IGlobalEventVariables implementation
         builder.Register<GlobalEventVariablesService>(Lifetime.Singleton).As<IGlobalEventVariables>().AsSelf();
         builder.Register<InventoryAdapter>(Lifetime.Singleton).As<IInventoryService>().AsSelf();
+        builder.Register<GoldRewardCaculate>(Lifetime.Singleton).AsSelf();
 
         builder.RegisterComponentInHierarchy<MapManager>().AsSelf();
         builder.RegisterComponentInHierarchy<GridManager>().AsSelf();
         builder.RegisterComponentInHierarchy<EventNodeManager>().AsSelf();
         builder.RegisterComponent(_playerAttribute).AsSelf();
         builder.RegisterComponent(_playerMovement).AsSelf();
+        builder.RegisterComponent(_uiDialogue).AsSelf();
         //builder.RegisterComponentInHierarchy<PlayerInventory>().AsSelf(); 我们暂时不使用这种方式注入 PlayerInventory
-
+        builder.Register<GlobalServiceContainer>(Lifetime.Singleton).AsSelf().As<GlobalServiceContainer>();
         // 如果场景中存在 GlobalEventVariables Mono，注入其 service
         var gev = GameObject.FindObjectOfType<GlobalEventVariables>();
         if (gev != null)

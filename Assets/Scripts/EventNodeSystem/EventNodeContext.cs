@@ -7,19 +7,32 @@ using UnityEngine;
 /// </summary>
 public class EventNodeContext
 {
-    public Vector3Int CellPos;
-    public int LayerId;
-    public GameObject TileObject; // 事件对应的GameObject
+    /// <summary>
+    /// 包含与格子/瓦片位置相关的聚合数据（CellPos, LayerId, TileObject）。
+    /// 使用 EventNodeData 作为底层数据承载，方便在多个接口间传递这些信息。
+    /// </summary>
+    public EventNodeData Data { get; set; }
+
+
+    public Vector3Int CellPos => Data?.CellPos ?? Vector3Int.zero;
+    public int LayerId => Data?.LayerId ?? 0;
+    public GameObject TileObject => Data?.TileObject;
+
     public MonoBehaviour OwnerMono; // 用于 StartCoroutine 等，通常通过 EventNodeManager 提供
     public Dictionary<string, object> Vars = new Dictionary<string, object>(); // 临时/扩展数据
 
-    // 兼容现有单例访问（逐步移除）
-    public PlayerAttribute PlayerAttribute { get; set; }
-    public GridManager GridManager { get; set; }
-    public EventCenter EventCenter { get; set; }
-    public MapManager MapManager { get; set; }
+    // DI 提供的容器引用，由 EventNodeManager 在构造 Context 时传入
+    public GlobalServiceContainer Services { get; set; }
+
+    // 通过 Services 获取服务
+    public PlayerAttribute PlayerAttribute => Services?.PlayerAttribute;
+    public GridManager GridManager => Services?.GridManager;
+    public EventCenter EventCenter => Services?.EventCenter;
+    public MapManager MapManager => Services?.MapManager;
+    public IInventoryService InventoryService => Services?.InventoryService;
+
+    // EventNodeManager 会在创建 Context 时将自身赋值给这里，避免循环依赖
     public EventNodeManager EventNodeManager { get; set; }
-    public IInventoryService InventoryService { get; set; }
 
     public EventNodeContext() { }
 

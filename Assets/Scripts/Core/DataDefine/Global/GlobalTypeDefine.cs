@@ -16,7 +16,9 @@ public enum ItemType
     // 血瓶类
     HP_Potion,  // 血瓶
     // 宝石类
-    Gem         // 宝石
+    Gem,        // 宝石
+    // 幸运金币（存在则掉落金币翻倍）
+    Lucky_Gold
 }
 
 /// <summary>

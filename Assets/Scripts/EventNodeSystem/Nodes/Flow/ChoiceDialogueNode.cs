@@ -47,7 +47,7 @@ public class ChoiceDialogueNode : EventNode
         };
         foreach (var c in choices)
         {
-            runtimeData.Options.Add(new DialogueOption { Text = c.Text, ActionName = null });
+            runtimeData.Options.Add(new DialogueOption { Text = c.Text });
         }
 
         Action<int> onChoice = null;

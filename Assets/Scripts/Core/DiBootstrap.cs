@@ -15,10 +15,19 @@ public class DiBootstrap : LifetimeScope
     [SerializeField] private PlayerMovement _playerMovement;
     [SerializeField] private UIDialogue _uiDialogue;
 
+    [Header("Item Database")]
+    [SerializeField] private ItemDatabase _itemDatabase;
+
     protected override void Configure(IContainerBuilder builder)
     {
         //if (EventNodeManager.Instance != null) builder.RegisterInstance(EventNodeManager.Instance).As<EventNodeManager>().AsSelf();
         if (EventCenter.Instance != null) builder.RegisterInstance(EventCenter.Instance).As<EventCenter>().AsSelf();
+
+        // Register ItemDatabase instance so it can be injected
+        if (_itemDatabase != null)
+        {
+            builder.RegisterInstance(_itemDatabase).As<ItemDatabase>().AsSelf();
+        }
 
         builder.Register<DialogueManager>(Lifetime.Singleton).AsSelf();
 

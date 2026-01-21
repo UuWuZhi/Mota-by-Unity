@@ -5,10 +5,9 @@ using UnityEngine.Tilemaps;
 //                                 瓦片：事件                                   //
 //                                                                              //
 //==============================================================================//
-[CreateAssetMenu(fileName = "EventTile", menuName = "Mota/EventTile")]
+[CreateAssetMenu(fileName = "EventTile", menuName = "Tile/EventTile")]
 public class EventTile : BaseTile
 {
-    public GameObject eventPrefab;
     public override void GetTileData(Vector3Int position, ITilemap tilemap, ref TileData tileData)
     {
         base.GetTileData(position, tilemap, ref tileData);

@@ -6,7 +6,11 @@ using VContainer;
 
 public class PlayerInventory : MonoBehaviour
 {
-    private Dictionary<ItemType, int> itemCounts = new Dictionary<ItemType, int>();
+    // 旧的按类型计数保留以兼容（可后续移除）
+    //private Dictionary<ItemType, int> itemCounts = new Dictionary<ItemType, int>();
+
+    // 动态列表：按拾取顺序存储条目
+    private readonly List<InventoryEntry> entries = new List<InventoryEntry>();
 
     private EventCenter _eventCenter;
     [Inject]
@@ -23,40 +27,63 @@ public class PlayerInventory : MonoBehaviour
     //==============================================================================//
     #region 道具操作
     /// <summary>
-    /// 初始化所有道具数量为0，由GameInitializer调用
+    /// 初始化背包（清空所有条目）
     /// </summary>
     public void InitItemCounts()
     {
-        foreach (ItemType type in System.Enum.GetValues(typeof(ItemType)))
-        {
-            if (type != ItemType.None)
-                itemCounts[type] = 0;
-        }
+        entries.Clear();
         // 通过 EventCenter 广播全量更新
         _eventCenter.TriggerInventoryChanged(new InventoryChangedEventArgs(ItemType.All));
     }
     /// <summary>
-    /// 添加道具
+    /// 添加道具（简单实现：在末尾追加新条目）
     /// </summary>
     public void AddItem(ItemType type, int count = 1)
     {
-        if (!itemCounts.ContainsKey(type) || type == ItemType.None || count <= 0) return;
-        
-        itemCounts[type] += count;
-        // 使用 EventCenter 广播
-        _eventCenter.TriggerInventoryChanged(new InventoryChangedEventArgs(type, count));
-        Debug.Log($"获得{type}×{count}！当前数量：{itemCounts[type]}");
+        if (type == ItemType.None || count <= 0) return;
+
+        entries.Add(new InventoryEntry(type, count));
+        // 广播全量更新（简化实现）
+        _eventCenter.TriggerInventoryChanged(new InventoryChangedEventArgs(type));
+        Debug.Log($"获得{type}×{count}！当前条目数：{entries.Count}");
     }
     /// <summary>
     /// 移除道具（返回是否成功）
+    /// 从头到尾遍历找到同类型条目，逐个扣减，条目计数为0则移除
     /// </summary>
     public bool RemoveItem(ItemType type, int count = 1)
     {
-        if (!itemCounts.ContainsKey(type) || itemCounts[type] < count || type == ItemType.None || count <= 0)
+        if (type == ItemType.None || count <= 0) return false;
+
+        int remaining = count;
+        for (int i = 0; i < entries.Count && remaining > 0; )
+        {
+            var e = entries[i];
+            if (e.Type != type) { i++; continue; }
+
+            if (e.Count > remaining)
+            {
+                e.Count -= remaining;
+                remaining = 0;
+            }
+            else
+            {
+                remaining -= e.Count;
+                // remove this entry
+                entries.RemoveAt(i);
+                continue; // 不递增 i，因为移除后当前位置被下一个填充
+            }
+            i++;
+        }
+
+        if (remaining > 0)
+        {
+            // not enough items: 失败（也可选择回滚，当前实现为不回滚，返回 false）
             return false;
-        
-        itemCounts[type] -= count;
-        _eventCenter.TriggerInventoryChanged(new InventoryChangedEventArgs(type, -count));
+        }
+
+        // 广播全量更新
+        _eventCenter.TriggerInventoryChanged(new InventoryChangedEventArgs(ItemType.All));
         return true;
     }
     /// <summary>
@@ -64,14 +91,25 @@ public class PlayerInventory : MonoBehaviour
     /// </summary>
     public bool HasItem(ItemType type, int count = 1)
     {
-        return itemCounts.ContainsKey(type) && itemCounts[type] >= count;
+        int total = GetItemCount(type);
+        return total >= count;
     }
     /// <summary>
-    /// 获取道具数量
+    /// 获取道具总数量（会遍历所有条目累加）
     /// </summary>
     public int GetItemCount(ItemType type)
     {
-        return itemCounts.TryGetValue(type, out int count) ? count : 0;
+        int total = 0;
+        foreach (var e in entries) if (e.Type == type) total += e.Count;
+        return total;
+    }
+
+    /// <summary>
+    /// 返回当前条目列表的只读视图，供 UI 使用
+    /// </summary>
+    public IReadOnlyList<InventoryEntry> GetEntries()
+    {
+        return entries.AsReadOnly();
     }
     #endregion
 

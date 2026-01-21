@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using VContainer;
+using System.Collections.Generic;
 
 /// <summary>
 /// 把现有的 PlayerInventory 适配为 IInventoryService 实现
@@ -66,5 +67,12 @@ public class InventoryAdapter : IInventoryService
     {
         EnsureInventory();
         _inventory?.InitItemCounts();
+    }
+
+    // 新增：暴露条目列表给 UI
+    public IReadOnlyList<InventoryEntry> GetEntries()
+    {
+        EnsureInventory();
+        return _inventory != null ? _inventory.GetEntries() : new List<InventoryEntry>().AsReadOnly();
     }
 }

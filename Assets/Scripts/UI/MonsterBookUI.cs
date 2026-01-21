@@ -102,9 +102,9 @@ public class MonsterBookUI : MonoBehaviour
             foreach (Vector3Int cell in eventTilemap.cellBounds.allPositionsWithin)
             {
                 if (!eventTilemap.HasTile(cell)) continue;
-                if (eventTilemap.GetTile(cell) is EventTile et && et.eventPrefab != null)
+                if (eventTilemap.GetTile(cell) is EventTile et && et.gameObject != null)
                 {
-                    var prefab = et.eventPrefab;
+                    var prefab = et.gameObject;
                     var eu = prefab.GetComponent<EnemyUnit>();
                     if (eu != null && eu.enemyData != null)
                     {

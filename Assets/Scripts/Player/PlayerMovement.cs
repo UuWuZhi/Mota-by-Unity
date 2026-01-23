@@ -86,10 +86,7 @@ public class PlayerMovement : MonoBehaviour
             Vertical = vertical
         });
         // 3. 计算目标位置（引用GridManager的tileSize）
-        Vector2 currentCenter = (Vector2)transform.position + new Vector2(0.5f, 0.5f);
-        Vector2 targetCenter = currentCenter + dir * _gridManager.tileSize;
-        targetWorldPos = targetCenter - new Vector2(0.5f, 0.5f);
-        Vector3Int targetCell = _gridManager.MapGrid.WorldToCell(targetWorldPos);
+        Vector3Int targetCell = ComputeTargetCellAndWorldPos(dir);
 
         // 新逻辑：
         // 1) 先判断是否在边界内（在边界内才可通行）
@@ -101,11 +98,20 @@ public class PlayerMovement : MonoBehaviour
             return;
         }
 
-        // 2) 再判断基础层能否通行（仅 Ground 可通行）
-        GridType baseType = _gridManager.GetGridTypeByWorldPos(targetWorldPos, TileMapType.GroundWall);
-        if (baseType != GridType.Ground)
+        // 2) 再判断基础层能否通行：先检查 Ground 层是否有地面（若无地面则不可通行）
+        var groundTile = _gridManager.GetTileAtWorldPos(targetWorldPos, TileMapType.Ground);
+        if (groundTile == null)
         {
-            // 基础层不可通行（例如 Wall） -> 阻止移动
+            // Ground 层无地面 -> 阻止移动
+            _eventCenter.TriggerMoveStateChanged(new PlayerMoveStateChangedEventArgs { IsMoving = false, MoveTime = 0 });
+            _eventCenter.TriggerPlayerArrived(new PlayerArrivedEventArgs { TriggerEvent = false, TargetWorldPos = targetWorldPos });
+            return;
+        }
+
+        // 再检查 Obstacle 层是否存在阻挡（若有则不可通行）
+        var obstacleTile = _gridManager.GetTileAtWorldPos(targetWorldPos, TileMapType.Obstacle);
+        if (obstacleTile != null)
+        {
             _eventCenter.TriggerMoveStateChanged(new PlayerMoveStateChangedEventArgs { IsMoving = false, MoveTime = 0 });
             _eventCenter.TriggerPlayerArrived(new PlayerArrivedEventArgs { TriggerEvent = false, TargetWorldPos = targetWorldPos });
             return;
@@ -237,6 +243,21 @@ public class PlayerMovement : MonoBehaviour
             TargetWorldPos = targetWorldPos
         });
         Debug.Log($"玩家已传送至: {targetPos}");
+    }
+    #endregion
+    //==============================================================================//
+    //                                                                              //
+    //                                 辅助函数                                     //
+    //                                                                              //
+    //==============================================================================//
+    #region 辅助函数
+    // 计算目标格子与世界坐标的辅助函数
+    private Vector3Int ComputeTargetCellAndWorldPos(Vector2 dir)
+    {
+        Vector2 currentCenter = (Vector2)transform.position + new Vector2(0.5f, 0.5f);
+        Vector2 targetCenter = currentCenter + dir * _gridManager.tileSize;
+        targetWorldPos = targetCenter - new Vector2(0.5f, 0.5f);
+        return _gridManager.MapGrid.WorldToCell(targetWorldPos);
     }
     #endregion
 }

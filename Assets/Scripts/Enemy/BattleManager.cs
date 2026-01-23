@@ -1,5 +1,6 @@
 using UnityEngine;
 using System;
+using VContainer;
 
 /// <summary>
 /// 战斗数据容器（玩家/敌人共用的战斗属性）
@@ -36,24 +37,24 @@ public class BattleManager : MonoBehaviour
     // 单例实例（方便全局调用）
     public static BattleManager Instance { get; private set; }
 
+    private EventCenter _eventCenter;
 
-    private void OnEnable()
+    [Inject]
+    public void Inject(EventCenter eventCenter)
     {
-        // 订阅战斗检查事件
-        EventCenter.Instance.OnBattleCheckRequest += OnBattleCheckRequest;
+        _eventCenter = eventCenter;
+        _eventCenter.OnBattleCheckRequest += OnBattleCheckRequest;
     }
-
     private void OnDisable()
     {
         // 取消订阅
-        EventCenter.Instance.OnBattleCheckRequest -= OnBattleCheckRequest;
+        _eventCenter.OnBattleCheckRequest -= OnBattleCheckRequest;
     }
     private void Awake()
     {
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject);
         }
         else
         {

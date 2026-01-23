@@ -16,10 +16,11 @@ public class LayerSwitchRequestEventArgs : EventArgs
 /// </summary>
 public class LayerSwitchedEventArgs : EventArgs
 {
-    public Tilemap GroundWallTilemap { get; set; } // 地面/墙壁瓦片地图
-    public Tilemap EventTilemap { get; set; }      // 事件瓦片地图（怪物/道具等）
-    public BoundsInt LayerBounds { get; set; }     // 楼层边界（限制移动范围）
-    public Vector2 SpawnPos { get; set; }          // 玩家在新楼层的出生位置
+    public Tilemap GroundTilemap { get; set; }      // 地面瓦片地图
+    public Tilemap ObstacleTilemap { get; set; }    // 障碍/墙瓦片地图
+    public Tilemap EventTilemap { get; set; }       // 事件瓦片地图（怪物/道具等）
+    public BoundsInt LayerBounds { get; set; }      // 楼层边界（限制移动范围）
+    public Vector2 SpawnPos { get; set; }           // 玩家在新楼层的出生位置
 }
 
 public class GridLoadedEventArgs : EventArgs

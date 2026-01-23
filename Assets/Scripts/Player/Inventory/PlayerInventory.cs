@@ -17,7 +17,7 @@ public class PlayerInventory : MonoBehaviour
     public void Construct(EventCenter eventCenter)
     {
         _eventCenter = eventCenter;
-        DontDestroyOnLoad(this);
+
     }
 
     //==============================================================================//

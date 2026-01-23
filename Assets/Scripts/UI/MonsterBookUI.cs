@@ -118,9 +118,8 @@ public class MonsterBookUI : MonoBehaviour
         }
 
         // 计算是否需要重新预测（基于玩家属性快照）
-        var player = _playerAttribute;
-        int playerAtk = player?.Attack ?? 0;
-        int playerDef = player?.Defense ?? 0;
+        int playerAtk = _playerAttribute.GetAttributeValue(AttributeType.Attack);
+        int playerDef = _playerAttribute.GetAttributeValue(AttributeType.Defense);
         //Debug.Log("当前玩家属性：攻击 " + playerAtk + " 防御 " + playerDef);
         bool snapshotSame = MonsterBook.Instance.IsPlayerSnapshotSame(_currentLayerId, playerAtk, playerDef);
         //Debug.Log("玩家属性快照是否相同：" + snapshotSame);
@@ -133,7 +132,7 @@ public class MonsterBookUI : MonoBehaviour
                 var data = MonsterBook.Instance.GetEnemyData(id);
                 if (data == null) continue;
                 int predicted;
-                BattleManager.Instance.ResolveBattle(player.GetPlayerUnitData(), data.ToBattleUnitData(), out predicted);
+                BattleManager.Instance.ResolveBattle(_playerAttribute.GetPlayerUnitData(), data.ToBattleUnitData(), out predicted);
                 MonsterBook.Instance.SetPredictedLoss(_currentLayerId, id, predicted);
             }
             MonsterBook.Instance.SetPlayerSnapshot(_currentLayerId, playerAtk, playerDef);

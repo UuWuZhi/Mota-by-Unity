@@ -47,8 +47,11 @@ TagManager:
   - name: Background
     uniqueID: 2370673535
     locked: 0
-  - name: GroundWall
+  - name: Ground
     uniqueID: 2633288701
+    locked: 0
+  - name: Obstacle
+    uniqueID: 1976170449
     locked: 0
   - name: Event
     uniqueID: 1647844683

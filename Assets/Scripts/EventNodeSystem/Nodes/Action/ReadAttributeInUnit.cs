@@ -38,8 +38,8 @@ public class ReadAttributeInUnitAction : ActionNode
         foreach (var ab in list)
         {
             if (ab == null) continue;
-            if (!aggregated.ContainsKey(ab.type)) aggregated[ab.type] = 0;
-            aggregated[ab.type] += ab.value;
+            if (!aggregated.ContainsKey(ab.Type)) aggregated[ab.Type] = 0;
+            aggregated[ab.Type] += ab.Value;
         }
 
         // 写入单项属性到 ctx.Vars，键名示例： "attribute_HP"

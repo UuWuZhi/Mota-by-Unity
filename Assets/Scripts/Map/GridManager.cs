@@ -4,16 +4,15 @@ using UnityEngine.Tilemaps;
 using System;
 using System.Collections.Generic;
 using VContainer;
-using System.Security.Cryptography.X509Certificates;
 
 public class GridManager : MonoBehaviour
 {
     public float tileSize = 1f;                 // 单个格子尺寸（和Tilemap的cell size一致）
     public Grid MapGrid;                        // 由外部注入，不再从MapManager获取
-    private GridType[,] _baseGridData;          // 基础层格子类型存储
     private BoundsInt _currentLayerBounds;      // 缓存当前层边界
-    private Tilemap _currentGroundWallTilemap;  //当前层基础层引用
-    private Tilemap _currentEventTilemap;       //当前层事件层引用
+    private Tilemap _currentGroundTilemap;      // 当前层地面层引用
+    private Tilemap _currentObstacleTilemap;    // 当前层障碍层引用
+    private Tilemap _currentEventTilemap;       // 当前层事件层引用
     public Tilemap CurrentEventTilemap => _currentEventTilemap;
 
     private IGlobalEventVariables _globalEventVariables;
@@ -51,13 +50,13 @@ public class GridManager : MonoBehaviour
     private void OnLayerSwitchedHandler(object sender, System.EventArgs args)
     {
         LayerSwitchedEventArgs layerArgs = args as LayerSwitchedEventArgs;
-        if (layerArgs == null || layerArgs.GroundWallTilemap == null || layerArgs.EventTilemap == null)
+        if (layerArgs == null || layerArgs.GroundTilemap == null || layerArgs.ObstacleTilemap == null || layerArgs.EventTilemap == null)
         {
             Debug.LogError("GridManager：楼层切换事件数据无效！");
             return;
         }
         // 更新当前层数据
-        UpdateCurrentLayerData(layerArgs.GroundWallTilemap, layerArgs.EventTilemap, layerArgs.LayerBounds);
+        UpdateCurrentLayerData(layerArgs.GroundTilemap, layerArgs.ObstacleTilemap, layerArgs.EventTilemap, layerArgs.LayerBounds);
     }
     private void SubscribeEventCenter()
     {
@@ -79,9 +78,10 @@ public class GridManager : MonoBehaviour
     //==============================================================================//
     #region 地图加载
     // 更新数据至当前层
-    public void UpdateCurrentLayerData(Tilemap groundWallTilemap, Tilemap eventTilemap, BoundsInt layerBounds) 
+    public void UpdateCurrentLayerData(Tilemap groundTilemap, Tilemap obstacleTilemap, Tilemap eventTilemap, BoundsInt layerBounds)
     {
-        _currentGroundWallTilemap = groundWallTilemap;
+        _currentGroundTilemap = groundTilemap;
+        _currentObstacleTilemap = obstacleTilemap;
         _currentEventTilemap = eventTilemap;
         _currentLayerBounds = layerBounds; // 直接使用传入的边界
         LoadMap(); // 重新加载当前层的网格数据
@@ -94,7 +94,7 @@ public class GridManager : MonoBehaviour
             Debug.LogError("LoadMap失败：MapGrid未初始化（请先调用SetMapGrid）");
             return;
         }
-        if (_currentGroundWallTilemap == null || _currentEventTilemap == null)
+        if (_currentGroundTilemap == null || _currentObstacleTilemap == null || _currentEventTilemap == null)
         {
             Debug.LogError("LoadMap失败：当前层Tilemap为null");
             return;
@@ -104,51 +104,10 @@ public class GridManager : MonoBehaviour
             Debug.LogError("LoadMap失败：层边界无效:{_currentLayerBounds}");
             return;
         }
-        // 获取地图的宽和高（根据所有Tilemap的最大范围计算）
-        int width = _currentLayerBounds.size.x;
-        int height = _currentLayerBounds.size.y;
-        _baseGridData = new GridType[width, height];
-        
-        for (int x = 0; x < width; x++) // 初始化所有格子
-        {
-            for (int y = 0; y < height; y++)
-            {
-                _baseGridData[x, y] = GridType.Wall;
-            }
-        }
-        Debug.Log("LoadMap:格子类型初始化完成");
-        UpdateGridDataByTilemap(_currentGroundWallTilemap); // 加载基础层数据
+        // 不再在内存中缓存基础层格子类型。读取时按需直接查询对应 Tilemap。
+        // Debug.Log("LoadMap: 当前层 Tilemap 已设置（Ground/Obstacle/Event），按需查询 Tilemap");
     }
-    //读取传入的TileMap，并根据类型更新瓦片数据
-    private void UpdateGridDataByTilemap(Tilemap tilemap) 
-    {
-        if (tilemap == null)
-        {
-            Debug.LogWarning("UpdateGridDataByTilemap：传入的Tilemap为null");
-            return;
-        }
-        // 获取Tilemap中所有有瓦片的位置（本地网格坐标）
-        foreach (Vector3Int cellPos in tilemap.cellBounds.allPositionsWithin)
-        {
-            if (!tilemap.HasTile(cellPos)) // 该位置无瓦片
-                continue;
 
-            // 转换为全局网格坐标（相对于地图Grid）
-            if (!TryConvertCellToGridPos(cellPos, out int gridX, out int gridY))
-            {
-                Debug.LogWarning($"瓦片位置 {cellPos} 超出当前层边界，已忽略");
-                continue;
-            }
-
-            if (tilemap.tag == "GroundWall")
-            {
-                if (tilemap.GetTile(cellPos) is GroundWallTile groundWallTile)
-                {
-                    _baseGridData[gridX, gridY] = groundWallTile.tileType; // 直接使用瓦片定义的类型
-                }
-            }
-        }
-    }
     #endregion
     //==============================================================================//
     //                                                                              //
@@ -159,14 +118,40 @@ public class GridManager : MonoBehaviour
     //==============================================================================//
     //                                 操作：查询                                   //
     //==============================================================================//
+    /// <summary>
+    /// 直接查询指定世界坐标在当前层指定图层上的 Tile
+    /// </summary>
+    public TileBase GetTileAtWorldPos(Vector2 worldPos, TileMapType tileMapType)
+    {
+        if (MapGrid == null) return null;
+        Vector3Int cellPos = MapGrid.WorldToCell(worldPos);
+
+        // 检查是否在当前层边界内
+        if (!IsInGridBounds(cellPos)) return null;
+
+        return tileMapType switch
+        {
+            TileMapType.Ground => _currentGroundTilemap.GetTile(cellPos),
+            TileMapType.Obstacle => _currentObstacleTilemap.GetTile(cellPos),
+            TileMapType.Event => _currentEventTilemap.GetTile(cellPos),
+            _ => null,
+        };
+    }
     //根据世界坐标与图层类型获取对应瓦片类型
     public GridType GetGridTypeByWorldPos(Vector2 targetworldPos, TileMapType tileMapType)
     {
-        if (tileMapType == TileMapType.GroundWall)
+        // 通过直接查询 Tilemap 判断类型：Ground 层有瓦片则视为 Ground，可通行；无瓦片视为 Wall（不可通行）
+        if (!TryConvertWorldToGridPos(targetworldPos, out int gridX, out int gridY))
+            return GridType.Wall;
+
+        TileBase tile = GetTileAtWorldPos(targetworldPos, tileMapType);
+        if (tileMapType == TileMapType.Ground)
         {
-            if (!TryConvertWorldToGridPos(targetworldPos, out int gridX, out int gridY))
-                return GridType.Wall;
-            return _baseGridData[gridX, gridY];
+            return tile != null ? GridType.Ground : GridType.Wall;
+        }
+        else if (tileMapType == TileMapType.Obstacle)
+        {
+            return tile != null ? GridType.Wall : GridType.Ground;
         }
         return GridType.None;
     }
@@ -241,16 +226,8 @@ public class GridManager : MonoBehaviour
     //根据世界坐标与图层类型更新对应瓦片
     public void UpdateGridType(int gridX, int gridY, GridType newType, TileMapType tileMapType)
     {
-        if (tileMapType == TileMapType.GroundWall)
-        {
-            if (!IsInGridBounds(gridX, gridY))
-            {
-                Debug.LogWarning($"更新网格类型失败：坐标 ({gridX},{gridY}) 超出边界");
-                return;
-            }
-            _baseGridData[gridX, gridY] = newType;
-            return;
-        }
+        // 现在不维护内存中的基础层缓存。如需修改 Tilemap，请使用外部直接操作 Tilemap API。
+        Debug.LogWarning("UpdateGridType: 已弃用内存缓存，若需修改 Tilemap 请直接使用 Tilemap.SetTile");
     }
 
     public void RemoveEventTile(Vector2 worldPos) // 重载1：使用世界坐标移除事件层图块
@@ -333,13 +310,14 @@ public class GridManager : MonoBehaviour
 
     public bool IsInGridBounds(int gridX, int gridY) // 边界检查重载2：网格坐标判断
     {
-        if (_baseGridData == null)
+        if (!IsBoundsValid(_currentLayerBounds))
         {
-            Debug.LogWarning($"IsInGridBounds:当前层基础层数据为空");
+            Debug.LogWarning($"IsInGridBounds:当前层边界非法");
             return false;
         }
-        return gridX >= 0 && gridX < _baseGridData.GetLength(0)
-            && gridY >= 0 && gridY < _baseGridData.GetLength(1);
+        int width = _currentLayerBounds.size.x;
+        int height = _currentLayerBounds.size.y;
+        return gridX >= 0 && gridX < width && gridY >= 0 && gridY < height;
     }
 
     public bool IsBoundsValid(BoundsInt bounds) //边界检查基础：边界合法

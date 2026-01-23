@@ -79,26 +79,26 @@ public class UIAttribute : MonoBehaviour
     {
         // 把“当前HP/最大HP”赋值给textHp文本
         if (textHp != null)
-            textHp.text = $"{_playerAttribute.CurrentHP}";
+            textHp.text = $"{_playerAttribute.GetAttributeValue(AttributeType.HP)}";
     }
 
     private void UpdateAttackUI()
     {
         // 把“攻击数值”赋值给textAttack文本
         if (textAttack != null)
-            textAttack.text = $"{_playerAttribute.Attack}";
+            textAttack.text = $"{_playerAttribute.GetAttributeValue(AttributeType.Attack)}";
     }
 
     private void UpdateDefenseUI()
     {
         // 把“防御数值”赋值给textDefense文本
         if (textDefense != null)
-            textDefense.text = $"{_playerAttribute.Defense}";
+            textDefense.text = $"{_playerAttribute.GetAttributeValue(AttributeType.Defense)}";
     }
     private void UpdateGoldUI()
     {
         // 把“防御数值”赋值给textDefense文本
         if (textGold != null)
-            textGold.text = $"{_playerAttribute.Gold}";
+            textGold.text = $"{_playerAttribute.GetAttributeValue(AttributeType.Gold)}";
     }
 }

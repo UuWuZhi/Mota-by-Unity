@@ -31,7 +31,6 @@ public class GlobalEventVariables : MonoBehaviour
     {
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
-        DontDestroyOnLoad(gameObject);
     }
 
     [Inject]

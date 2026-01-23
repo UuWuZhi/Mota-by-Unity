@@ -13,9 +13,9 @@ public class MapManager : MonoBehaviour
     public int _currentLayerId = 1;                                    // 当前层数（默认1层）
     public List<MapLayerInfo> allLayers = new List<MapLayerInfo>();    // 所有层的配置
 
-    // 缓存各层的Tilemap和边界（键：楼层ID，值：(基础层, 事件层, 边界)）
-    private Dictionary<int, (Tilemap groundWall, Tilemap eventTilemap, BoundsInt bounds)> _layerDataCache = 
-        new Dictionary<int, (Tilemap, Tilemap, BoundsInt)>();
+    // 缓存各层的Tilemap和边界（键：楼层ID，值：(ground, obstacle, eventTilemap, 边界)）
+    private Dictionary<int, (Tilemap ground, Tilemap obstacle, Tilemap eventTilemap, BoundsInt bounds)> _layerDataCache = 
+        new Dictionary<int, (Tilemap, Tilemap, Tilemap, BoundsInt)>();
 
     private GridManager _gridManager;
     private EventCenter _eventCenter;
@@ -66,14 +66,16 @@ public class MapManager : MonoBehaviour
         // 1. 隐藏所有层
         foreach (var kvp in _layerDataCache)
         {
-            kvp.Value.groundWall.gameObject.SetActive(false);
+            kvp.Value.ground.gameObject.SetActive(false);
+            kvp.Value.obstacle.gameObject.SetActive(false);
             kvp.Value.eventTilemap.gameObject.SetActive(false);
         }
 
         // 2. 激活目标层
         var targetData = _layerDataCache[switchArgs.TargetLayerId];
         Debug.Log($"切换到楼层{switchArgs.TargetLayerId}，激活Tilemaps");
-        targetData.groundWall.gameObject.SetActive(true);
+        targetData.ground.gameObject.SetActive(true);
+        targetData.obstacle.gameObject.SetActive(true);
         targetData.eventTilemap.gameObject.SetActive(true);
 
         // 3. 获取目标出生点位置
@@ -96,7 +98,8 @@ public class MapManager : MonoBehaviour
         {
             _eventCenter.TriggerLayerSwitched(new LayerSwitchedEventArgs
             {
-                GroundWallTilemap = targetData.groundWall,
+                GroundTilemap = targetData.ground,
+                ObstacleTilemap = targetData.obstacle,
                 EventTilemap = targetData.eventTilemap,
                 LayerBounds = targetData.bounds,
                 SpawnPos = spawnPos
@@ -207,25 +210,27 @@ public class MapManager : MonoBehaviour
                 Debug.LogWarning($"层 {layerData.layerId} 缺少MapLayerInfo组件，已自动添加");
             }
 
-            // 查找基础层和事件层Tilemap
-            Tilemap groundWall = layerData.layerRoot.Find("GroundWall")?.GetComponent<Tilemap>();
+            // 查找地面、障碍和事件层 Tilemap
+            Tilemap ground = layerData.layerRoot.Find("Ground")?.GetComponent<Tilemap>();
+            Tilemap obstacle = layerData.layerRoot.Find("Obstacle")?.GetComponent<Tilemap>();
             Tilemap eventTilemap = layerData.layerRoot.Find("Event")?.GetComponent<Tilemap>();
-            if (groundWall == null || eventTilemap == null)
+            if (ground == null || obstacle == null || eventTilemap == null)
             {
-                Debug.LogWarning($"层 {layerData.layerId} 缺少 GroundWall 或 Event Tilemap，跳过初始化");
+                Debug.LogWarning($"层 {layerData.layerId} 缺少 Ground/Obstacle 或 Event Tilemap，跳过初始化");
                 continue;
             }
 
             // 处理边界（优先使用预存边界，否则临时计算）
             BoundsInt bounds = _gridManager.IsBoundsValid(layerInfo.layerBounds) 
                 ? layerInfo.layerBounds 
-                : GetTilemapBounds(groundWall);
+                : GetTilemapBounds(ground);
 
             // 存入缓存
-            _layerDataCache.Add(layerData.layerId, (groundWall, eventTilemap, bounds));
+            _layerDataCache.Add(layerData.layerId, (ground, obstacle, eventTilemap, bounds));
 
             // 初始禁用所有层（除了默认层，由切换事件激活）
-            groundWall.gameObject.SetActive(false);
+            ground.gameObject.SetActive(false);
+            obstacle.gameObject.SetActive(false);
             eventTilemap.gameObject.SetActive(false);
         }
     }
@@ -307,11 +312,19 @@ public class MapManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 获取指定层的基础层Tilemap（供存读档使用）
+    /// 获取指定层的地面层Tilemap（供存读档使用）
     /// </summary>
-    public Tilemap GetGroundWallTilemapByLayer(int layerId)
+    public Tilemap GetGroundTilemapByLayer(int layerId)
     {
-        return _layerDataCache.TryGetValue(layerId, out var data) ? data.groundWall : null;
+        return _layerDataCache.TryGetValue(layerId, out var data) ? data.ground : null;
+    }
+
+    /// <summary>
+    /// 获取指定层的障碍层Tilemap（供存读档使用）
+    /// </summary>
+    public Tilemap GetObstacleTilemapByLayer(int layerId)
+    {
+        return _layerDataCache.TryGetValue(layerId, out var data) ? data.obstacle : null;
     }
     #endregion
 }

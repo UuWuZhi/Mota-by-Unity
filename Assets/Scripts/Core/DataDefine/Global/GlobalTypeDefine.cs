@@ -28,7 +28,8 @@ public enum GridType
 public enum TileMapType
 {
     None,           // 空类型（排错用）
-    GroundWall,     // 基础层（地面和墙）
+    Ground,         // 地面层（可走）
+    Obstacle,       // 障碍层（阻挡/墙）
     Event           // 事件层（道具/敌人/楼梯等）
 }
 
@@ -44,7 +45,8 @@ public enum AttributeType
     HP,         // 血量
     Attack,     // 攻击
     Defense,    // 防御
-    Gold        // 金币
+    Gold,       // 金币
+    Altitude    // 高度
 }
 
 /// <summary>
@@ -53,8 +55,8 @@ public enum AttributeType
 [System.Serializable]
 public class AttributeBonus
 {
-    public AttributeType type;   // 属性类型
-    public int value;            // 属性变化值
+    public AttributeType Type;   // 属性类型
+    public int Value;            // 属性变化值
 }
 
 //==============================================================================//

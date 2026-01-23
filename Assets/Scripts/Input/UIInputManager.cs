@@ -14,7 +14,7 @@ public class UIInputManager : MonoBehaviour
             {
                 GameObject go = new GameObject("UIInputManager");
                 _instance = go.AddComponent<UIInputManager>();
-                DontDestroyOnLoad(go);
+
             }
             return _instance;
         }

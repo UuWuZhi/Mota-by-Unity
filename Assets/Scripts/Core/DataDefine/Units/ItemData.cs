@@ -3,10 +3,10 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "ItemData", menuName = "Data/Item/ItemData", order = 3)]
 public class ItemData : ScriptableObject
 {
-    public ItemType type;       //ÎïÆ·ÀàĞÍID£¨ÄÚ²¿Î¨Ò»±êÊ¶£©
-    public string displayName;  //ÎïÆ·ÏÔÊ¾Ãû³Æ
-    public Sprite icon;         //ÎïÆ·Í¼±ê
+    public ItemType type;       //ç‰©å“ç±»å‹IDï¼ˆå†…éƒ¨å”¯ä¸€æ ‡è¯†ï¼‰
+    public string displayName;  //ç‰©å“æ˜¾ç¤ºåç§°
+    public Sprite icon;         //ç‰©å“å›¾æ ‡
     [TextArea]
-    public string description;  //ÎïÆ·ÃèÊö
+    public string description;  //ç‰©å“æè¿°
     // maxStack omitted for now
 }

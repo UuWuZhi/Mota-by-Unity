@@ -12,7 +12,6 @@ public class MovementInputManager : MonoBehaviour
             {
                 GameObject obj = new GameObject("InputManager");
                 _instance = obj.AddComponent<MovementInputManager>();
-                DontDestroyOnLoad(obj);
             }
             return _instance;
         }

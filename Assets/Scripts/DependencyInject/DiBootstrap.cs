@@ -20,8 +20,6 @@ public class DiBootstrap : LifetimeScope
 
     protected override void Configure(IContainerBuilder builder)
     {
-        //if (EventNodeManager.Instance != null) builder.RegisterInstance(EventNodeManager.Instance).As<EventNodeManager>().AsSelf();
-        if (EventCenter.Instance != null) builder.RegisterInstance(EventCenter.Instance).As<EventCenter>().AsSelf();
 
         // Register ItemDatabase instance so it can be injected
         if (_itemDatabase != null)
@@ -94,6 +92,11 @@ public class DiBootstrap : LifetimeScope
                     container.InjectGameObject(im.gameObject);
             }
             foreach (var im in GameObject.FindObjectsOfType<DialogueInputManager>())
+            {
+                if (im != null && im.gameObject != null)
+                    container.InjectGameObject(im.gameObject);
+            }
+            foreach (var im in GameObject.FindObjectsOfType<BattleManager>())
             {
                 if (im != null && im.gameObject != null)
                     container.InjectGameObject(im.gameObject);

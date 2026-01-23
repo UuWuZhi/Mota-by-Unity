@@ -5,8 +5,8 @@ using UnityEngine;
 public class ItemDatabase : ScriptableObject
 {
 
-    public List<ItemData> items = new List<ItemData>(); //ÎïÆ·Êı¾İÁĞ±í
-    private Dictionary<ItemType, ItemData> _map;        //ÎïÆ·Êı¾İÓ³Éä±í
+    public List<ItemData> items = new List<ItemData>(); //ç‰©å“æ•°æ®åˆ—è¡¨
+    private Dictionary<ItemType, ItemData> _map;        //ç‰©å“æ•°æ®æ˜ å°„è¡¨
 
     private void OnEnable()
     {
@@ -21,11 +21,11 @@ public class ItemDatabase : ScriptableObject
             if (it == null) continue;
             if (_map.ContainsKey(it.type))
             {
-                Debug.LogWarning($"ItemDatabase:ÎïÆ·IDÖØ¸´£¡£º{it.type}");
+                Debug.LogWarning($"ItemDatabase:ç‰©å“IDé‡å¤ï¼ï¼š{it.type}");
                 continue;
             }
             _map[it.type] = it;
-            Debug.Log($"ItemDatabase:¼ÓÔØÎïÆ·Êı¾İ£º{it.type}");
+            Debug.Log($"ItemDatabase:åŠ è½½ç‰©å“æ•°æ®ï¼š{it.type}");
         }
     }
 

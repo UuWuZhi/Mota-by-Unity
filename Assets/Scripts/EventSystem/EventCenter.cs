@@ -35,13 +35,6 @@ public class EventCenter : MonoBehaviour
     public event EventHandler<UIHideEventArgs> OnHideUI; // 请求隐藏特定 UI
     public event EventHandler<UIToggleEventArgs> OnToggleUI; // 请求切换特定 UI 显示状态
 
-    private void Awake()
-    {
-        if (Instance == null) Instance = this;
-        else Destroy(gameObject);
-        DontDestroyOnLoad(gameObject); // 全局保留
-    }
-
     public void TriggerLayerSwitched(LayerSwitchedEventArgs args) => OnLayerSwitched?.Invoke(this, args);
     public void TriggerLayerSwitchRequest(LayerSwitchRequestEventArgs args) => OnLayerSwitchRequested?.Invoke(this, args);
     public void TriggerPlayerMoveInput(PlayerInputEventArgs args) => OnPlayerMoveInput?.Invoke(this, args);

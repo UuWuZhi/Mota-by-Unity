@@ -1,4 +1,5 @@
 using UnityEngine;
+using VContainer;
 
 public class PlayerAnimationController : MonoBehaviour
 {
@@ -9,25 +10,32 @@ public class PlayerAnimationController : MonoBehaviour
     public string walkAnimClipName = "Player_Walk";
     private float _walkAnimRawLength; // 缓存Walk动画原始时长
 
+    private EventCenter _eventCenter;
+
     private void Awake()
     {
         animator ??= GetComponent<Animator>();
         // 初始化动画时长（保持原逻辑）
         _walkAnimRawLength = GetAnimClipLength(walkAnimClipName);
     }
+    [Inject]
+    public void Inject(EventCenter eventCenter)
+    { 
+        _eventCenter = eventCenter;
+    }
 
     // 订阅动画相关事件
     private void OnEnable()
     {
-        EventCenter.Instance.OnMoveDirectionChanged += OnMoveDirectionChanged;
-        EventCenter.Instance.OnMoveStateChanged += OnMoveStateChanged;
+        _eventCenter.OnMoveDirectionChanged += OnMoveDirectionChanged;
+        _eventCenter.OnMoveStateChanged += OnMoveStateChanged;
     }
 
     // 取消订阅（避免内存泄漏）
     private void OnDisable()
     {
-        EventCenter.Instance.OnMoveDirectionChanged -= OnMoveDirectionChanged;
-        EventCenter.Instance.OnMoveStateChanged -= OnMoveStateChanged;
+        _eventCenter.OnMoveDirectionChanged -= OnMoveDirectionChanged;
+        _eventCenter.OnMoveStateChanged -= OnMoveStateChanged;
     }
 
     // 处理方向更新事件（更新混合树参数）

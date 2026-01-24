@@ -1,42 +1,23 @@
 using UnityEngine;
+using VContainer;
 
 // 输入管理器单例（仅负责检测输入，不关心移动逻辑）
 public class MovementInputManager : MonoBehaviour
 {
-    private static MovementInputManager _instance;
-    public static MovementInputManager Instance //懒加载单例
-    {
-        get
-        {
-            if (_instance == null)
-            {
-                GameObject obj = new GameObject("InputManager");
-                _instance = obj.AddComponent<MovementInputManager>();
-            }
-            return _instance;
-        }
-    }
-
     [Header("输入设置")]
-    [SerializeField] private float inputInterval = 0.15f; // 输入间隔（也许有用呢？）
+    [SerializeField] private float inputInterval = 0.15f;   // 输入间隔（也许有用呢？）
     [SerializeField] private bool useInputInterval = false; // 间隔开关（false=长按无间隔）
-    private float _lastInputTime; // 上次输入时间
+    private float _lastInputTime;                           // 上次输入时间
 
-    // 输入屏蔽开关（如对话/战斗时禁用移动输入）
-    public bool IsInputBlocked { get; set; } = false;
+    public bool IsInputBlocked { get; set; } = false;       // 输入屏蔽开关（如对话/战斗时禁用移动输入）
 
-    private void Awake()
+    private EventCenter _eventCenter;
+    [Inject]
+    public void Inject(EventCenter eventCenter)
     {
-        if (_instance != null && _instance != this)
-        {
-            Destroy(gameObject);
-        }
-        else
-        {
-            _instance = this;
-        }
+        _eventCenter = eventCenter;
     }
-
+      
     private void Update()
     {
         if (IsInputBlocked)
@@ -70,7 +51,7 @@ public class MovementInputManager : MonoBehaviour
             if (!useInputInterval || (Time.time - _lastInputTime >= inputInterval))
             {
                 _lastInputTime = Time.time; // 更新上次输入时间（无论是否启用间隔都记录，方便后续扩展）
-                EventCenter.Instance.TriggerPlayerMoveInput(new PlayerInputEventArgs
+                _eventCenter.TriggerPlayerMoveInput(new PlayerInputEventArgs
                 {
                     MoveDirection = moveDir,
                     IsValidInput = true

@@ -34,5 +34,4 @@ MonoBehaviour:
   m_InstancedGameObject: {fileID: 8083261046862395108, guid: f71c1c7bbe249684dbc06fbb46d539ab, type: 3}
   m_Flags: 1
   m_ColliderType: 1
-  tileType: 0
-  eventPrefab: {fileID: 8083261046862395108, guid: f71c1c7bbe249684dbc06fbb46d539ab, type: 3}
+  tileType: 7

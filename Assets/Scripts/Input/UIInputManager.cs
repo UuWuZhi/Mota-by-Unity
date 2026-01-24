@@ -5,21 +5,6 @@ using VContainer;
 // 负责识别与 UI 相关的按键（例如 F4 隐藏所有 UI）并通过 EventCenter 发布事件
 public class UIInputManager : MonoBehaviour
 {
-    private static UIInputManager _instance;
-    public static UIInputManager Instance
-    {
-        get
-        {
-            if (_instance == null)
-            {
-                GameObject go = new GameObject("UIInputManager");
-                _instance = go.AddComponent<UIInputManager>();
-
-            }
-            return _instance;
-        }
-    }
-
     // 注入（可选）
     private UIManager _uiManager;
     private EventCenter _eventCenter;
@@ -46,13 +31,6 @@ public class UIInputManager : MonoBehaviour
 
     private void Awake()
     {
-        if (_instance != null && _instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
-        _instance = this;
-
         // 记录场景中一开始哪些 UI 是激活的（若 UIManager 可用）
         var uiMgr = _uiManager ?? UIManager.Instance;
         if (uiMgr != null)

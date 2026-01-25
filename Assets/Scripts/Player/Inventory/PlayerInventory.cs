@@ -4,22 +4,16 @@ using System.Collections.Generic;
 using System;
 using VContainer;
 
-public class PlayerInventory : MonoBehaviour
+public class PlayerInventory : MonoBehaviour, IInventoryService
 {
-    // 旧的按类型计数保留以兼容（可后续移除）
-    //private Dictionary<ItemType, int> itemCounts = new Dictionary<ItemType, int>();
-
-    // 动态列表：按拾取顺序存储条目
     private readonly List<InventoryEntry> entries = new List<InventoryEntry>();
 
     private EventCenter _eventCenter;
     [Inject]
-    public void Construct(EventCenter eventCenter)
+    public void Inject(EventCenter eventCenter)
     {
         _eventCenter = eventCenter;
-
     }
-
     //==============================================================================//
     //                                                                              //
     //                                 道具操作                                     //
@@ -43,7 +37,6 @@ public class PlayerInventory : MonoBehaviour
         if (type == ItemType.None || count <= 0) return;
 
         entries.Add(new InventoryEntry(type, count));
-        // 广播全量更新（简化实现）
         _eventCenter.TriggerInventoryChanged(new InventoryChangedEventArgs(type));
         Debug.Log($"获得{type}×{count}！当前条目数：{entries.Count}");
     }
@@ -83,7 +76,7 @@ public class PlayerInventory : MonoBehaviour
         }
 
         // 广播全量更新
-        _eventCenter.TriggerInventoryChanged(new InventoryChangedEventArgs(ItemType.All));
+        _eventCenter.TriggerInventoryChanged(new InventoryChangedEventArgs(type));
         return true;
     }
     /// <summary>

@@ -11,10 +11,6 @@ using VContainer.Unity;
 /// </summary>
 public class DiBootstrap : LifetimeScope
 {
-    //[SerializeField] private PlayerAttribute _playerAttribute;
-    //[SerializeField] private PlayerMovement _playerMovement;
-    [SerializeField] private UIDialogue _uiDialogue;
-
 
     protected override void Configure(IContainerBuilder builder)
     {
@@ -27,51 +23,24 @@ public class DiBootstrap : LifetimeScope
         builder.RegisterComponentInHierarchy<PlayerAttribute>().AsSelf();
         builder.RegisterComponentInHierarchy<PlayerMovement>().AsSelf();
         builder.RegisterComponentInHierarchy<MovementInputManager>().AsSelf();
-        builder.Register<InventoryAdapter>(Lifetime.Singleton).As<IInventoryService>().AsSelf();
+        builder.RegisterComponentInHierarchy<PlayerInventory>().AsSelf().As<IInventoryService>();
 
-        builder.Register<DialogueManager>(Lifetime.Singleton).AsSelf();
+        // UI相关
+        //builder.RegisterComponentInHierarchy<UIInputManager>().AsSelf();
+        builder.RegisterComponentInHierarchy<UIDialogue>().AsSelf();
 
         // 服务类
         builder.Register<GoldRewardCaculate>(Lifetime.Transient).AsSelf();
+        builder.Register<DialogueManager>(Lifetime.Singleton).AsSelf();
+        builder.Register<GlobalServiceContainer>(Lifetime.Singleton).AsSelf();
 
-        
-        builder.RegisterComponentInHierarchy<UIInputManager>().AsSelf();
-        builder.RegisterComponent(_uiDialogue).AsSelf();
-
-        builder.Register<GlobalServiceContainer>(Lifetime.Singleton).AsSelf().As<GlobalServiceContainer>();
-
-        
-        if (UIManager.Instance != null) builder.RegisterInstance(UIManager.Instance).As<UIManager>().AsSelf();
         if (BattleManager.Instance != null) builder.RegisterInstance(BattleManager.Instance).As<BattleManager>().AsSelf();
 
         builder.RegisterEntryPoint<GameInitializationEntryPoint>();
-        builder.RegisterEntryPoint<InventoryLogger>();
 
         // 在容器构建完成后对场景中的现有实例与动态实例执行注入
         builder.RegisterBuildCallback(container =>
         {
-
-            if (UIManager.Instance != null) container.Inject(UIManager.Instance);
-
-
-            // 注入场景中所有 PlayerInventory 组件（替代原先的 Instance 注入方式）
-            foreach (var inv in GameObject.FindObjectsOfType<PlayerInventory>())
-            {
-                if (inv != null && inv.gameObject != null)
-                    container.InjectGameObject(inv.gameObject);
-            }
-
-            foreach (var im in GameObject.FindObjectsOfType<DialogueInputManager>())
-            {
-                if (im != null && im.gameObject != null)
-                    container.InjectGameObject(im.gameObject);
-            }
-            foreach (var im in GameObject.FindObjectsOfType<BattleManager>())
-            {
-                if (im != null && im.gameObject != null)
-                    container.InjectGameObject(im.gameObject);
-            }
-
 
             foreach (var ui in GameObject.FindObjectsOfType<MonsterBar>())
             {

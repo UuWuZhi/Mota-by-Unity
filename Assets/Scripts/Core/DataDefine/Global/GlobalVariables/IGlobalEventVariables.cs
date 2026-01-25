@@ -16,4 +16,8 @@ public interface IGlobalEventVariables
 
     void SetBool(GlobalEventKey key, bool value);
     bool GetBool(GlobalEventKey key, bool defaultValue = false);
+
+    // Enum helpers
+    void SetEnum<T>(GlobalEventKey key, T value) where T : struct, System.Enum;
+    T GetEnum<T>(GlobalEventKey key, T defaultValue = default) where T : struct, System.Enum;
 }

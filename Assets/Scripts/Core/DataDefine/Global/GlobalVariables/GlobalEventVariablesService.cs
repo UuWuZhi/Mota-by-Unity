@@ -58,4 +58,33 @@ public class GlobalEventVariablesService : IGlobalEventVariables
         if (_data.TryGetValue(key, out var obj) && obj is bool b) return b;
         return defaultValue;
     }
+
+    //==============================================================================//
+    //                                 Enum                                         //
+    //==============================================================================//
+    public void SetEnum<T>(GlobalEventKey key, T value) where T : struct, Enum
+    {
+        _data[key] = Convert.ToInt32(value);
+    }
+
+    public T GetEnum<T>(GlobalEventKey key, T defaultValue = default) where T : struct, Enum
+    {
+        if (_data.TryGetValue(key, out var obj))
+        {
+            if (obj is int i)
+            {
+                try
+                {
+                    return (T)Enum.ToObject(typeof(T), i);
+                }
+                catch { }
+            }
+            // if stored as string, try parse
+            if (obj is string s && Enum.TryParse<T>(s, out var parsed))
+            {
+                return parsed;
+            }
+        }
+        return defaultValue;
+    }
 }

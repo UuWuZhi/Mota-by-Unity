@@ -25,13 +25,13 @@ public class UIInputF4Manager : MonoBehaviour
             // toggle hide-all
             if (!_hideAllActive && _globalEventVariables.GetEnum<UIState>(GlobalEventKey.UIState) == UIState.Main)
             {
-                _uiManager.HideAndRecordVisible();
+                _uiManager.HideAndRecordVisible(); // Updated to use enum-based calls
                 _hideAllActive = true;
                 _globalEventVariables.SetEnum(GlobalEventKey.UIState, UIState.Hidden);
             }
             else
             {
-                _uiManager.ShowRecordedVisible();
+                _uiManager.ShowRecordedVisible(); // Updated to use enum-based calls
                 _hideAllActive = false;
                 _globalEventVariables.SetEnum(GlobalEventKey.UIState, UIState.Main);
             }

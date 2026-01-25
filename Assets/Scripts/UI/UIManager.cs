@@ -5,8 +5,11 @@ using VContainer; // for [Inject]
 // 中央 UI 管理器：负责注册场景中所有可控制的 UI 根对象，并统一显示/隐藏
 public class UIManager : MonoBehaviour
 {
-    public List<string> RecordedUI = new List<string>();
-    [SerializeField] private List<GameObject> uiRoots = new List<GameObject>();
+    public List<UIRootType> RecordedUITypes = new List<UIRootType>();
+    [SerializeField] private UIRootDatabase _uiRootDatabase;
+
+    // 枚举类型映射（由数据库或 RegisterUIRoot 自动维护）
+    private readonly Dictionary<UIRootType, GameObject> _rootsByType = new Dictionary<UIRootType, GameObject>();
 
     // injected EventCenter (via VContainer)
     private EventCenter _eventCenter;
@@ -25,6 +28,12 @@ public class UIManager : MonoBehaviour
         TrySubscribeEvents();
     }
 
+    private void Awake()
+    {
+        // Ensure database-driven mapping exists early (before IStartable runs)
+        InitializeFromDatabase();
+    }
+
     private void OnDisable()
     {
         TryUnsubscribeEvents();
@@ -34,8 +43,8 @@ public class UIManager : MonoBehaviour
     public void Inject(EventCenter eventCenter)
     {
         _eventCenter = eventCenter;
-
         TrySubscribeEvents();
+        InitializeFromDatabase();
     }
 
     private void TrySubscribeEvents()
@@ -68,17 +77,17 @@ public class UIManager : MonoBehaviour
     #region 事件系统
     private void OnShowUI(object sender, UIShowEventArgs args)
     {
-        ShowUI(args?.UINames);
+        ShowUI(args?.UITypes);
     }
 
     private void OnHideUI(object sender, UIHideEventArgs args)
     {
-        HideUI(args?.UINames);
+        HideUI(args?.UITypes);
     }
 
     private void OnToggleUI(object sender, UIToggleEventArgs args)
     {
-        ToggleUI(args?.UINames);
+        ToggleUI(args?.UITypes);
     }
     #endregion
     //==============================================================================//
@@ -87,40 +96,83 @@ public class UIManager : MonoBehaviour
     //                                                                              //
     //==============================================================================//
     #region 节点管理
-    public void RegisterUIRoot(GameObject root)
+    // 显式注册并指定类型（推荐用于运行时动态创建的 UI）
+    public void RegisterUIRoot(GameObject root, UIRootType type)
     {
-        if (root == null) return;
-        if (!uiRoots.Contains(root)) uiRoots.Add(root);
+        if (root == null || type == UIRootType.None) return;
+        _rootsByType[type] = root;
     }
 
     public void UnregisterUIRoot(GameObject root)
     {
         if (root == null) return;
-        if (uiRoots.Contains(root)) uiRoots.Remove(root);
+        // 清理枚举映射中引用相同的项
+        var keysToRemove = new List<UIRootType>();
+        foreach (var kv in _rootsByType)
+        {
+            if (kv.Value == root) keysToRemove.Add(kv.Key);
+        }
+        foreach (var k in keysToRemove) _rootsByType.Remove(k);
     }
     // 新增：提供对外读取 UI 根及其显示状态的接口
-    public List<string> GetActiveRootNames()
+    // string-based name list removed; use GetActiveRootTypes() instead
+
+    // 新：以枚举返回当前激活的 UI 列表
+    public List<UIRootType> GetActiveRootTypes()
     {
-        List<string> result = new List<string>();
-        foreach (var r in uiRoots)
+        var result = new List<UIRootType>();
+        foreach (var kv in _rootsByType)
         {
-            if (r == null) continue;
-            if (r.activeSelf) result.Add(r.name);
+            if (kv.Value != null && kv.Value.activeSelf) result.Add(kv.Key);
         }
         return result;
     }
 
-    public bool IsUIRootRegistered(string name)
+    // 从 ScriptableObject DB 初始化内部映射
+    private void InitializeFromDatabase()
     {
-        if (string.IsNullOrEmpty(name)) return false;
-        foreach (var r in uiRoots) if (r != null && r.name == name) return true;
-        return false;
+        _rootsByType.Clear();
+        if (_uiRootDatabase == null) return;
+        foreach (var e in _uiRootDatabase.GetAllEntries())
+        {
+            if (e.Type == UIRootType.None) continue;
+            var proto = e.Root;
+            if (proto == null) continue;
+
+            GameObject instance = null;
+            // If the referenced object is a scene instance, use it directly
+            if (proto.scene.IsValid())
+            {
+                instance = proto;
+            }
+            else
+            {
+                // Try find an existing scene object with the same name
+                instance = GameObject.Find(proto.name);
+                if (instance == null)
+                {
+                    // instantiate prefab into scene
+                    instance = Object.Instantiate(proto);
+                    instance.name = proto.name; // remove (Clone) for clarity
+                }
+            }
+
+            if (instance != null) _rootsByType[e.Type] = instance;
+        }
     }
 
-    public bool IsUIRootActive(string name)
+    // string-based lookup removed
+
+    public bool IsUIRootRegistered(UIRootType type)
     {
-        if (string.IsNullOrEmpty(name)) return false;
-        foreach (var r in uiRoots) if (r != null && r.name == name) return r.activeSelf;
+        if (type == UIRootType.None) return false;
+        return _rootsByType.ContainsKey(type) && _rootsByType[type] != null;
+    }
+
+    public bool IsUIRootActive(UIRootType type)
+    {
+        if (type == UIRootType.None) return false;
+        if (_rootsByType.TryGetValue(type, out var go) && go != null) return go.activeSelf;
         return false;
     }
     #endregion
@@ -130,122 +182,109 @@ public class UIManager : MonoBehaviour
     //                                                                              //
     //==============================================================================//
     #region 显示方法
-    public void ShowUI(List<string> names)
+    // string-based ShowUI removed; use enum-based ShowUI
+
+    // 枚举版本 ShowUI
+    public void ShowUI(List<UIRootType> types)
     {
-        if (names == null || names.Count == 0)
+        if (types == null || types.Count == 0)
         {
-            foreach (var r in uiRoots) if (r != null) r.SetActive(true);
+            foreach (var kv in _rootsByType) if (kv.Value != null) kv.Value.SetActive(true);
             return;
         }
-        foreach (var name in names)
+        foreach (var t in types)
         {
-            foreach (var r in uiRoots)
-            {
-                if (r == null) continue;
-                if (r.name == name)
-                {
-                    r.SetActive(true);
-                    break;
-                }
-            }
+            if (t == UIRootType.None) continue;
+            if (_rootsByType.TryGetValue(t, out var go) && go != null) go.SetActive(true);
         }
     }
 
-    public void ShowUI(string name)
+    public void ShowUI(UIRootType type)
     {
-        if (string.IsNullOrEmpty(name)) { ShowUI((List<string>)null); return; }
-        ShowUI(new List<string> { name });
+        ShowUI(new List<UIRootType> { type });
     }
 
-    public void HideUI(List<string> names)
+    // string-based HideUI removed; use enum-based HideUI
+
+    // 枚举版本 HideUI
+    public void HideUI(List<UIRootType> types)
     {
-        if (names == null || names.Count == 0)
+        if (types == null || types.Count == 0)
         {
-            foreach (var r in uiRoots) if (r != null) r.SetActive(false);
+            foreach (var kv in _rootsByType) if (kv.Value != null) kv.Value.SetActive(false);
             return;
         }
-        foreach (var name in names)
+        foreach (var t in types)
         {
-            foreach (var r in uiRoots)
-            {
-                if (r == null) continue;
-                if (r.name == name)
-                {
-                    r.SetActive(false);
-                    break;
-                }
-            }
+            if (t == UIRootType.None) continue;
+            if (_rootsByType.TryGetValue(t, out var go) && go != null) go.SetActive(false);
         }
     }
-    public void HideUI(string name)
+
+    public void HideUI(UIRootType type)
     {
-        if (string.IsNullOrEmpty(name)) { HideUI((List<string>)null); return; }
-        HideUI(new List<string> { name });
+        HideUI(new List<UIRootType> { type });
     }
 
-    public void ToggleUI(List<string> names)
+    // string-based ToggleUI removed; use enum-based ToggleUI
+    
+    // 枚举版本 Toggle
+    public void ToggleUI(List<UIRootType> types)
     {
-        if (names == null || names.Count == 0)
+        if (types == null || types.Count == 0)
         {
-            foreach (var r in uiRoots)
+            foreach (var kv in _rootsByType)
             {
-                if (r == null) continue;
-                r.SetActive(!r.activeSelf);
+                if (kv.Value == null) continue;
+                kv.Value.SetActive(!kv.Value.activeSelf);
             }
             return;
         }
-
-        foreach (var name in names)
+        foreach (var t in types)
         {
-            foreach (var r in uiRoots)
-            {
-                if (r == null) continue;
-                if (r.name == name)
-                {
-                    r.SetActive(!r.activeSelf);
-                    break;
-                }
-            }
+            if (t == UIRootType.None) continue;
+            if (_rootsByType.TryGetValue(t, out var go) && go != null) go.SetActive(!go.activeSelf);
         }
-    }
-
-    public void ToggleUI(string name)
-    {
-        if (string.IsNullOrEmpty(name))
-        {
-            ToggleUI((List<string>)null);
-            return;
-        }
-        ToggleUI(new List<string> { name });
     }
     // 新增：封装 “隐藏并记录当前可见 UI” 与 “显示记录的 UI” 的方法
     // HideAndRecordVisible: 返回被隐藏的 UI 名称列表（可能为空）
-    public List<string> HideAndRecordVisible()
+    public List<UIRootType> HideAndRecordVisible()
     {
-        var active = GetActiveRootNames();
+        var active = GetActiveRootTypes();
         if (active != null && active.Count > 0)
         {
             HideUI(active);
         }
-        RecordedUI = active;
-        return active ?? new List<string>();
+        RecordedUITypes = active;
+        return active ?? new List<UIRootType>();
+    }
+
+    // 枚举版本 HideAndRecordVisible
+    public List<UIRootType> HideAndRecordVisibleByType()
+    {
+        var active = GetActiveRootTypes();
+        if (active != null && active.Count > 0)
+        {
+            HideUI(active);
+        }
+        return active ?? new List<UIRootType>();
     }
 
     // ShowRecordedVisible: 传入先前记录的名称列表，尝试恢复显示其中注册过的 UI 根
-    public void ShowRecordedVisible(List<string> recordedNames)
+    public void ShowRecordedVisible(List<UIRootType> recordedTypes)
     {
-        if (recordedNames == null || recordedNames.Count == 0) return;
-        var restore = new List<string>();
-        foreach (var name in recordedNames)
+        if (recordedTypes == null || recordedTypes.Count == 0) return;
+        var restore = new List<UIRootType>();
+        foreach (var t in recordedTypes)
         {
-            if (string.IsNullOrEmpty(name)) continue;
-            if (IsUIRootRegistered(name)) restore.Add(name);
+            if (t == UIRootType.None) continue;
+            if (IsUIRootRegistered(t)) restore.Add(t);
         }
         if (restore.Count > 0) ShowUI(restore);
     }
     public void ShowRecordedVisible()
     {
-        ShowRecordedVisible(RecordedUI);
+        ShowRecordedVisible(RecordedUITypes);
     }
     #endregion
 }

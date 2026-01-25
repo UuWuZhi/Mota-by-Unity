@@ -13,6 +13,7 @@ public class GameInitializationEntryPoint : IStartable
     private readonly MapManager _mapManager;
     private readonly PlayerAttribute _playerAttribute;
     private readonly EventCenter _eventCenter;
+    private readonly UIManager _uiManager;
     private readonly IGlobalEventVariables _globalEventVariables;
     private readonly PlayerMovement _playerMovement;
     private readonly GameObject _playerObject;
@@ -46,12 +47,18 @@ public class GameInitializationEntryPoint : IStartable
         //4. 初始化UI显示
         try
         {
-            if (_eventCenter != null)
+            var initial = new List<UIRootType> { UIRootType.Left, UIRootType.Right, UIRootType.Top, UIRootType.Bottom };
+            if (_uiManager != null)
             {
-                _eventCenter.TriggerHideUI(new UIHideEventArgs { UINames = null });
-                _eventCenter.TriggerShowUI(new UIShowEventArgs {
-                    UINames = new List<string>{ "Left", "Right", "Top", "Bottom" } 
-                });
+                // Directly use UIManager to avoid ordering issues with event subscriptions
+                _uiManager.HideAndRecordVisible();
+                _uiManager.ShowUI(initial);
+                _globalEventVariables.SetEnum(GlobalEventKey.UIState, UIState.Main);
+            }
+            else if (_eventCenter != null)
+            {
+                _eventCenter.TriggerHideUI(new UIHideEventArgs { UITypes = null });
+                _eventCenter.TriggerShowUI(new UIShowEventArgs { UITypes = initial });
                 _globalEventVariables.SetEnum(GlobalEventKey.UIState, UIState.Main);
             }
         }

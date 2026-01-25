@@ -29,7 +29,7 @@ public class UIDialogue : MonoBehaviour
 
     private bool _typeFinished = false;         // 文字是否已经全部显示
     private bool _eventSubscribed = false;      // 是否已订阅事件
-    private bool _registeredRoot = false;       // 是否已注册 UI 根节点
+    //private bool _registeredRoot = false;       // 是否已注册 UI 根节点
     private bool _awaitingContinue = false;     // 是否处于等待继续（无选项时）
 
     private readonly List<Button> _choiceButtons = new List<Button>();
@@ -49,7 +49,7 @@ public class UIDialogue : MonoBehaviour
     private void Start()
     {
         SubscribeDialogueManager();
-        TryRegisterRoot();
+        //TryRegisterRoot();
         if (root != null) root.SetActive(false);
     }
 
@@ -72,7 +72,7 @@ public class UIDialogue : MonoBehaviour
         _dialogueManager = dialogueManager;
         _uiManager = uiManager;
         SubscribeDialogueManager();
-        TryRegisterRoot();
+        //TryRegisterRoot();
     }
     #endregion
     //==============================================================================//
@@ -163,13 +163,13 @@ public class UIDialogue : MonoBehaviour
     /// <summary>
     /// 尝试将当前 root 注册到 UIManager，注册仅执行一次且在 _uiManager 与 root 可用时执行。
     /// </summary>
-    private void TryRegisterRoot()
-    {
-        if (_registeredRoot) return;
-        if (_uiManager == null || root == null) return;
-        _uiManager.RegisterUIRoot(root);
-        _registeredRoot = true;
-    }
+    //private void TryRegisterRoot()
+    //{
+    //    if (_registeredRoot) return;
+    //    if (_uiManager == null || root == null) return;
+    //    _uiManager.RegisterUIRoot(root);
+    //    _registeredRoot = true;
+    //}
 
     /// <summary>
     /// 订阅 DialogueManager 的对话相关事件（开始/改变/结束）。

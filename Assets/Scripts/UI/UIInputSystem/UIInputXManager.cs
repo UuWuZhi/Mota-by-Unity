@@ -18,11 +18,11 @@ public class UIInputXManager : MonoBehaviour
     }
 
     // 记录启动时哪些 UI 根是可见的（用于遵守“一开始就隐藏的不影响”）
-    private HashSet<string> _initiallyVisible = new HashSet<string>();
+    private HashSet<UIRootType> _initiallyVisible = new HashSet<UIRootType>();
 
     // X 键模式（第一次按 X 会隐藏当前全部并显示指定面板，之后按 X 切换这些面板的显示/隐藏）
     private bool _xModeActive = false;
-    private readonly string[] _xTargetNames = new[] { "MonsterBook", "SideMenu" };
+    private readonly UIRootType[] _xTargetTypes = new[] { UIRootType.MonsterBook, UIRootType.SideMenu };
 
     private void Awake()
     {
@@ -30,8 +30,8 @@ public class UIInputXManager : MonoBehaviour
         var uiMgr = _uiManager;
         if (uiMgr != null)
         {
-            var active = uiMgr.GetActiveRootNames();
-            foreach (var n in active) if (!string.IsNullOrEmpty(n)) _initiallyVisible.Add(n);
+            var active = uiMgr.GetActiveRootTypes();
+            foreach (var n in active) _initiallyVisible.Add(n);
         }
     }
 
@@ -63,14 +63,14 @@ public class UIInputXManager : MonoBehaviour
         if (!_xModeActive)
         {
             uiMgr?.HideAndRecordVisible();
-            var toShow = new List<string>();
-            foreach (var n in _xTargetNames)
+            var toShow = new List<UIRootType>();
+            foreach (var t in _xTargetTypes)
             {
-                if (!string.IsNullOrEmpty(n) && uiMgr != null && uiMgr.IsUIRootRegistered(n))
-                    toShow.Add(n);
+                if (uiMgr != null && uiMgr.IsUIRootRegistered(t))
+                    toShow.Add(t);
             }
             if (toShow.Count > 0)
-                ec?.TriggerShowUI(new UIShowEventArgs { UINames = toShow });
+                ec?.TriggerShowUI(new UIShowEventArgs { UITypes = toShow });
 
             _xModeActive = true;
         }
@@ -78,15 +78,15 @@ public class UIInputXManager : MonoBehaviour
         {
             // 之后按 X：切换 MonsterBook 与 SideMenu 的显示状态（仅针对那些一开始不是隐藏的）
             uiMgr?.ShowRecordedVisible();
-            var toHide = new List<string>();
-            foreach (var n in _xTargetNames)
+            var toHide = new List<UIRootType>();
+            foreach (var t in _xTargetTypes)
             {
-                if (!string.IsNullOrEmpty(n) && uiMgr != null && uiMgr.IsUIRootRegistered(n))
-                    toHide.Add(n);
+                if (uiMgr != null && uiMgr.IsUIRootRegistered(t))
+                    toHide.Add(t);
             }
             if (toHide.Count > 0)
             {
-                ec?.TriggerHideUI(new UIHideEventArgs { UINames = toHide });
+                ec?.TriggerHideUI(new UIHideEventArgs { UITypes = toHide });
             }
 
             _xModeActive = false;

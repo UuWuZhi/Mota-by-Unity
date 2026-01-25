@@ -21,17 +21,17 @@ public class MonsterBookUI : MonoBehaviour
     private GridManager _gridManager;
     private PlayerAttribute _playerAttribute;
 
-    private bool _registeredRoot = false;
+    //private bool _registeredRoot = false;
     private bool _subscribed = false;
     private void OnEnable()
     {
-        TryRegisterRoot();
+        //TryRegisterRoot();
         TrySubscribeShowEvent();
     }
 
     private void OnDisable()
     {
-        TryUnregisterRoot();
+        //TryUnregisterRoot();
         TryUnsubscribeShowEvent();
     }
 
@@ -43,24 +43,24 @@ public class MonsterBookUI : MonoBehaviour
         _globalEventVariables = globalEventVariables;
         _gridManager = gridManager;
         _playerAttribute = playerAttribute;
-        TryRegisterRoot();
+        //TryRegisterRoot();
         TrySubscribeShowEvent();
     }
 
-    private void TryRegisterRoot()
-    {
-        if (_registeredRoot) return;
-        if (_uiManager == null || root == null) return;
-        _uiManager.RegisterUIRoot(root);
-        _registeredRoot = true;
-    }
+    //private void TryRegisterRoot()
+    //{
+    //    if (_registeredRoot) return;
+    //    if (_uiManager == null || root == null) return;
+    //    _uiManager.RegisterUIRoot(root);
+    //    _registeredRoot = true;
+    //}
 
-    private void TryUnregisterRoot()
-    {
-        if (!_registeredRoot) return;
-        if (_uiManager != null && root != null) _uiManager.UnregisterUIRoot(root);
-        _registeredRoot = false;
-    }
+    //private void TryUnregisterRoot()
+    //{
+    //    if (!_registeredRoot) return;
+    //    if (_uiManager != null && root != null) _uiManager.UnregisterUIRoot(root);
+    //    _registeredRoot = false;
+    //}
 
     private void TrySubscribeShowEvent()
     {
@@ -80,7 +80,8 @@ public class MonsterBookUI : MonoBehaviour
     private void OnShowUIHandler(object sender, UIShowEventArgs args)
     {
         if (args == null) return;
-        if (args.UINames != null && args.UINames.Contains("MonsterBook"))
+        // 支持枚举型事件参数
+        if (args.UITypes != null && args.UITypes.Contains(UIRootType.MonsterBook))
         {
             Refresh();
         }

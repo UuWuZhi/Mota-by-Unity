@@ -6,149 +6,127 @@ using VContainer;
 /// 怪物手册UI：在打开时收集当前层怪物ID并填充 MonsterBar 预制体
 /// 依赖 GridManager.CurrentEventTilemap 来获取当前层事件层 Tilemap
 /// </summary>
-public class MonsterBookUI : MonoBehaviour
+public class MonsterBookUI : BaseUI
 {
     [Header("UI 元素")]
-    public GameObject root;
     public Transform contentParent; // 放 MonsterBar 的容器
     public GameObject monsterBarPrefab; // MonsterBar 预制
 
-    private int _currentLayerId => _globalEventVariables.GetInt(GlobalEventKey.LayerId);
+    private int CurrentLayerId => _globalEventVariables.GetInt(GlobalEventKey.LayerId);
 
-    private EventCenter _eventCenter;
-    private UIManager _uiManager;
     private IGlobalEventVariables _globalEventVariables;
     private GridManager _gridManager;
     private PlayerAttribute _playerAttribute;
+    private IMonsterBook _monsterBook;
 
-    //private bool _registeredRoot = false;
-    private bool _subscribed = false;
-    private void OnEnable()
-    {
-        //TryRegisterRoot();
-        TrySubscribeShowEvent();
-    }
-
-    private void OnDisable()
-    {
-        //TryUnregisterRoot();
-        TryUnsubscribeShowEvent();
-    }
-
+    //==============================================================================//
+    //                                                                              //
+    //                                 生命周期                                     //
+    //                                                                              //
+    //==============================================================================//
+    #region 生命周期
     [Inject]
-    public void Construct(EventCenter eventCenter, UIManager uiManager, IGlobalEventVariables globalEventVariables, GridManager gridManager, PlayerAttribute playerAttribute)
+    public void Construct(IGlobalEventVariables globalEventVariables, GridManager gridManager, PlayerAttribute playerAttribute, IMonsterBook monsterBook)
     {
-        _eventCenter = eventCenter;
-        _uiManager = uiManager;
         _globalEventVariables = globalEventVariables;
         _gridManager = gridManager;
         _playerAttribute = playerAttribute;
-        //TryRegisterRoot();
-        TrySubscribeShowEvent();
+        _monsterBook = monsterBook;
     }
 
-    //private void TryRegisterRoot()
-    //{
-    //    if (_registeredRoot) return;
-    //    if (_uiManager == null || root == null) return;
-    //    _uiManager.RegisterUIRoot(root);
-    //    _registeredRoot = true;
-    //}
-
-    //private void TryUnregisterRoot()
-    //{
-    //    if (!_registeredRoot) return;
-    //    if (_uiManager != null && root != null) _uiManager.UnregisterUIRoot(root);
-    //    _registeredRoot = false;
-    //}
-
-    private void TrySubscribeShowEvent()
+    #endregion
+    //==============================================================================//
+    //                                                                              //
+    //                                 事件系统                                     //
+    //                                                                              //
+    //==============================================================================//
+    #region 事件系统
+    // UI 显示由 UIManager 控制；重写 OnShown 在显示时刷新内容
+    protected override void OnShown()
     {
-        if (_subscribed) return;
-        if (_eventCenter == null) return;
-        _eventCenter.OnShowUI += OnShowUIHandler;
-        _subscribed = true;
+        Debug.Log("MonsterBookUI:进入显示函数");
+        base.OnShown();
+        Refresh();
     }
-
-    private void TryUnsubscribeShowEvent()
-    {
-        if (!_subscribed) return;
-        if (_eventCenter != null) _eventCenter.OnShowUI -= OnShowUIHandler;
-        _subscribed = false;
-    }
-
-    private void OnShowUIHandler(object sender, UIShowEventArgs args)
-    {
-        if (args == null) return;
-        // 支持枚举型事件参数
-        if (args.UITypes != null && args.UITypes.Contains(UIRootType.MonsterBook))
-        {
-            Refresh();
-        }
-    }
+    #endregion
 
     // NOTE: Show/Hide is handled centrally by UIManager / UIInputManager. Local event subscriptions limited to refresh on show.
 
-    public void Refresh()
+    public void Refresh() 
     {
-        //Debug.Log("刷新怪物手册 UI");
-        // 清理旧条目
-        foreach (Transform t in contentParent) Destroy(t.gameObject);
+        ClearContent();
+        var ids = CollectMonsterIds();
+        UpdatePredictions(ids);
+        PopulateEntries(ids);
+    }
 
-        // 获取当前层所有怪物ID：通过 EventTilemap 的所有 EventTiles 的 eventPrefab 上的 EnemyUnit 中的 enemyData 或 id
-        var eventTilemap = _gridManager.CurrentEventTilemap;
-        HashSet<int> ids = new HashSet<int>();
-        if (eventTilemap != null)
+    // 清理内容容器
+    private void ClearContent()
+    {
+        if (contentParent == null) return;
+        foreach (Transform t in contentParent)
         {
-            foreach (Vector3Int cell in eventTilemap.cellBounds.allPositionsWithin)
+            Destroy(t.gameObject);
+        }
+    }
+
+    // 收集当前层所有怪物 ID 并标记已见
+    private HashSet<int> CollectMonsterIds()
+    {
+        var ids = new HashSet<int>();
+        var eventTilemap = _gridManager.CurrentEventTilemap;
+        if (eventTilemap == null) return ids;
+        foreach (Vector3Int cell in eventTilemap.cellBounds.allPositionsWithin)
+        {
+            if (!eventTilemap.HasTile(cell)) continue;
+            if (eventTilemap.GetTile(cell) is EventTile et && et.gameObject != null)
             {
-                if (!eventTilemap.HasTile(cell)) continue;
-                if (eventTilemap.GetTile(cell) is EventTile et && et.gameObject != null)
+                var prefab = et.gameObject;
+                var eu = prefab.GetComponent<EnemyUnit>();
+                if (eu != null && eu.enemyData != null)
                 {
-                    var prefab = et.gameObject;
-                    var eu = prefab.GetComponent<EnemyUnit>();
-                    if (eu != null && eu.enemyData != null)
-                    {
-                        // 标记已见并收集 id
-                        int id = eu.enemyData.id;
-                        ids.Add(id);
-                        MonsterBook.Instance.MarkSeen(_currentLayerId, id);
-                    }
+                    int id = eu.enemyData.id;
+                    ids.Add(id);
+                    _monsterBook?.MarkSeen(CurrentLayerId, id);
                 }
             }
         }
+        Debug.Log($"MonsterBookUI:收集到怪物ID {string.Join(", ", ids)}");
+        return ids;
+    }
 
-        // 计算是否需要重新预测（基于玩家属性快照）
+    // 基于玩家属性快照更新每个怪物的预测损失
+    private void UpdatePredictions(HashSet<int> ids)
+    {
+        if (_playerAttribute == null) return;
         int playerAtk = _playerAttribute.GetAttributeValue(AttributeType.Attack);
         int playerDef = _playerAttribute.GetAttributeValue(AttributeType.Defense);
-        //Debug.Log("当前玩家属性：攻击 " + playerAtk + " 防御 " + playerDef);
-        bool snapshotSame = MonsterBook.Instance.IsPlayerSnapshotSame(_currentLayerId, playerAtk, playerDef);
-        //Debug.Log("玩家属性快照是否相同：" + snapshotSame);
-        // 若快照不同，需要为该层（或新出现的怪物）更新预测
-        if (!snapshotSame)
+        bool snapshotSame = _monsterBook != null && _monsterBook.IsPlayerSnapshotSame(CurrentLayerId, playerAtk, playerDef);
+        if (snapshotSame) return;
+        foreach (int id in ids)
         {
-            // 更新每个怪物的预测并保存快照
-            foreach (int id in ids)
-            {
-                var data = MonsterBook.Instance.GetEnemyData(id);
-                if (data == null) continue;
-                int predicted;
-                BattleManager.Instance.ResolveBattle(_playerAttribute.GetPlayerUnitData(), data.ToBattleUnitData(), out predicted);
-                MonsterBook.Instance.SetPredictedLoss(_currentLayerId, id, predicted);
-            }
-            MonsterBook.Instance.SetPlayerSnapshot(_currentLayerId, playerAtk, playerDef);
+            var data = _monsterBook?.GetEnemyData(id);
+            if (data == null) continue;
+            int predicted;
+            BattleManager.Instance.ResolveBattle(_playerAttribute.GetPlayerUnitData(), data.ToBattleUnitData(), out predicted);
+            _monsterBook?.SetPredictedLoss(CurrentLayerId, id, predicted);
         }
+        _monsterBook?.SetPlayerSnapshot(CurrentLayerId, playerAtk, playerDef);
+    }
 
-        // 对收集到的 ids 进行排序并填充 UI（传入已计算的 predictedLoss）
-        List<int> sorted = new List<int>(ids);
+    // 填充 UI 条目
+    private void PopulateEntries(HashSet<int> ids)
+    {
+        if (contentParent == null || monsterBarPrefab == null) return;
+        var sorted = new List<int>(ids);
         sorted.Sort();
         foreach (int id in sorted)
         {
-            var data = MonsterBook.Instance.GetEnemyData(id);
+            var data = _monsterBook?.GetEnemyData(id);
             var go = Instantiate(monsterBarPrefab, contentParent);
             var bar = go.GetComponent<MonsterBar>();
             int loss;
-            if (bar != null && MonsterBook.Instance.TryGetPredictedLoss(_currentLayerId, id, out loss))
+            if (bar != null && _monsterBook != null && _monsterBook.TryGetPredictedLoss(CurrentLayerId, id, out loss))
             {
                 bar.SetData(data, loss);
             }

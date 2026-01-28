@@ -5,39 +5,22 @@ using VContainer;
 // 负责 X 键的处理（拆分自 UIInputManager）
 public class UIInputXManager : MonoBehaviour
 {
-    private UIManager _uiManager;
     private EventCenter _eventCenter;
     private IGlobalEventVariables _globalEventVariables;
 
     [Inject]
-    public void Inject(UIManager uiManager, EventCenter eventCenter, IGlobalEventVariables globalEventVariables)
+    public void Inject(EventCenter eventCenter, IGlobalEventVariables globalEventVariables)
     {
-        _uiManager = uiManager;
         _eventCenter = eventCenter;
         _globalEventVariables = globalEventVariables;
     }
 
-    // 记录启动时哪些 UI 根是可见的（用于遵守“一开始就隐藏的不影响”）
-    private HashSet<UIRootType> _initiallyVisible = new HashSet<UIRootType>();
-
     // X 键模式（第一次按 X 会隐藏当前全部并显示指定面板，之后按 X 切换这些面板的显示/隐藏）
-    private bool _xModeActive = false;
-    private readonly UIRootType[] _xTargetTypes = new[] { UIRootType.MonsterBook, UIRootType.SideMenu };
+    private readonly List<UIRootType> _xTargetTypes = new List<UIRootType>() { UIRootType.MonsterBook, UIRootType.SideMenu };
 
-    private void Awake()
-    {
-        // 记录场景中一开始哪些 UI 是激活的（若 UIManager 可用）
-        var uiMgr = _uiManager;
-        if (uiMgr != null)
-        {
-            var active = uiMgr.GetActiveRootTypes();
-            foreach (var n in active) _initiallyVisible.Add(n);
-        }
-    }
 
     private void Update()
     {
-        // X：只有当未处于 HideAll 时才生效
         if (Input.GetKeyDown(KeyCode.X))
         {
             HandleXPress();
@@ -55,41 +38,17 @@ public class UIInputXManager : MonoBehaviour
     // 抽取 X 键的处理逻辑，供 Update 与 UI 按钮复用
     private void HandleXPress()
     {
-        // Note: 无 _hideAllActive 标志在本类中；如果需要跨组件共享该状态，需要通过全局变量或事件中心传递
-        var uiMgr = _uiManager;
-        var ec = _eventCenter;
-
-        // 第一次按 X：隐藏目前可见的全部 UI，然后显示 MonsterBook 与 SideMenu（仅当它们一开始不是隐藏的）
-        if (!_xModeActive)
+        if (_globalEventVariables.GetEnum<UIState>(GlobalEventKey.UIState) == UIState.Main)
         {
-            uiMgr?.HideAndRecordVisible();
-            var toShow = new List<UIRootType>();
-            foreach (var t in _xTargetTypes)
-            {
-                if (uiMgr != null && uiMgr.IsUIRootRegistered(t))
-                    toShow.Add(t);
-            }
-            if (toShow.Count > 0)
-                ec?.TriggerShowUI(new UIShowEventArgs { UITypes = toShow });
-
-            _xModeActive = true;
+            _eventCenter.TriggerHideUI(new UIHideEventArgs { UITypes = new List<UIRootType> { UIRootType.Main } });
+            _eventCenter.TriggerShowUI(new UIShowEventArgs { UITypes = _xTargetTypes });
+            _globalEventVariables.SetEnum(GlobalEventKey.UIState, UIState.Menu);
         }
-        else
+        else if (_globalEventVariables.GetEnum<UIState>(GlobalEventKey.UIState) == UIState.Menu)
         {
-            // 之后按 X：切换 MonsterBook 与 SideMenu 的显示状态（仅针对那些一开始不是隐藏的）
-            uiMgr?.ShowRecordedVisible();
-            var toHide = new List<UIRootType>();
-            foreach (var t in _xTargetTypes)
-            {
-                if (uiMgr != null && uiMgr.IsUIRootRegistered(t))
-                    toHide.Add(t);
-            }
-            if (toHide.Count > 0)
-            {
-                ec?.TriggerHideUI(new UIHideEventArgs { UITypes = toHide });
-            }
-
-            _xModeActive = false;
+            _eventCenter.TriggerHideUI(new UIHideEventArgs { UITypes = _xTargetTypes });
+            _eventCenter.TriggerShowUI(new UIShowEventArgs { UITypes = new List<UIRootType> { UIRootType.Main } });
+            _globalEventVariables.SetEnum(GlobalEventKey.UIState, UIState.Main);
         }
     }
 }

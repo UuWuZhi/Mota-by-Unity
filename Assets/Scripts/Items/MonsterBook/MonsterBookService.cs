@@ -1,36 +1,31 @@
 using System.Collections.Generic;
 using UnityEngine;
+using VContainer;
 
-/// <summary>
-/// 怪物手册：保持已记录怪物信息（按层缓存）并提供查询/更新接口
-/// 注意：依赖 EnemyDatabase 进行 id->EnemyData 查找
-/// </summary>
-public class MonsterBook : MonoBehaviour
+// 纯 C# 实现的 MonsterBook 服务（用于 DI）
+public class MonsterBookService : IMonsterBook
 {
-    public static MonsterBook Instance { get; private set; }
-
-    [Tooltip("引用的敌人数据库资源（在Inspector中配置）")]
-    public EnemyDatabase enemyDatabase;
+    private EnemyDatabase _enemyDatabase;
+    private BattleManager _battleManager;
 
     // layerId -> set of seen enemy ids
-    private Dictionary<int, HashSet<int>> _seenByLayer = new Dictionary<int, HashSet<int>>();
+    private readonly Dictionary<int, HashSet<int>> _seenByLayer = new Dictionary<int, HashSet<int>>();
 
     // layerId -> (enemyId -> predictedLoss)
-    private Dictionary<int, Dictionary<int, int>> _predictedLossByLayer = new Dictionary<int, Dictionary<int, int>>();
+    private readonly Dictionary<int, Dictionary<int, int>> _predictedLossByLayer = new Dictionary<int, Dictionary<int, int>>();
 
-    // snapshot of player attributes when predictions were made
     private class PlayerSnapshot { public int attack; public int defense; }
-    private Dictionary<int, PlayerSnapshot> _playerSnapshotByLayer = new Dictionary<int, PlayerSnapshot>();
+    private readonly Dictionary<int, PlayerSnapshot> _playerSnapshotByLayer = new Dictionary<int, PlayerSnapshot>();
 
-    private void Awake()
+    [Inject]
+    public void Inject(EnemyDatabase enemyDatabase, BattleManager battleManager)
     {
-        if (Instance == null) Instance = this; else Destroy(gameObject);
-
+        _enemyDatabase = enemyDatabase;
+        _battleManager = battleManager;
     }
 
     public void MarkSeen(int layerId, int enemyId)
     {
-        Debug.Log($"标记已见怪物：层 {layerId}, 怪物ID {enemyId}");
         if (!_seenByLayer.TryGetValue(layerId, out var set))
         {
             set = new HashSet<int>();
@@ -46,8 +41,15 @@ public class MonsterBook : MonoBehaviour
 
     public EnemyData GetEnemyData(int enemyId)
     {
-        if (enemyDatabase == null) return null;
-        return enemyDatabase.GetById(enemyId);
+        if (_enemyDatabase != null)
+        {
+            var d = _enemyDatabase.GetById(enemyId);
+            if (d == null) Debug.LogWarning($"MonsterBookService: EnemyDatabase does not contain id {enemyId}");
+            return d;
+        }
+        // No fallback to MonoBehaviour bridge available here; require _enemyDatabase registered in DI
+        Debug.LogWarning($"MonsterBookService: No EnemyDatabase available to resolve id {enemyId}");
+        return null;
     }
 
     public IEnumerable<int> GetSeenIdsForLayer(int layerId)
@@ -56,7 +58,6 @@ public class MonsterBook : MonoBehaviour
         return new int[0];
     }
 
-    // Predicted loss API
     public bool TryGetPredictedLoss(int layerId, int enemyId, out int loss)
     {
         loss = 0;
@@ -79,13 +80,11 @@ public class MonsterBook : MonoBehaviour
 
     public void SetPlayerSnapshot(int layerId, int attack, int defense)
     {
-        //Debug.Log("设置玩家属性快照: 层 " + layerId + ", 攻击 " + attack + ", 防御 " + defense);
         _playerSnapshotByLayer[layerId] = new PlayerSnapshot { attack = attack, defense = defense };
     }
 
     public bool IsPlayerSnapshotSame(int layerId, int attack, int defense)
     {
-        //Debug.Log("检查玩家属性快照: 层 " + layerId + ", 攻击 " + attack + ", 防御 " + defense);
         if (!_playerSnapshotByLayer.TryGetValue(layerId, out var snap) || snap == null) return false;
         return snap.attack == attack && snap.defense == defense;
     }

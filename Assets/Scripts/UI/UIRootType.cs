@@ -2,7 +2,7 @@
 public enum UIRootType
 {
     None = 0,
-    Left,
+    Main,
     Right,
     Top,
     Bottom,

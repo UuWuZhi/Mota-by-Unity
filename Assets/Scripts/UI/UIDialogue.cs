@@ -12,10 +12,9 @@ using VContainer;
 /// - 将选项的显示延后到文字完全打出之后
 /// - 鼠标点击仍然可用，键盘输入由 InputManager 转发到本类的公有方法处理
 /// </summary>
-public class UIDialogue : MonoBehaviour
+public class UIDialogue : BaseUI
 {
     [Header("UI 元素")]
-    [Tooltip("对话根节点")]   public GameObject root;
     [Tooltip("说话者文本")]   public TextMeshProUGUI speakerText;
     [Tooltip("对话文本")]     public TextMeshProUGUI contentText;
     [Tooltip("选项容器")]     public Transform choicesContainer;
@@ -29,14 +28,12 @@ public class UIDialogue : MonoBehaviour
 
     private bool _typeFinished = false;         // 文字是否已经全部显示
     private bool _eventSubscribed = false;      // 是否已订阅事件
-    //private bool _registeredRoot = false;       // 是否已注册 UI 根节点
     private bool _awaitingContinue = false;     // 是否处于等待继续（无选项时）
 
     private readonly List<Button> _choiceButtons = new List<Button>();
     private int _selectedIndex = -1;
 
     private DialogueManager _dialogueManager;
-    private UIManager _uiManager;
     //==============================================================================//
     //                                                                              //
     //                                 生命周期                                     //
@@ -46,18 +43,18 @@ public class UIDialogue : MonoBehaviour
     /// <summary>
     /// Unity Start 回调。尝试订阅 DialogueManager 事件并在可用时注册 UI 根节点，初始隐藏 root。
     /// </summary>
-    private void Start()
+    protected override void OnEnable()
     {
+        base.OnEnable();
         SubscribeDialogueManager();
-        //TryRegisterRoot();
-        if (root != null) root.SetActive(false);
     }
 
     /// <summary>
     /// Unity OnDestroy 回调。解除对 DialogueManager 事件的订阅并做清理。
     /// </summary>
-    private void OnDestroy()
+    protected override void OnDestroy()
     {
+        base.OnDestroy();
         UnsubscribeDialogueManager();
     }
 
@@ -67,12 +64,10 @@ public class UIDialogue : MonoBehaviour
     /// <param name="dialogueManager">注入的 DialogueManager 实例。</param>
     /// <param name="uiManager">注入的 UIManager 实例。</param>
     [Inject]
-    public void Inject(DialogueManager dialogueManager, UIManager uiManager)
+    public void Inject(DialogueManager dialogueManager)
     {
         _dialogueManager = dialogueManager;
-        _uiManager = uiManager;
         SubscribeDialogueManager();
-        //TryRegisterRoot();
     }
     #endregion
     //==============================================================================//

@@ -2,5 +2,6 @@ public enum UIState
 {
     Main,
     Hidden,
-    Menu
+    Menu,
+    Dialog,
 }

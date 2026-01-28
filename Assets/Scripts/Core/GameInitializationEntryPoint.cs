@@ -43,29 +43,6 @@ public class GameInitializationEntryPoint : IStartable
         // 3. 初始化背包道具
         _inventoryService.InitItemCounts();
         Debug.Log("背包道具初始化完成！（Container EntryPoint）");
-
-        //4. 初始化UI显示
-        try
-        {
-            var initial = new List<UIRootType> { UIRootType.Left, UIRootType.Right, UIRootType.Top, UIRootType.Bottom };
-            if (_uiManager != null)
-            {
-                // Directly use UIManager to avoid ordering issues with event subscriptions
-                _uiManager.HideAndRecordVisible();
-                _uiManager.ShowUI(initial);
-                _globalEventVariables.SetEnum(GlobalEventKey.UIState, UIState.Main);
-            }
-            else if (_eventCenter != null)
-            {
-                _eventCenter.TriggerHideUI(new UIHideEventArgs { UITypes = null });
-                _eventCenter.TriggerShowUI(new UIShowEventArgs { UITypes = initial });
-                _globalEventVariables.SetEnum(GlobalEventKey.UIState, UIState.Main);
-            }
-        }
-        catch (System.Exception ex)
-        {
-            Debug.LogWarning($"UI 初始化时发生异常：{ex.Message}");
-        }
         _eventCenter.TriggerLayerSwitchRequest(new LayerSwitchRequestEventArgs
         {
             TargetLayerId = 1,

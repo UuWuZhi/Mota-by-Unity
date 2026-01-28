@@ -7,9 +7,8 @@ using VContainer;
 /// 动态背包面板：固定槽位数（默认36）。在 Start 时一次性创建槽位并保留，收到背包变更时仅更新各槽显示（不销毁/重建槽）。
 /// 在 Inspector 中配置 slotParent(容器)、slotPrefab(包含 InventorySlot 组件)、maxSlots（可改为36）
 /// </summary>
-public class InventoryUI : MonoBehaviour
+public class InventoryUI : BaseUI
 {
-    public GameObject root;         // UI 根对象，用于 UIManager 注册
     public Transform slotParent;    // 槽位容器
     public GameObject slotPrefab;   // 槽位预制体（包含 InventorySlot 组件）
 
@@ -19,42 +18,30 @@ public class InventoryUI : MonoBehaviour
     private List<InventorySlot> _slots = new List<InventorySlot>(); // 已创建的槽位列表
     private EventCenter _eventCenter;
     private IInventoryService _inventory;
-    private UIManager _uiManager;
     private ItemDatabase _itemDatabase;
 
-    //private bool _registeredRoot = false;   // 是否已注册 UI 根
     private bool _subscribed = false;       // 是否已订阅事件
 
     [Inject]
-    public void Construct(EventCenter eventCenter, IInventoryService inventory, UIManager uiManager, ItemDatabase itemDatabase = null)
+    public void Construct(EventCenter eventCenter, IInventoryService inventory, ItemDatabase itemDatabase = null)
     {
         _eventCenter = eventCenter;
         _inventory = inventory;
-        _uiManager = uiManager;
         _itemDatabase = itemDatabase;
-        //TryRegisterRoot();
         TrySubscribe();
     }
-
-    private void OnEnable()
+    protected override void OnEnable()
     {
-        //TryRegisterRoot();
+        base.OnEnable();
         TrySubscribe();
         UpdateSlotsFromEntries();
     }
 
-    private void OnDisable()
+    protected override void OnDestroy()
     {
         TryUnsubscribe();
+        base.OnDestroy();
     }
-
-    //private void TryRegisterRoot()
-    //{
-    //    if (_registeredRoot) return;
-    //    if (_uiManager == null || root == null) return;
-    //    _uiManager.RegisterUIRoot(root);
-    //    _registeredRoot = true;
-    //}
 
     private void TrySubscribe()
     {

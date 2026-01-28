@@ -3,7 +3,7 @@ using VContainer;
 
 /// <summary>
 /// 简单的输入路由器：把键盘输入转发给 DialogueUI
-/// - ↑/W/Left/A 向上选择，↓/S/Right/D 向下选择（左右也映射为上下）
+/// - ↑/W/Main/A 向上选择，↓/S/Right/D 向下选择（左右也映射为上下）
 /// - Enter / Return 或 Space 确认
 /// - 当文字正在打字时，按 Enter/Space 或 鼠标左键 直接显示全部文本
 /// - 仅当 DialogueManager.IsActive 时才处理对话输入

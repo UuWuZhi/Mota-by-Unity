@@ -67,4 +67,11 @@ public class EventCenter : MonoBehaviour
     public void TriggerShowUI(UIShowEventArgs args) => OnShowUI?.Invoke(this, args);
     public void TriggerHideUI(UIHideEventArgs args) => OnHideUI?.Invoke(this, args);
     public void TriggerToggleUI(UIToggleEventArgs args) => OnToggleUI?.Invoke(this, args);
+    
+    // 新：请求隐藏并记录当前可见 UI，以及请求显示先前记录的 UI
+    public event EventHandler OnHideAndRecordRequested;
+    public event EventHandler OnShowRecordedRequested;
+
+    public void TriggerHideAndRecord() => OnHideAndRecordRequested?.Invoke(this, EventArgs.Empty);
+    public void TriggerShowRecorded() => OnShowRecordedRequested?.Invoke(this, EventArgs.Empty);
 }

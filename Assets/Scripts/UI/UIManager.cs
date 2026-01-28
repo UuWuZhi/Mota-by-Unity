@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using VContainer; // for [Inject]
@@ -6,10 +7,10 @@ using VContainer; // for [Inject]
 public class UIManager : MonoBehaviour
 {
     public List<UIRootType> RecordedUITypes = new List<UIRootType>();
-    [SerializeField] private UIRootDatabase _uiRootDatabase;
 
     // 枚举类型映射（由数据库或 RegisterUIRoot 自动维护）
-    private readonly Dictionary<UIRootType, GameObject> _rootsByType = new Dictionary<UIRootType, GameObject>();
+    // 改为持有 BaseUI，便于通过 Show/Hide/Toggle 调用而不是直接 SetActive
+    private readonly Dictionary<UIRootType, BaseUI> _rootsByType = new Dictionary<UIRootType, BaseUI>();
 
     // injected EventCenter (via VContainer)
     private EventCenter _eventCenter;
@@ -27,13 +28,6 @@ public class UIManager : MonoBehaviour
         // Try to subscribe; if DI hasn't injected EventCenter yet, Inject(...) will call TrySubscribe later
         TrySubscribeEvents();
     }
-
-    private void Awake()
-    {
-        // Ensure database-driven mapping exists early (before IStartable runs)
-        InitializeFromDatabase();
-    }
-
     private void OnDisable()
     {
         TryUnsubscribeEvents();
@@ -44,7 +38,6 @@ public class UIManager : MonoBehaviour
     {
         _eventCenter = eventCenter;
         TrySubscribeEvents();
-        InitializeFromDatabase();
     }
 
     private void TrySubscribeEvents()
@@ -54,6 +47,9 @@ public class UIManager : MonoBehaviour
         _eventCenter.OnShowUI += OnShowUI;
         _eventCenter.OnHideUI += OnHideUI;
         _eventCenter.OnToggleUI += OnToggleUI;
+        // 订阅请求隐藏并记录 / 显示已记录的事件
+        _eventCenter.OnHideAndRecordRequested += OnHideAndRecordRequested;
+        _eventCenter.OnShowRecordedRequested += OnShowRecordedRequested;
         _subscribedToEvents = true;
     }
 
@@ -65,6 +61,8 @@ public class UIManager : MonoBehaviour
             _eventCenter.OnShowUI -= OnShowUI;
             _eventCenter.OnHideUI -= OnHideUI;
             _eventCenter.OnToggleUI -= OnToggleUI;
+            _eventCenter.OnHideAndRecordRequested -= OnHideAndRecordRequested;
+            _eventCenter.OnShowRecordedRequested -= OnShowRecordedRequested;
         }
         _subscribedToEvents = false;
     }
@@ -82,6 +80,8 @@ public class UIManager : MonoBehaviour
 
     private void OnHideUI(object sender, UIHideEventArgs args)
     {
+        Debug.Log("UIManager 收到 HideUI 事件");
+        Debug.Log("args.UITypes 内容： " + (args?.UITypes == null ? "null" : string.Join(", ", args.UITypes)));
         HideUI(args?.UITypes);
     }
 
@@ -97,20 +97,21 @@ public class UIManager : MonoBehaviour
     //==============================================================================//
     #region 节点管理
     // 显式注册并指定类型（推荐用于运行时动态创建的 UI）
-    public void RegisterUIRoot(GameObject root, UIRootType type)
+    // 现在 Register/Unregister 接受 BaseUI 实例
+    public void RegisterUIRoot(BaseUI ui, UIRootType type)
     {
-        if (root == null || type == UIRootType.None) return;
-        _rootsByType[type] = root;
+        if (ui == null || type == UIRootType.None) return;
+        _rootsByType[type] = ui;
     }
 
-    public void UnregisterUIRoot(GameObject root)
+    public void UnregisterUIRoot(BaseUI ui)
     {
-        if (root == null) return;
+        if (ui == null) return;
         // 清理枚举映射中引用相同的项
         var keysToRemove = new List<UIRootType>();
         foreach (var kv in _rootsByType)
         {
-            if (kv.Value == root) keysToRemove.Add(kv.Key);
+            if (kv.Value == ui) keysToRemove.Add(kv.Key);
         }
         foreach (var k in keysToRemove) _rootsByType.Remove(k);
     }
@@ -123,43 +124,12 @@ public class UIManager : MonoBehaviour
         var result = new List<UIRootType>();
         foreach (var kv in _rootsByType)
         {
-            if (kv.Value != null && kv.Value.activeSelf) result.Add(kv.Key);
+            var baseUI = kv.Value;
+            if (baseUI == null) continue;
+            if (baseUI.IsVisible) result.Add(kv.Key);
         }
         return result;
-    }
-
-    // 从 ScriptableObject DB 初始化内部映射
-    private void InitializeFromDatabase()
-    {
-        _rootsByType.Clear();
-        if (_uiRootDatabase == null) return;
-        foreach (var e in _uiRootDatabase.GetAllEntries())
-        {
-            if (e.Type == UIRootType.None) continue;
-            var proto = e.Root;
-            if (proto == null) continue;
-
-            GameObject instance = null;
-            // If the referenced object is a scene instance, use it directly
-            if (proto.scene.IsValid())
-            {
-                instance = proto;
-            }
-            else
-            {
-                // Try find an existing scene object with the same name
-                instance = GameObject.Find(proto.name);
-                if (instance == null)
-                {
-                    // instantiate prefab into scene
-                    instance = Object.Instantiate(proto);
-                    instance.name = proto.name; // remove (Clone) for clarity
-                }
-            }
-
-            if (instance != null) _rootsByType[e.Type] = instance;
         }
-    }
 
     // string-based lookup removed
 
@@ -172,7 +142,7 @@ public class UIManager : MonoBehaviour
     public bool IsUIRootActive(UIRootType type)
     {
         if (type == UIRootType.None) return false;
-        if (_rootsByType.TryGetValue(type, out var go) && go != null) return go.activeSelf;
+        if (_rootsByType.TryGetValue(type, out var ui) && ui != null) return ui.IsVisible;
         return false;
     }
     #endregion
@@ -189,13 +159,13 @@ public class UIManager : MonoBehaviour
     {
         if (types == null || types.Count == 0)
         {
-            foreach (var kv in _rootsByType) if (kv.Value != null) kv.Value.SetActive(true);
+            foreach (var kv in _rootsByType) if (kv.Value != null) kv.Value.Show();
             return;
         }
         foreach (var t in types)
         {
             if (t == UIRootType.None) continue;
-            if (_rootsByType.TryGetValue(t, out var go) && go != null) go.SetActive(true);
+            if (_rootsByType.TryGetValue(t, out var ui) && ui != null) ui.Show();
         }
     }
 
@@ -211,13 +181,13 @@ public class UIManager : MonoBehaviour
     {
         if (types == null || types.Count == 0)
         {
-            foreach (var kv in _rootsByType) if (kv.Value != null) kv.Value.SetActive(false);
+            foreach (var kv in _rootsByType) if (kv.Value != null) kv.Value.Hide();
             return;
         }
         foreach (var t in types)
         {
             if (t == UIRootType.None) continue;
-            if (_rootsByType.TryGetValue(t, out var go) && go != null) go.SetActive(false);
+            if (_rootsByType.TryGetValue(t, out var ui) && ui != null) ui.Hide();
         }
     }
 
@@ -236,14 +206,14 @@ public class UIManager : MonoBehaviour
             foreach (var kv in _rootsByType)
             {
                 if (kv.Value == null) continue;
-                kv.Value.SetActive(!kv.Value.activeSelf);
+                kv.Value.Toggle();
             }
             return;
         }
         foreach (var t in types)
         {
             if (t == UIRootType.None) continue;
-            if (_rootsByType.TryGetValue(t, out var go) && go != null) go.SetActive(!go.activeSelf);
+            if (_rootsByType.TryGetValue(t, out var ui) && ui != null) ui.Toggle();
         }
     }
     // 新增：封装 “隐藏并记录当前可见 UI” 与 “显示记录的 UI” 的方法
@@ -257,6 +227,17 @@ public class UIManager : MonoBehaviour
         }
         RecordedUITypes = active;
         return active ?? new List<UIRootType>();
+    }
+
+    // Event handlers for EventCenter-driven hide/show-recorded requests
+    private void OnHideAndRecordRequested(object sender, EventArgs args)
+    {
+        HideAndRecordVisible();
+    }
+
+    private void OnShowRecordedRequested(object sender, EventArgs args)
+    {
+        ShowRecordedVisible();
     }
 
     // 枚举版本 HideAndRecordVisible

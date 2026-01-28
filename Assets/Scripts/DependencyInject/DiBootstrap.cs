@@ -33,9 +33,9 @@ public class DiBootstrap : LifetimeScope
         builder.Register<GoldRewardCaculate>(Lifetime.Transient).AsSelf();
         builder.Register<DialogueManager>(Lifetime.Singleton).AsSelf();
         builder.Register<GlobalServiceContainer>(Lifetime.Singleton).AsSelf();
-
+        // 确保 BattleManager 单例先注册（若存在），以便 MonsterBookService 的构造函数注入
         if (BattleManager.Instance != null) builder.RegisterInstance(BattleManager.Instance).As<BattleManager>().AsSelf();
-
+        builder.Register<IMonsterBook, MonsterBookService>(Lifetime.Singleton).AsSelf();
         builder.RegisterEntryPoint<GameInitializationEntryPoint>();
 
         // 在容器构建完成后对场景中的现有实例与动态实例执行注入

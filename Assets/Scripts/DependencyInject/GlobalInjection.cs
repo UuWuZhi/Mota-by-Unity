@@ -5,6 +5,7 @@ using UnityEngine;
 public class GlobalInjection : LifetimeScope
 {
     [SerializeField] private ItemDatabase _itemDatabase;
+    [SerializeField] private EnemyDatabase _enemyDatabase;
     protected override void Configure(IContainerBuilder builder)
     {
         // Monobehaviour 组件注册
@@ -16,5 +17,7 @@ public class GlobalInjection : LifetimeScope
 
         // ScriptableObject 注册
         builder.RegisterInstance(_itemDatabase).AsSelf();
+        builder.RegisterInstance(_enemyDatabase).AsSelf();
+        
     }
 }  

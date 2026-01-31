@@ -4,6 +4,7 @@ using UnityEngine.Tilemaps;
 using System;
 using System.Collections.Generic;
 using VContainer;
+using Unity.VisualScripting;
 
 public class GridManager : MonoBehaviour
 {
@@ -118,17 +119,20 @@ public class GridManager : MonoBehaviour
     //==============================================================================//
     //                                 操作：查询                                   //
     //==============================================================================//
+    #region 查询
     /// <summary>
     /// 直接查询指定世界坐标在当前层指定图层上的 Tile
     /// </summary>
     public TileBase GetTileAtWorldPos(Vector2 worldPos, TileMapType tileMapType)
     {
         if (MapGrid == null) return null;
-        Vector3Int cellPos = MapGrid.WorldToCell(worldPos);
-
-        // 检查是否在当前层边界内
+        Vector3Int cellPos = MapGrid.WorldToCell(worldPos);   
+        return GetTileAtCell(cellPos, tileMapType);
+    }
+    public TileBase GetTileAtCell(Vector3Int cellPos, TileMapType tileMapType)
+    {
+        if (MapGrid == null) return null;
         if (!IsInGridBounds(cellPos)) return null;
-
         return tileMapType switch
         {
             TileMapType.Ground => _currentGroundTilemap.GetTile(cellPos),
@@ -137,125 +141,68 @@ public class GridManager : MonoBehaviour
             _ => null,
         };
     }
-    //根据世界坐标与图层类型获取对应瓦片类型
-    public GridType GetGridTypeByWorldPos(Vector2 targetworldPos, TileMapType tileMapType)
+    /// <summary>
+    /// 泛型重载：根据 TileMapType 返回指定派生类型的 Tile（若类型不匹配返回 null）
+    /// </summary>
+    public T GetTileAtWorldPos<T>(Vector2 worldPos, TileMapType tileMapType) where T : TileBase
     {
-        // 通过直接查询 Tilemap 判断类型：Ground 层有瓦片则视为 Ground，可通行；无瓦片视为 Wall（不可通行）
-        if (!TryConvertWorldToGridPos(targetworldPos, out int gridX, out int gridY))
-            return GridType.Wall;
-
-        TileBase tile = GetTileAtWorldPos(targetworldPos, tileMapType);
-        if (tileMapType == TileMapType.Ground)
-        {
-            return tile != null ? GridType.Ground : GridType.Wall;
-        }
-        else if (tileMapType == TileMapType.Obstacle)
-        {
-            return tile != null ? GridType.Wall : GridType.Ground;
-        }
-        return GridType.None;
+        TileBase tile = GetTileAtWorldPos(worldPos, tileMapType);
+        return tile as T;
     }
-    //==============================================================================//
-    //                                 操作：更新                                   //
-    //==============================================================================//
-    // 新增：移动事件层瓦片（单元格坐标）
-    public bool MoveEventTile(Vector3Int fromCell, Vector3Int toCell, bool overwrite = false)
+    public T GetTileAtCell<T>(Vector3Int cellPos, TileMapType tileMapType) where T : TileBase
     {
-        if (MapGrid == null || _currentEventTilemap == null)
-        {
-            Debug.LogError("MoveEventTile失败：MapGrid或EventTilemap为null");
-            return false;
-        }
-
-        if (fromCell == toCell) return false;
-
-        // 检查源格是否有瓦片
-        if (!_currentEventTilemap.HasTile(fromCell))
-        {
-            Debug.LogWarning($"MoveEventTile: 源格无瓦片 {fromCell}");
-            return false;
-        }
-
-        // 目标存在且不覆盖时拒绝
-        if (_currentEventTilemap.HasTile(toCell) && !overwrite)
-        {
-            Debug.LogWarning($"MoveEventTile: 目标格已有瓦片且 overwrite=false，目标：{toCell}");
-            return false;
-        }
-
-        // 获取源瓦片（引用）
-        EventTile sourceTile = _currentEventTilemap.GetTile(fromCell) as EventTile;
-        if (sourceTile == null)
-        {
-            Debug.LogWarning($"MoveEventTile: 源瓦片类型非 EventTile 或为空 at {fromCell}");
-            return false;
-        }
-
-        // 执行 Tilemap 操作：在目标放置源引用，并移除源位
-        _currentEventTilemap.SetTile(toCell, sourceTile);
-        _currentEventTilemap.SetTile(fromCell, null);
-
-        // 不再维护 _eventGridData；EventNode / Tile assets 表示事件类型
-
-        // 同步实体（若存在）：告诉 EntityManager 更新键与位置
-
-        int layerId = _globalEventVariables.GetInt(GlobalEventKey.LayerId);
-
-        // 通知系统瓦片已移动
-        _eventCenter.TriggerEventTileMoved(new TileMovedEventArgs
-        {
-            FromCell = fromCell,
-            ToCell = toCell,
-            LayerId = layerId,
-            TileAsset = sourceTile
-        });
-
-        // EventNodeManager will handle updating registrations when it receives the TileMoved event
-
-        return true;
+        TileBase tile = GetTileAtCell(cellPos, tileMapType);
+        return tile as T;
     }
-
-    // 新增：使用世界坐标版本（方便外部调用）
-    public bool MoveEventTile(Vector2 fromWorldPos, Vector2 toWorldPos, bool overwrite = false)
+    public EventTile GetEventTileAtCell(Vector3Int cellPos){ return GetTileAtCell<EventTile>(cellPos, TileMapType.Event); }
+    public EventTile GetEventTileAtWorldPos(Vector2 worldPos){ return GetTileAtWorldPos<EventTile>(worldPos, TileMapType.Event); }
+    public ObstacleTile GetObstacleTileAtCell(Vector3Int cellPos){ return GetTileAtCell<ObstacleTile>(cellPos, TileMapType.Obstacle); }
+    public ObstacleTile GetObstacleTileAtWorldPos(Vector2 worldPos){ return GetTileAtWorldPos<ObstacleTile>(worldPos, TileMapType.Obstacle); }
+    public GroundTile GetGroundTileAtCell(Vector3Int cellPos){ return GetTileAtCell<GroundTile>(cellPos, TileMapType.Ground); }
+    public GroundTile GetGroundTileAtWorldPos(Vector2 worldPos){ return GetTileAtWorldPos<GroundTile>(worldPos, TileMapType.Ground); }
+    #endregion
+    //==============================================================================//
+    //                                 操作：移除                                   //
+    //==============================================================================//
+    #region 移除
+    public bool RemoveTileAtCell(Vector3Int cellPos, TileMapType tileMapType)
     {
         if (MapGrid == null) return false;
-        Vector3Int fromCell = MapGrid.WorldToCell(fromWorldPos);
-        Vector3Int toCell = MapGrid.WorldToCell(toWorldPos);
-        return MoveEventTile(fromCell, toCell, overwrite);
-    }
-    //根据世界坐标与图层类型更新对应瓦片
-    public void UpdateGridType(int gridX, int gridY, GridType newType, TileMapType tileMapType)
-    {
-        // 现在不维护内存中的基础层缓存。如需修改 Tilemap，请使用外部直接操作 Tilemap API。
-        Debug.LogWarning("UpdateGridType: 已弃用内存缓存，若需修改 Tilemap 请直接使用 Tilemap.SetTile");
-    }
-
-    public void RemoveEventTile(Vector2 worldPos) // 重载1：使用世界坐标移除事件层图块
-    {
-        if (MapGrid == null || _currentEventTilemap == null)
-            return;
-        Vector3Int cellPos = MapGrid.WorldToCell(worldPos);
-        RemoveEventTile(cellPos);
-    }
-    public void RemoveEventTile(Vector3Int cellPos) // 重载2：使用网格坐标移除事件层图块
-    {
-        if (MapGrid == null || _currentEventTilemap == null)
-            return;
-        // 获取当前瓦片引用以放入事件参数
-        EventTile removed = _currentEventTilemap.GetTile(cellPos) as EventTile;
+        if (!IsInGridBounds(cellPos)) return false;
+        Tilemap targetTilemap = tileMapType switch
+        {
+            TileMapType.Ground => _currentGroundTilemap,
+            TileMapType.Obstacle => _currentObstacleTilemap,
+            TileMapType.Event => _currentEventTilemap,
+            _ => null,
+        };
+        if (targetTilemap == null) return false;
+        BaseTile removed = _currentEventTilemap.GetTile(cellPos) as BaseTile;
         _currentEventTilemap.SetTile(cellPos, null);
 
         int layerId = _globalEventVariables.GetInt(GlobalEventKey.LayerId);
-        // 触发事件层瓦片移除事件
+        targetTilemap.SetTile(cellPos, null);
         _eventCenter.TriggerEventTileRemoved(new TileRemovedEventArgs
         {
             Cell = cellPos,
             LayerId = layerId,
             TileAsset = removed
         });
-
-        // 不直接处理 EventNodeManager 的注销/销毁，交由 EventNodeManager 监听 TileRemoved 事件处理
+        return true;
     }
+    public bool RemoveTileAtWorldPos(Vector2 worldPos, TileMapType tileMapType)
+    {
+        if (MapGrid == null) return false;
+        Vector3Int cellPos = MapGrid.WorldToCell(worldPos);
+        return RemoveTileAtCell(cellPos, tileMapType);
+    }
+    public bool RemoveEventTileAtCell(Vector3Int cellPos) { return RemoveTileAtCell(cellPos, TileMapType.Event); }
+    public bool RemoveEventTileAtWorldPos(Vector2 worldPos) { return RemoveTileAtWorldPos(worldPos, TileMapType.Event); }
+    public bool RemoveObstacleTileAtCell(Vector3Int cellPos) { return RemoveTileAtCell(cellPos, TileMapType.Obstacle); }
+    public bool RemoveObstacleTileAtWorldPos(Vector2 worldPos) { return RemoveTileAtWorldPos(worldPos, TileMapType.Obstacle); }
+    public bool RemoveGroundTileAtCell(Vector3Int cellPos) { return RemoveTileAtCell(cellPos, TileMapType.Ground); }
+    public bool RemoveGroundTileAtWorldPos(Vector2 worldPos) { return RemoveTileAtWorldPos(worldPos, TileMapType.Ground); }
+    #endregion
     #endregion
     //==============================================================================//
     //                                                                              //
@@ -356,5 +303,6 @@ public class GridManager : MonoBehaviour
         }
         return tilemapBounds;
     }
+    
     #endregion
 }

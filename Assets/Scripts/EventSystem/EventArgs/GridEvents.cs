@@ -67,5 +67,5 @@ public class TileRemovedEventArgs : EventArgs
     public GridType TileType { get; set; }
     public Vector3Int Cell { get; set; }
     public int LayerId { get; set; }
-    public EventTile TileAsset { get; set; } // 被移除的瓦片资源引用（可为 null）
+    public BaseTile TileAsset { get; set; } // 被移除的瓦片资源引用（可为 null）
 }

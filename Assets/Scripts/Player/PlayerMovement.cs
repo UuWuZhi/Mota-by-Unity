@@ -93,27 +93,24 @@ public class PlayerMovement : MonoBehaviour
         if (!_gridManager.IsInGridBounds(targetCell))
         {
             // 超出边界 -> 阻止移动并触发到达事件（不触发事件逻辑）
-            _eventCenter.TriggerMoveStateChanged(new PlayerMoveStateChangedEventArgs { IsMoving = false, MoveTime = 0 });
-            _eventCenter.TriggerPlayerArrived(new PlayerArrivedEventArgs { TriggerEvent = false, TargetWorldPos = targetWorldPos });
+            NotifyBlockedMovement(targetWorldPos);
             return;
         }
 
         // 2) 再判断基础层能否通行：先检查 Ground 层是否有地面（若无地面则不可通行）
-        var groundTile = _gridManager.GetTileAtWorldPos(targetWorldPos, TileMapType.Ground);
+        var groundTile = _gridManager.GetGroundTileAtWorldPos(targetWorldPos);
         if (groundTile == null)
         {
             // Ground 层无地面 -> 阻止移动
-            _eventCenter.TriggerMoveStateChanged(new PlayerMoveStateChangedEventArgs { IsMoving = false, MoveTime = 0 });
-            _eventCenter.TriggerPlayerArrived(new PlayerArrivedEventArgs { TriggerEvent = false, TargetWorldPos = targetWorldPos });
+            NotifyBlockedMovement(targetWorldPos);
             return;
         }
 
         // 再检查 Obstacle 层是否存在阻挡（若有则不可通行）
-        var obstacleTile = _gridManager.GetTileAtWorldPos(targetWorldPos, TileMapType.Obstacle);
+        var obstacleTile = _gridManager.GetObstacleTileAtWorldPos(targetWorldPos);
         if (obstacleTile != null)
         {
-            _eventCenter.TriggerMoveStateChanged(new PlayerMoveStateChangedEventArgs { IsMoving = false, MoveTime = 0 });
-            _eventCenter.TriggerPlayerArrived(new PlayerArrivedEventArgs { TriggerEvent = false, TargetWorldPos = targetWorldPos });
+            NotifyBlockedMovement(targetWorldPos);
             return;
         }
 
@@ -124,8 +121,7 @@ public class PlayerMovement : MonoBehaviour
                 if (!allowEnter)
                 {
                     // 阻止移动
-                    _eventCenter.TriggerMoveStateChanged(new PlayerMoveStateChangedEventArgs { IsMoving = false, MoveTime = 0 });
-                    _eventCenter.TriggerPlayerArrived(new PlayerArrivedEventArgs { TriggerEvent = false, TargetWorldPos = targetWorldPos });
+                    NotifyBlockedMovement(targetWorldPos);
                     return;
                 }
 
@@ -154,6 +150,13 @@ public class PlayerMovement : MonoBehaviour
         _eventCenter.OnPlayerMoveInput -= OnReceiveMoveInput;
         _eventCenter.OnLayerSwitched -= OnLayerSwitched;
         _eventSubscribed = false;
+    }
+    
+    // 统一处理无法移动时的事件发布
+    private void NotifyBlockedMovement(Vector2 blockedTargetWorldPos)
+    {
+        _eventCenter.TriggerMoveStateChanged(new PlayerMoveStateChangedEventArgs { IsMoving = false, MoveTime = 0 });
+        _eventCenter.TriggerPlayerArrived(new PlayerArrivedEventArgs { TriggerEvent = false, TargetWorldPos = blockedTargetWorldPos });
     }
     #endregion
     //==============================================================================//

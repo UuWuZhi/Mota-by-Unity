@@ -21,6 +21,7 @@ public class DiBootstrap : LifetimeScope
 
         // 玩家相关
         builder.RegisterComponentInHierarchy<PlayerAttribute>().AsSelf();
+        builder.RegisterComponentInHierarchy<PlayerState>().AsSelf();
         builder.RegisterComponentInHierarchy<PlayerMovement>().AsSelf();
         builder.RegisterComponentInHierarchy<MovementInputManager>().AsSelf();
         builder.RegisterComponentInHierarchy<PlayerInventory>().AsSelf().As<IInventoryService>();

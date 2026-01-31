@@ -46,7 +46,6 @@ public enum AttributeType
     Attack,     // 攻击
     Defense,    // 防御
     Gold,       // 金币
-    Altitude    // 高度
 }
 
 /// <summary>

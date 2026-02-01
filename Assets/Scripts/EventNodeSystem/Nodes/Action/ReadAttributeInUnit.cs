@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "ReadAttributeInUnitAction", menuName = "EventNodes/Action/ReadAttributeInUnit")]
-public class ReadAttributeInUnitAction : ActionNode
+public class ReadAttributeInUnitAction : TileActionNode
 {
-    // Ğ´Èëµ½ ctx.Vars µÄ key Ç°×º£¬¿ÉÔÚ Inspector ÖĞµ÷Õû
+    // å†™å…¥åˆ° ctx.Vars çš„ key å‰ç¼€ï¼Œå¯åœ¨ Inspector ä¸­è°ƒæ•´
     public string variablePrefix = "attribute";
 
-    public override void Execute(EventNodeContext ctx, Action onComplete)
+    public override void ExecuteTile(EventNodeTileContext ctx, Action onComplete)
     {
         if (ctx == null)
         {
@@ -19,7 +19,7 @@ public class ReadAttributeInUnitAction : ActionNode
         var attributeUnit = ctx.TileObject != null ? ctx.TileObject.GetComponent<AttributeUnit>() : null;
         if (attributeUnit == null)
         {
-            Debug.LogError("ReadAttributeInUnitAction: Ä¿±êÃ»ÓĞ AttributeUnit ×é¼ş");
+            Debug.LogError("ReadAttributeInUnitAction: ç›®æ ‡æ²¡æœ‰ AttributeUnit ç»„ä»¶");
             onComplete?.Invoke();
             return;
         }
@@ -27,13 +27,13 @@ public class ReadAttributeInUnitAction : ActionNode
         var list = attributeUnit.attributeBonuses;
         if (list == null || list.Count == 0)
         {
-            // ÇåÀí¿ÉÄÜ´æÔÚµÄ¾É±äÁ¿£¨¿ÉÑ¡£©
+            // æ¸…ç†å¯èƒ½å­˜åœ¨çš„æ—§å˜é‡ï¼ˆå¯é€‰ï¼‰
             ctx.Vars[$"{variablePrefix}list"] = new List<AttributeBonus>();
             onComplete?.Invoke();
             return;
         }
 
-        // ¾ÛºÏÏàÍ¬ÊôĞÔÀàĞÍµÄ value
+        // èšåˆç›¸åŒå±æ€§ç±»å‹çš„ value
         var aggregated = new Dictionary<AttributeType, int>();
         foreach (var ab in list)
         {
@@ -42,14 +42,14 @@ public class ReadAttributeInUnitAction : ActionNode
             aggregated[ab.Type] += ab.Value;
         }
 
-        // Ğ´Èëµ¥ÏîÊôĞÔµ½ ctx.Vars£¬¼üÃûÊ¾Àı£º "attribute_HP"
+        // å†™å…¥å•é¡¹å±æ€§åˆ° ctx.Varsï¼Œé”®åç¤ºä¾‹ï¼š "attribute_HP"
         foreach (var kv in aggregated)
         {
             string key = $"{variablePrefix}{kv.Key}";
             ctx.Vars[key] = kv.Value;
         }
 
-        Debug.Log($"ReadAttributeInUnitAction: Ğ´Èë {aggregated.Count} ¸öÊôĞÔµ½ ctx.Vars");
+        Debug.Log($"ReadAttributeInUnitAction: å†™å…¥ {aggregated.Count} ä¸ªå±æ€§åˆ° ctx.Vars");
 
         onComplete?.Invoke();
     }

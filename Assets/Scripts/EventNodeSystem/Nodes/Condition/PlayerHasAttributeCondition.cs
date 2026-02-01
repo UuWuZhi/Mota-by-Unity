@@ -9,14 +9,14 @@ public class PlayerHasAttributeCondition : ConditionNode
 
     public override void Evaluate(EventNodeContext ctx, Action<bool> onResult)
     {
-        //Debug.Log("Node:¼ì²âÎïÆ·¿ªÊ¼");
+        //Debug.Log("Node:æ£€æµ‹ç‰©å“å¼€å§‹");
         bool hasAttribute;
         try
         {
             hasAttribute = ctx.PlayerAttribute != null && ctx.PlayerAttribute.HasAttributeValue(attributeType, requiredValue);
         }
         catch { hasAttribute = false; }
-        //Debug.Log($"ÎïÆ·¼ì²â½á¹û£º{hasAttribute}");
+        //Debug.Log($"ç‰©å“æ£€æµ‹ç»“æœï¼š{hasAttribute}");
         onResult?.Invoke(hasAttribute);
     }
 }

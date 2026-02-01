@@ -33,7 +33,7 @@ public class EventNodeTile : MonoBehaviour
     [HideInInspector] public Vector3Int CellPos;
 
     // 简易接口，外部（EventNodeManager）调用以运行此 Tile 的 RootNode
-    // 现在 Run 会委托给全局的 EventNodeRunner（如果存在），以统一注入/池化行为。
+    // 现在 Run 会委托给全局的 EventTileRunner（如果存在），以统一注入/池化行为。
     public void Run(EventNodeTileContext ctx, System.Action onComplete)
     {
         if (rootNode == null)
@@ -43,10 +43,10 @@ public class EventNodeTile : MonoBehaviour
         }
 
         // 先尝试从场景中找到 Runner（通过单例注入或查找）。
-        var runner = FindObjectOfType<EventNodeRunner>();
+        var runner = FindObjectOfType<EventTileRunner>();
         if (runner != null)
         {
-            // EventNodeRunner.Run 接受通用 EventNodeContext，因此向上转型
+            // EventTileRunner.Run 接受通用 EventNodeContext，因此向上转型
             runner.Run(rootNode, ctx as EventNodeContext, onComplete);
             return;
         }

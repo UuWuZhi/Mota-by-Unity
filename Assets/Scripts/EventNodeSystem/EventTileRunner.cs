@@ -6,7 +6,7 @@ using VContainer;
 /// 统一的 EventNode 执行器（Runner）。
 /// 负责注入常用服务并调用节点的 Execute 方法。
 /// </summary>
-public class EventNodeRunner : MonoBehaviour
+public class EventTileRunner : MonoBehaviour, IEventRunner
 {
     private GlobalServiceContainer _services;
 

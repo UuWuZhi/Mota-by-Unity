@@ -2,10 +2,9 @@ using System;
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "CanDefeatCondition", menuName = "EventNodes/Condition/CanDefeat")]
-public class CanDefeatCondition : ConditionNode
+public class CanDefeatCondition : TileConditionNode
 {
-
-    public override void Evaluate(EventNodeContext ctx, Action<bool> onResult)
+    public override void EvaluateTile(EventNodeTileContext ctx, Action<bool> onResult)
     {
         //Debug.Log("Node:对战检测开始");
         bool canDefeat;
@@ -13,6 +12,7 @@ public class CanDefeatCondition : ConditionNode
         if (enemyUnit == null)
         {
             Debug.LogError("BattleNode: 目标没有 EnemyUnit 组件");
+            onResult?.Invoke(false);
             return;
         }
         // 构建玩家数据（与之前 EventManager 的做法一致）
@@ -27,7 +27,7 @@ public class CanDefeatCondition : ConditionNode
                 ctx.Vars["PlayerHPLoss"] = playerHPLoss;
                 ctx.Vars["GoldReward"] = enemyUnit.enemyData.goldReward;
             }
-            else 
+            else
             {
                 canDefeat = false;
             }

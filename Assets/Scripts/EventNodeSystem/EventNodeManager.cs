@@ -15,7 +15,7 @@ public class EventNodeManager : MonoBehaviour
     private EventCenter _eventCenter;
     private DialogueManager _dialogueManager;
     private GlobalServiceContainer _globalServiceContainer;
-    private EventNodeRunner _eventNodeRunner;
+    private EventTileRunner _eventNodeRunner;
 
     private bool _eventSubscribed = false;
 
@@ -34,7 +34,7 @@ public class EventNodeManager : MonoBehaviour
     /// <param name="eventCenter">事件中心，用于订阅与分发全局事件。</param>
     /// <param name="dialogueManager">对话管理器，用于在事件上下文中触发对话。</param>
     /// <param name="globalService">全局服务容器，作为事件执行时可用的服务集合。</param>
-    public void Construct(IGlobalEventVariables globalEventVariables, GridManager gridManager, EventCenter eventCenter, DialogueManager dialogueManager, EventNodeRunner eventNodeRunner, GlobalServiceContainer globalService)
+    public void Construct(IGlobalEventVariables globalEventVariables, GridManager gridManager, EventCenter eventCenter, DialogueManager dialogueManager, EventTileRunner eventNodeRunner, GlobalServiceContainer globalService)
     {
         _globalServiceContainer = globalService ?? throw new ArgumentNullException(nameof(globalService));
         _globalEventVariables = globalEventVariables ?? throw new ArgumentNullException(nameof(globalEventVariables));
@@ -470,7 +470,7 @@ public class EventNodeManager : MonoBehaviour
     {
         var ctx = new EventNodeTileContext
         {
-            Data = BuildEventNodeData(cellPos, layerId, tileObject),
+            Data = BuildEventNodeTileData(cellPos, layerId, tileObject),
             OwnerMono = this,
             Services = _globalServiceContainer,
             EventNodeManager = this,
@@ -480,13 +480,13 @@ public class EventNodeManager : MonoBehaviour
         return ctx;
     }
     /// <summary>
-    /// 构建一个新的 <see cref="EventNodeData"/> 实例，包含格子坐标、层 Id 与瓦片对象。
+    /// 构建一个新的 <see cref="EventNodeTileData"/> 实例，包含格子坐标、层 Id 与瓦片对象。
     /// </summary>
     /// <param name="cellPos">格子坐标。</param>
     /// <param name="layerId">层 Id。</param>
     /// <param name="tileObject">瓦片对应的 GameObject 引用（可为 null）。</param>
-    /// <returns>包含传入信息的 <see cref="EventNodeData"/> 实例。</returns>
-    public EventNodeTileData BuildEventNodeData(Vector3Int cellPos, int layerId, GameObject tileObject)
+    /// <returns>包含传入信息的 <see cref="EventNodeTileData"/> 实例。</returns>
+    public EventNodeTileData BuildEventNodeTileData(Vector3Int cellPos, int layerId, GameObject tileObject)
     {
         return new EventNodeTileData(cellPos, layerId, tileObject);
     }

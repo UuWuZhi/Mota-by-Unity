@@ -18,6 +18,7 @@ public class DiBootstrap : LifetimeScope
         builder.RegisterComponentInHierarchy<GridManager>().AsSelf();
         builder.RegisterComponentInHierarchy<MapManager>().AsSelf();
         builder.RegisterComponentInHierarchy<EventNodeManager>().AsSelf();
+        builder.RegisterComponentInHierarchy<EventNodeRunner>().AsSelf();
 
         // 玩家相关
         builder.RegisterComponentInHierarchy<PlayerAttribute>().AsSelf();

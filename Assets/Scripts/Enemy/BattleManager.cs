@@ -1,5 +1,5 @@
-using UnityEngine;
 using System;
+using UnityEngine;
 using VContainer;
 
 /// <summary>
@@ -10,10 +10,10 @@ public class BattleUnitData
 {
     [Tooltip("当前生命值")]
     public int currentHP;
-    
+
     [Tooltip("攻击力")]
     public int attack;
-    
+
     [Tooltip("防御力")]
     public int defense;
 }

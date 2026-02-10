@@ -1,8 +1,7 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 using VContainer;
-using System;
 
 /// <summary>
 /// 单个背包格的 UI 组件：显示图标与数量，并响应点击以选中/使用等。

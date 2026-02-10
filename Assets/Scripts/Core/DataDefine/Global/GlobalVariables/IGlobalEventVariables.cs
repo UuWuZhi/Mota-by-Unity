@@ -1,5 +1,3 @@
-using System;
-
 public interface IGlobalEventVariables
 {
     bool HasKey(GlobalEventKey key);

@@ -1,7 +1,6 @@
 // 玩家背包管理器
-using UnityEngine;
 using System.Collections.Generic;
-using System;
+using UnityEngine;
 using VContainer;
 
 public class PlayerInventory : MonoBehaviour, IInventoryService
@@ -49,7 +48,7 @@ public class PlayerInventory : MonoBehaviour, IInventoryService
         if (type == ItemType.None || count <= 0) return false;
 
         int remaining = count;
-        for (int i = 0; i < entries.Count && remaining > 0; )
+        for (int i = 0; i < entries.Count && remaining > 0;)
         {
             var e = entries[i];
             if (e.Type != type) { i++; continue; }

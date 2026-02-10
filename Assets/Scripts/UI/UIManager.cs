@@ -129,7 +129,7 @@ public class UIManager : MonoBehaviour
             if (baseUI.IsVisible) result.Add(kv.Key);
         }
         return result;
-        }
+    }
 
     // string-based lookup removed
 
@@ -197,7 +197,7 @@ public class UIManager : MonoBehaviour
     }
 
     // string-based ToggleUI removed; use enum-based ToggleUI
-    
+
     // 枚举版本 Toggle
     public void ToggleUI(List<UIRootType> types)
     {

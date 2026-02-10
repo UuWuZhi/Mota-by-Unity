@@ -1,5 +1,3 @@
-using UnityEngine;
-
 /// <summary>
 /// 物品使用专用上下文，继承自通用 EventNodeContext。
 /// 节点可以通过 MarkConsumed 标记物品应被消耗（由调用方负责实际移除）。

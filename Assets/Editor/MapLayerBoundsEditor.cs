@@ -46,13 +46,13 @@
 //         // 2. 单独计算选中楼层边界（下拉选择）
 //         EditorGUILayout.Space();
 //         EditorGUILayout.LabelField("单独更新指定楼层：");
-        
+
 //         // 构建楼层下拉选项
 //         List<string> layerOptions = new List<string>();
 //         List<int> layerIds = new List<int>();
 //         layerOptions.Add("请选择楼层");
 //         layerIds.Add(-1);
-        
+
 //         foreach (var layerData in _targetMapManager.allLayers)
 //         {
 //             layerOptions.Add($"楼层 {layerData.layerId} ({layerData.layerRoot?.name ?? "未配置根节点"})");

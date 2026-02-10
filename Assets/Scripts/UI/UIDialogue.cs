@@ -1,10 +1,9 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
-using UnityEngine.UI;
 using TMPro;
+using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 using VContainer;
 
 /// <summary>
@@ -15,9 +14,9 @@ using VContainer;
 public class UIDialogue : BaseUI
 {
     [Header("UI 元素")]
-    [Tooltip("说话者文本")]   public TextMeshProUGUI speakerText;
-    [Tooltip("对话文本")]     public TextMeshProUGUI contentText;
-    [Tooltip("选项容器")]     public Transform choicesContainer;
+    [Tooltip("说话者文本")] public TextMeshProUGUI speakerText;
+    [Tooltip("对话文本")] public TextMeshProUGUI contentText;
+    [Tooltip("选项容器")] public Transform choicesContainer;
     [Tooltip("选项按钮预制")] public Button choiceButtonPrefab;
 
     [Header("打字机参数")]

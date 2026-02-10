@@ -17,7 +17,7 @@ public class MovementInputManager : MonoBehaviour
     {
         _eventCenter = eventCenter;
     }
-      
+
     private void Update()
     {
         if (IsInputBlocked)

@@ -1,6 +1,6 @@
+using UnityEngine;
 using VContainer;
 using VContainer.Unity;
-using UnityEngine;
 
 public class GlobalInjection : LifetimeScope
 {
@@ -18,6 +18,6 @@ public class GlobalInjection : LifetimeScope
         // ScriptableObject 注册
         builder.RegisterInstance(_itemDatabase).AsSelf();
         builder.RegisterInstance(_enemyDatabase).AsSelf();
-        
+
     }
-}  
+}

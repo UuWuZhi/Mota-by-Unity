@@ -1,6 +1,6 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
-using System.Collections.Generic;
 using VContainer;
 
 /// <summary>
@@ -14,7 +14,7 @@ public class MapManager : MonoBehaviour
     public List<MapLayerInfo> allLayers = new List<MapLayerInfo>();    // 所有层的配置
 
     // 缓存各层的Tilemap和边界（键：楼层ID，值：(ground, obstacle, eventTilemap, 边界)）
-    private Dictionary<int, (Tilemap ground, Tilemap obstacle, Tilemap eventTilemap, BoundsInt bounds)> _layerDataCache = 
+    private Dictionary<int, (Tilemap ground, Tilemap obstacle, Tilemap eventTilemap, BoundsInt bounds)> _layerDataCache =
         new Dictionary<int, (Tilemap, Tilemap, Tilemap, BoundsInt)>();
 
     private GridManager _gridManager;
@@ -221,8 +221,8 @@ public class MapManager : MonoBehaviour
             }
 
             // 处理边界（优先使用预存边界，否则临时计算）
-            BoundsInt bounds = _gridManager.IsBoundsValid(layerInfo.layerBounds) 
-                ? layerInfo.layerBounds 
+            BoundsInt bounds = _gridManager.IsBoundsValid(layerInfo.layerBounds)
+                ? layerInfo.layerBounds
                 : GetTilemapBounds(ground);
 
             // 存入缓存
@@ -248,8 +248,8 @@ public class MapManager : MonoBehaviour
     private BoundsInt GetTilemapBounds(Tilemap tilemap)
     {
         BoundsInt bounds = tilemap.cellBounds;
-        return (bounds.size.x <= 0 || bounds.size.y <= 0) 
-            ? new BoundsInt(0, 0, 0, 1, 1, 1) 
+        return (bounds.size.x <= 0 || bounds.size.y <= 0)
+            ? new BoundsInt(0, 0, 0, 1, 1, 1)
             : bounds;
     }
     public void GetLayerAndSpawnPosIDbyStairType(StairType stairType, out int layerId, out int spawnId)

@@ -25,5 +25,5 @@ public class LayerSwitchedEventArgs : EventArgs
 
 public class GridLoadedEventArgs : EventArgs
 {
-    
+
 }

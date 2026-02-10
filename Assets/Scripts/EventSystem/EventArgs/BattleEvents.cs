@@ -1,6 +1,5 @@
 // 新增文件：Scripts/EventSystem/EventArgs/BattleCheckEventArgs.cs
 using System;
-using UnityEngine;
 
 /// <summary>
 /// 战斗可行性检查事件参数

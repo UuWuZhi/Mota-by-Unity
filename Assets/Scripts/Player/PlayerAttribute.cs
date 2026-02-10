@@ -1,6 +1,5 @@
-using UnityEngine;
-using System;
 using System.Collections.Generic;
+using UnityEngine;
 using VContainer;
 
 /// <summary>
@@ -116,7 +115,7 @@ public class PlayerAttribute : MonoBehaviour
 
         _attributes[type] = Mathf.Max(0, _attributes[type] - value);
         Debug.Log($"{type}-{value}！当前{type}：{_attributes[type]}");
-        
+
         // 通过事件中心触发属性变化事件
         _eventCenter.TriggerAttributeChanged(new AttributeChangedEventArgs
         {

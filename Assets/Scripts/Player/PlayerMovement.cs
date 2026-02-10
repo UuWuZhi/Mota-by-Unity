@@ -1,6 +1,5 @@
-using UnityEngine;
 using System.Collections;
-using System.Collections.Generic;
+using UnityEngine;
 using VContainer;
 
 public class PlayerMovement : MonoBehaviour
@@ -11,10 +10,10 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private Rigidbody2D rb;
 
 
-    private Vector2 moveDir; 
-    private Coroutine moveCoroutine; 
-    private Vector2 targetWorldPos; 
-    
+    private Vector2 moveDir;
+    private Coroutine moveCoroutine;
+    private Vector2 targetWorldPos;
+
     private IGlobalEventVariables _globalEventVariables;
     private EventTileManager _eventNodeManager;
     private GridManager _gridManager;
@@ -151,7 +150,7 @@ public class PlayerMovement : MonoBehaviour
         _eventCenter.OnLayerSwitched -= OnLayerSwitched;
         _eventSubscribed = false;
     }
-    
+
     // 统一处理无法移动时的事件发布
     private void NotifyBlockedMovement(Vector2 blockedTargetWorldPos)
     {

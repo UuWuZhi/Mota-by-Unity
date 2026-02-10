@@ -20,7 +20,7 @@ public class PlayerAnimationController : MonoBehaviour
     }
     [Inject]
     public void Inject(EventCenter eventCenter)
-    { 
+    {
         _eventCenter = eventCenter;
     }
 

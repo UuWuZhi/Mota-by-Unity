@@ -52,7 +52,7 @@ public class MonsterBookUI : BaseUI
 
     // NOTE: Show/Hide is handled centrally by UIManager / UIInputManager. Local event subscriptions limited to refresh on show.
 
-    public void Refresh() 
+    public void Refresh()
     {
         ClearContent();
         var ids = CollectMonsterIds();

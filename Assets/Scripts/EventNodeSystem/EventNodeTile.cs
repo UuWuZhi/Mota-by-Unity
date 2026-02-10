@@ -1,5 +1,4 @@
 using UnityEngine;
-using VContainer;
 
 /// <summary>
 /// 事件挂载点

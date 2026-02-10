@@ -1,5 +1,5 @@
-using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine;
 using VContainer;
 
 /// <summary>
@@ -31,7 +31,8 @@ public class InventoryUIInput : MonoBehaviour
     {
         if (_globalEventVariables.GetEnum<UIState>(GlobalEventKey.UIState) == UIState.Main)
         {
-            _eventCenter.TriggerToggleUI(new UIToggleEventArgs {
+            _eventCenter.TriggerToggleUI(new UIToggleEventArgs
+            {
                 UITypes = new List<UIRootType> { UIRootType.Inventory }
             });
         }

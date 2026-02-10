@@ -1,8 +1,8 @@
-using UnityEngine;
-using UnityEngine.Tilemaps;
 using System;
 using System.Collections.Generic;
 using System.Linq; // 新增这行！解决FirstOrDefault的编译错误
+using UnityEngine;
+using UnityEngine.Tilemaps;
 
 /// <summary>
 /// 地图楼层信息组件（挂载在楼层根节点，存储楼层边界和出生点）
@@ -57,18 +57,18 @@ public class MapLayerInfo : MonoBehaviour
             // _spawnPoints.Add(new SpawnPoint { id = 1, position = transform.position });
         }
     }
-    #if UNITY_EDITOR
+#if UNITY_EDITOR
     private void OnDrawGizmosSelected()
     {
         if (_spawnPoints == null) return;
-        
+
         // 绘制上楼梯出生点（红色方框）
         var upSpawn = _spawnPoints.FirstOrDefault(p => p.id == 0);
         if (upSpawn != null)
         {
             Gizmos.color = Color.red;
             // 绘制方框（中心位置为出生点，大小为1x1x0.1的立方体，视觉上为方框）
-            Gizmos.DrawWireCube(upSpawn.position+ new Vector2(0.5f, 0.5f), new Vector3(1f, 1f, 0.1f));
+            Gizmos.DrawWireCube(upSpawn.position + new Vector2(0.5f, 0.5f), new Vector3(1f, 1f, 0.1f));
             UnityEditor.Handles.Label(upSpawn.position + Vector2.up * 0.3f, "UpSpawn (ID=0)");
         }
 
@@ -78,9 +78,9 @@ public class MapLayerInfo : MonoBehaviour
         {
             Gizmos.color = Color.blue;
             // 绘制方框（中心位置为出生点，大小为1x1x0.1的立方体，视觉上为方框）
-            Gizmos.DrawWireCube(downSpawn.position+ new Vector2(0.5f, 0.5f), new Vector3(1f, 1f, 0.1f));
+            Gizmos.DrawWireCube(downSpawn.position + new Vector2(0.5f, 0.5f), new Vector3(1f, 1f, 0.1f));
             UnityEditor.Handles.Label(downSpawn.position + Vector2.up * 0.3f, "DownSpawn (ID=1)");
         }
     }
-    #endif
+#endif
 }

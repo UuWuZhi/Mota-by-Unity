@@ -1,10 +1,7 @@
 // GridManager：基础网格管理系统
 using UnityEngine;
 using UnityEngine.Tilemaps;
-using System;
-using System.Collections.Generic;
 using VContainer;
-using Unity.VisualScripting;
 
 public class GridManager : MonoBehaviour
 {
@@ -88,7 +85,7 @@ public class GridManager : MonoBehaviour
         LoadMap(); // 重新加载当前层的网格数据
     }
     //加载地图数据
-    public void LoadMap() 
+    public void LoadMap()
     {
         if (MapGrid == null)
         {
@@ -126,7 +123,7 @@ public class GridManager : MonoBehaviour
     public TileBase GetTileAtWorldPos(Vector2 worldPos, TileMapType tileMapType)
     {
         if (MapGrid == null) return null;
-        Vector3Int cellPos = MapGrid.WorldToCell(worldPos);   
+        Vector3Int cellPos = MapGrid.WorldToCell(worldPos);
         return GetTileAtCell(cellPos, tileMapType);
     }
     public TileBase GetTileAtCell(Vector3Int cellPos, TileMapType tileMapType)
@@ -154,12 +151,12 @@ public class GridManager : MonoBehaviour
         TileBase tile = GetTileAtCell(cellPos, tileMapType);
         return tile as T;
     }
-    public EventTile GetEventTileAtCell(Vector3Int cellPos){ return GetTileAtCell<EventTile>(cellPos, TileMapType.Event); }
-    public EventTile GetEventTileAtWorldPos(Vector2 worldPos){ return GetTileAtWorldPos<EventTile>(worldPos, TileMapType.Event); }
-    public ObstacleTile GetObstacleTileAtCell(Vector3Int cellPos){ return GetTileAtCell<ObstacleTile>(cellPos, TileMapType.Obstacle); }
-    public ObstacleTile GetObstacleTileAtWorldPos(Vector2 worldPos){ return GetTileAtWorldPos<ObstacleTile>(worldPos, TileMapType.Obstacle); }
-    public GroundTile GetGroundTileAtCell(Vector3Int cellPos){ return GetTileAtCell<GroundTile>(cellPos, TileMapType.Ground); }
-    public GroundTile GetGroundTileAtWorldPos(Vector2 worldPos){ return GetTileAtWorldPos<GroundTile>(worldPos, TileMapType.Ground); }
+    public EventTile GetEventTileAtCell(Vector3Int cellPos) { return GetTileAtCell<EventTile>(cellPos, TileMapType.Event); }
+    public EventTile GetEventTileAtWorldPos(Vector2 worldPos) { return GetTileAtWorldPos<EventTile>(worldPos, TileMapType.Event); }
+    public ObstacleTile GetObstacleTileAtCell(Vector3Int cellPos) { return GetTileAtCell<ObstacleTile>(cellPos, TileMapType.Obstacle); }
+    public ObstacleTile GetObstacleTileAtWorldPos(Vector2 worldPos) { return GetTileAtWorldPos<ObstacleTile>(worldPos, TileMapType.Obstacle); }
+    public GroundTile GetGroundTileAtCell(Vector3Int cellPos) { return GetTileAtCell<GroundTile>(cellPos, TileMapType.Ground); }
+    public GroundTile GetGroundTileAtWorldPos(Vector2 worldPos) { return GetTileAtWorldPos<GroundTile>(worldPos, TileMapType.Ground); }
     #endregion
     //==============================================================================//
     //                                 操作：移除                                   //
@@ -217,7 +214,7 @@ public class GridManager : MonoBehaviour
         if (MapGrid == null)
             return false;
         Vector3Int cellPos = MapGrid.WorldToCell(worldPos);
-        return TryConvertCellToGridPos(cellPos, out gridX, out gridY); 
+        return TryConvertCellToGridPos(cellPos, out gridX, out gridY);
     }
 
     public bool TryConvertCellToGridPos(Vector3Int cellPos, out int gridX, out int gridY) // 单元格坐标转网格坐标（带验证）
@@ -243,7 +240,16 @@ public class GridManager : MonoBehaviour
         worldPos = MapGrid.GetCellCenterWorld(cellPos);
         return true;
     }
-    
+
+    public bool TryConvertWorldToCellPos(Vector2 worldPos, out Vector3Int cellPos) // 世界坐标转单元格坐标（带验证）
+    {
+        cellPos = Vector3Int.zero;
+        if (MapGrid == null)
+            return false;
+        cellPos = MapGrid.WorldToCell(worldPos);
+        return IsInGridBounds(cellPos);
+    }
+
     public bool IsInGridBounds(Vector3Int cellPos) // 边界检查重载1：单元格坐标判断
     {
         if (!IsBoundsValid(_currentLayerBounds))
@@ -271,7 +277,7 @@ public class GridManager : MonoBehaviour
     {
         return bounds.size.x > 0 && bounds.size.y > 0;
     }
-    
+
     public Vector2 GetCellCenterWorld(Vector2 worldPos) //获取格子中心世界坐标
     {
         if (MapGrid == null)
@@ -293,7 +299,7 @@ public class GridManager : MonoBehaviour
         }
         return MapGrid.GetCellCenterWorld(cellPos);
     }
-    
+
     private BoundsInt GetMapTotalBounds(Tilemap tilemap) //用于计算单个地图的边界（不知道有啥用，先留着吧）
     {
         BoundsInt tilemapBounds = tilemap.cellBounds;
@@ -303,6 +309,6 @@ public class GridManager : MonoBehaviour
         }
         return tilemapBounds;
     }
-    
+
     #endregion
 }

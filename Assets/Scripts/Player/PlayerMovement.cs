@@ -16,7 +16,7 @@ public class PlayerMovement : MonoBehaviour
     private Vector2 targetWorldPos; 
     
     private IGlobalEventVariables _globalEventVariables;
-    private EventNodeManager _eventNodeManager;
+    private EventTileManager _eventNodeManager;
     private GridManager _gridManager;
     private EventCenter _eventCenter;
 
@@ -34,7 +34,7 @@ public class PlayerMovement : MonoBehaviour
         SubscribeEventCenter();
     }
     [Inject]
-    public void Construct(IGlobalEventVariables globalEventVariables, EventCenter eventCenter, GridManager gridManager, EventNodeManager eventNodeManager)
+    public void Construct(IGlobalEventVariables globalEventVariables, EventCenter eventCenter, GridManager gridManager, EventTileManager eventNodeManager)
     {
         _globalEventVariables = globalEventVariables;
         _eventCenter = eventCenter;
@@ -114,7 +114,7 @@ public class PlayerMovement : MonoBehaviour
             return;
         }
 
-        // 3) 最后委托给 EventNodeManager 决定是否允许进入以及是否在事件执行期间阻塞玩家
+        // 3) 最后委托给 EventTileManager 决定是否允许进入以及是否在事件执行期间阻塞玩家
         _eventNodeManager.RequestEnterCell_PreMove(targetCell, _globalEventVariables.GetInt(GlobalEventKey.LayerId),
             (allowEnter, blockUntilComplete) =>
             {
@@ -128,12 +128,12 @@ public class PlayerMovement : MonoBehaviour
                 // 允许进入
                 StartMoveProcess(targetWorldPos, targetCell, blockUntilComplete, () =>
                 {
-                    // 当事件执行决定阻塞玩家直到完成时，EventNodeManager 会在后台执行并在完成时调用此回调
+                    // 当事件执行决定阻塞玩家直到完成时，EventTileManager 会在后台执行并在完成时调用此回调
                     // 该回调用于解锁玩家输入。
                     _waitingForEventExecution = false;
                 });
             },
-            // onExecutionComplete: 当 EventNodeManager 在后台执行完成时会调用此回调（仅在需要时）
+            // onExecutionComplete: 当 EventTileManager 在后台执行完成时会调用此回调（仅在需要时）
             null
         );
     }
@@ -175,7 +175,7 @@ public class PlayerMovement : MonoBehaviour
             StopCoroutine(moveCoroutine);
         }
 
-        // 如果事件要求阻塞玩家直到执行完成，则设置标志（等待 EventNodeManager 在完成时触发解锁回调）
+        // 如果事件要求阻塞玩家直到执行完成，则设置标志（等待 EventTileManager 在完成时触发解锁回调）
         if (blockUntilComplete)
         {
             _waitingForEventExecution = true;
@@ -185,7 +185,7 @@ public class PlayerMovement : MonoBehaviour
         {
             // 到达后触发玩家移动事件（由订阅方决定是否响应）
             _eventCenter.TriggerPlayerArrived(new PlayerArrivedEventArgs { TriggerEvent = true, TargetWorldPos = targetPos });
-            // 如果事件不要求阻塞，则立即解锁（若要求阻塞则会由 EventNodeManager 在事件完成时调用 onExecutionComplete）
+            // 如果事件不要求阻塞，则立即解锁（若要求阻塞则会由 EventTileManager 在事件完成时调用 onExecutionComplete）
             if (!blockUntilComplete)
             {
                 _waitingForEventExecution = false;

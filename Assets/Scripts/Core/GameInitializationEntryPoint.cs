@@ -28,18 +28,18 @@ public class GameInitializationEntryPoint : IStartable
     {
         // 1. 先加载地图数据
         _mapManager.GlobalMapLoad();
-        Debug.Log("地图数据加载完成！（Container EntryPoint）");
+        //Debug.Log("地图数据加载完成！（Container EntryPoint）");
 
         // 2. 初始化玩家属性
         _playerAttribute.ResetAttribute();
-        Debug.Log("玩家属性初始化完成！（Container EntryPoint）");
+        //Debug.Log("玩家属性初始化完成！（Container EntryPoint）");
 
         // 3. 初始化背包道具
         _inventoryService.InitItemCounts();
-        Debug.Log("背包道具初始化完成！（Container EntryPoint）");
+        //Debug.Log("背包道具初始化完成！（Container EntryPoint）");
         _eventCenter.TriggerLayerSwitchRequest(new LayerSwitchRequestEventArgs
         {
-            TargetLayerId = 1,
+            TargetLayerId = 0,
             SpawnPointId = 0
         });
     }

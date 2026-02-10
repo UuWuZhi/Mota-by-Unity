@@ -10,7 +10,7 @@ public class MapManager : MonoBehaviour
 {
     [Header("地图配置")]
     public Grid mapRoot;                                               // 所有层的根Grid
-    public int _currentLayerId = 1;                                    // 当前层数（默认1层）
+    public int _currentLayerId = 0;                                    // 当前层数（默认0层）
     public List<MapLayerInfo> allLayers = new List<MapLayerInfo>();    // 所有层的配置
 
     // 缓存各层的Tilemap和边界（键：楼层ID，值：(ground, obstacle, eventTilemap, 边界)）

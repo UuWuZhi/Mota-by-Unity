@@ -17,8 +17,9 @@ public class DiBootstrap : LifetimeScope
         // 地图相关
         builder.RegisterComponentInHierarchy<GridManager>().AsSelf();
         builder.RegisterComponentInHierarchy<MapManager>().AsSelf();
-        builder.RegisterComponentInHierarchy<EventNodeManager>().AsSelf();
-        builder.RegisterComponentInHierarchy<EventTileRunner>().AsSelf();
+        builder.RegisterComponentInHierarchy<EventTileManager>().AsSelf();
+        builder.RegisterComponentInHierarchy<CoroutineRunner>().AsSelf();
+        builder.Register<EventRunnerService>(Lifetime.Singleton).As<IEventRunner>().AsSelf();
 
         // 玩家相关
         builder.RegisterComponentInHierarchy<PlayerAttribute>().AsSelf();
@@ -28,14 +29,11 @@ public class DiBootstrap : LifetimeScope
         builder.RegisterComponentInHierarchy<PlayerInventory>().AsSelf().As<IInventoryService>();
 
         // UI相关
-        //builder.RegisterComponentInHierarchy<UIInputManager>().AsSelf();
         builder.RegisterComponentInHierarchy<UIDialogue>().AsSelf();
 
         // 服务类
         builder.Register<GoldRewardCaculate>(Lifetime.Transient).AsSelf();
         builder.Register<DialogueManager>(Lifetime.Singleton).AsSelf();
-        builder.Register<GlobalServiceContainer>(Lifetime.Singleton).AsSelf();
-        // 确保 BattleManager 单例先注册（若存在），以便 MonsterBookService 的构造函数注入
         if (BattleManager.Instance != null) builder.RegisterInstance(BattleManager.Instance).As<BattleManager>().AsSelf();
         builder.Register<IMonsterBook, MonsterBookService>(Lifetime.Singleton).AsSelf();
         builder.RegisterEntryPoint<GameInitializationEntryPoint>();

@@ -1,21 +1,22 @@
-//EventTile管理器：单例，负责注册/查找基于格子的 EventNodeTile，并响应事件中心的触发请求。
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Tilemaps;
 using VContainer;
 
-public class EventNodeManager : MonoBehaviour
+public class EventTileManager : MonoBehaviour
 {
-    // 基于格子的 EventNodeTile 注册表
-    private readonly Dictionary<Vector3Int, EventNodeTile> _nodesByCell = new Dictionary<Vector3Int, EventNodeTile>();
+    // 按层分组的 EventNodeTile 注册表：layerId -> (cellPos -> tile)
+    private readonly Dictionary<int, Dictionary<Vector3Int, EventNodeTile>> _nodesByLayer =
+        new Dictionary<int, Dictionary<Vector3Int, EventNodeTile>>();
 
     private IGlobalEventVariables _globalEventVariables;
     private GridManager _gridManager;
     private EventCenter _eventCenter;
-    private DialogueManager _dialogueManager;
-    private GlobalServiceContainer _globalServiceContainer;
-    private EventTileRunner _eventNodeRunner;
+    private IEventRunner _eventRunner;
+    // 当前已注册的层（用于切换时清理或替换注册表）
+    private int _currentRegisteredLayer = int.MinValue;
 
     private bool _eventSubscribed = false;
 
@@ -32,16 +33,12 @@ public class EventNodeManager : MonoBehaviour
     /// <param name="globalEventVariables">用于读取运行时全局事件变量的接口。</param>
     /// <param name="gridManager">负责地图网格与坐标转换的管理器。</param>
     /// <param name="eventCenter">事件中心，用于订阅与分发全局事件。</param>
-    /// <param name="dialogueManager">对话管理器，用于在事件上下文中触发对话。</param>
-    /// <param name="globalService">全局服务容器，作为事件执行时可用的服务集合。</param>
-    public void Construct(IGlobalEventVariables globalEventVariables, GridManager gridManager, EventCenter eventCenter, DialogueManager dialogueManager, EventTileRunner eventNodeRunner, GlobalServiceContainer globalService)
+    public void Construct(IGlobalEventVariables globalEventVariables, GridManager gridManager, EventCenter eventCenter, IEventRunner eventRunner)
     {
-        _globalServiceContainer = globalService ?? throw new ArgumentNullException(nameof(globalService));
-        _globalEventVariables = globalEventVariables ?? throw new ArgumentNullException(nameof(globalEventVariables));
-        _gridManager = gridManager ?? throw new ArgumentNullException(nameof(gridManager));
-        _eventCenter = eventCenter ?? throw new ArgumentNullException(nameof(eventCenter));
-        _dialogueManager = dialogueManager; // optional - allow null but handle accordingly
-        _eventNodeRunner = eventNodeRunner;
+        _globalEventVariables = globalEventVariables;
+        _gridManager = gridManager;
+        _eventCenter = eventCenter;
+        _eventRunner = eventRunner;
         SubscribeEventCenter();
     }
 
@@ -85,9 +82,45 @@ public class EventNodeManager : MonoBehaviour
         try
         {
             if (args.TriggerEvent == false) return;
-            if (!TryWorldToCellSafe(args.TargetWorldPos, out var cellPos)) return;
-            int layerId = GetCurrentLayerIdOrDefault();
+            Vector3Int cellPos = _gridManager.MapGrid.WorldToCell(args.TargetWorldPos);
+            int layerId = _globalEventVariables.GetInt(GlobalEventKey.LayerId);
             TryTriggerEventTile(cellPos, layerId);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogException(ex);
+        }
+    }
+
+    // 处理：楼层切换完成事件，按层批量加载该层的 EventNodeTile 并注册
+    private void OnLayerSwitched_Handler(object sender, LayerSwitchedEventArgs args)
+    {
+        if (args == null) return;
+        try
+        {
+            // 从全局变量或事件参数确定当前层 id
+            int layerId = _globalEventVariables != null ? _globalEventVariables.GetInt(GlobalEventKey.LayerId) : 0;
+
+            // 清理上一次注册的层（只移除注册表，不销毁 GameObject）
+            if (_currentRegisteredLayer != int.MinValue && _nodesByLayer.ContainsKey(_currentRegisteredLayer))
+            {
+                _nodesByLayer.Remove(_currentRegisteredLayer);
+            }
+
+            // 批量加载新层的 EventNodeTile（使用事件参数提供的 Tilemap）
+            if (args.EventTilemap != null)
+            {
+                LoadLayerEventTiles(layerId, args.EventTilemap.gameObject);
+            }
+            else
+            {
+                Debug.LogWarning("EventTileManager: OnLayerSwitched 收到的 args.EventTilemap 为 null，无法加载事件瓦片");
+            }
+
+            _currentRegisteredLayer = layerId;
+
+            // 触发 GridLoaded 以便处理 OnLoad 类型节点
+            _eventCenter?.TriggerGridLoaded(new GridLoadedEventArgs());
         }
         catch (Exception ex)
         {
@@ -107,12 +140,13 @@ public class EventNodeManager : MonoBehaviour
         // args 允许为 null（事件可能不包含额外信息）
         try
         {
-            int layerId = GetCurrentLayerIdOrDefault();
+            int layerId = _globalEventVariables.GetInt(GlobalEventKey.LayerId);
+            if (!_nodesByLayer.TryGetValue(layerId, out var dict)) return;
             // 迭代时复制 keys 防止并发修改
-            var keys = new List<Vector3Int>(_nodesByCell.Keys);
+            var keys = new List<Vector3Int>(dict.Keys);
             foreach (var cell in keys)
             {
-                if (!_nodesByCell.TryGetValue(cell, out var tileMono) || tileMono == null) continue;
+                if (!dict.TryGetValue(cell, out var tileMono) || tileMono == null) continue;
                 if (tileMono.triggerMode != EventNodeTile.TriggerMode.OnLoad) continue;
                 TryTriggerEventTile(cell, layerId);
             }
@@ -137,11 +171,13 @@ public class EventNodeManager : MonoBehaviour
         {
             // 如果有注册的 EventNode 在源格子上，移动注册并更新 Mono 的位置
             if (args.FromCell == args.ToCell) return;
-            if (!_nodesByCell.TryGetValue(args.FromCell, out var node) || node == null) return;
+            int layerId = _globalEventVariables != null ? _globalEventVariables.GetInt(GlobalEventKey.LayerId) : 0;
+            if (!_nodesByLayer.TryGetValue(layerId, out var dict)) return;
+            if (!dict.TryGetValue(args.FromCell, out var node) || node == null) return;
 
             // 移除旧注册并注册到新格子
-            _nodesByCell.Remove(args.FromCell);
-            _nodesByCell[args.ToCell] = node;
+            dict.Remove(args.FromCell);
+            dict[args.ToCell] = node;
             node.CellPos = args.ToCell;
 
             // 更新 gameObject 世界位置（安全检查）
@@ -174,8 +210,10 @@ public class EventNodeManager : MonoBehaviour
         if (args == null) return;
         try
         {
-            if (!_nodesByCell.TryGetValue(args.Cell, out var node) || node == null) return;
-            _nodesByCell.Remove(args.Cell);
+            int layerId = _globalEventVariables != null ? _globalEventVariables.GetInt(GlobalEventKey.LayerId) : 0;
+            if (!_nodesByLayer.TryGetValue(layerId, out var dict)) return;
+            if (!dict.TryGetValue(args.Cell, out var node) || node == null) return;
+            dict.Remove(args.Cell);
             if (node.gameObject != null)
                 GameObject.Destroy(node.gameObject);
         }
@@ -195,6 +233,7 @@ public class EventNodeManager : MonoBehaviour
         _eventCenter.OnGridLoaded += OnGridLoaded_EventCenter;
         _eventCenter.OnEventTileMoved += OnEventTileMoved_Handler;
         _eventCenter.OnEventTileRemoved += OnEventTileRemoved_Handler;
+        _eventCenter.OnLayerSwitched += OnLayerSwitched_Handler;
         _eventSubscribed = true;
     }
 
@@ -208,6 +247,7 @@ public class EventNodeManager : MonoBehaviour
         _eventCenter.OnGridLoaded -= OnGridLoaded_EventCenter;
         _eventCenter.OnEventTileMoved -= OnEventTileMoved_Handler;
         _eventCenter.OnEventTileRemoved -= OnEventTileRemoved_Handler;
+        _eventCenter.OnLayerSwitched -= OnLayerSwitched_Handler;
         _eventSubscribed = false;
     }
     #endregion
@@ -228,20 +268,105 @@ public class EventNodeManager : MonoBehaviour
     /// </summary>
     /// <param name="cellPos">要注册的格子坐标。</param>
     /// <param name="node">要注册的节点实例（不可为 null）。</param>
-    public void RegisterEventNodeAtCell(Vector3Int cellPos, EventNodeTile node)
+    public void RegisterEventTileAtCell(Vector3Int cellPos, EventNodeTile node)
     {
         if (node == null) return;
-        _nodesByCell[cellPos] = node;
+        int layerId = _globalEventVariables != null ? _globalEventVariables.GetInt(GlobalEventKey.LayerId) : 0;
+        if (!_nodesByLayer.TryGetValue(layerId, out var dict))
+        {
+            dict = new Dictionary<Vector3Int, EventNodeTile>();
+            _nodesByLayer[layerId] = dict;
+        }
+        dict[cellPos] = node;
+        Debug.Log($"已在层{layerId}的{cellPos}处注册节点");
+    }
+    public void RegisterEventTileAtWorldPos(Vector2 worldPos, EventNodeTile node)
+    {
+        if (node == null) return;
+        Vector3Int cellPos = _gridManager.MapGrid.WorldToCell(worldPos);
+        RegisterEventTileAtCell(cellPos, node);
+    }
+
+    // 批量加载指定层的 EventNodeTile 并存入 _nodesByLayer
+    public void LoadLayerEventTiles(int layerId, Tilemap eventTilemap)
+    {
+        if (eventTilemap == null)
+        {
+            Debug.LogWarning("EventTileManager.LoadLayerEventTiles: eventTilemap 为 null");
+            return;
+        }
+        LoadLayerEventTiles(layerId, eventTilemap.gameObject);
+    }
+
+    // overload：接受层根对象（例如 Event Tilemap 的 GameObject）
+    public void LoadLayerEventTiles(int layerId, GameObject layerRoot)
+    {
+        if (layerRoot == null)
+        {
+            Debug.LogWarning("EventTileManager.LoadLayerEventTiles: layerRoot 为 null");
+            return;
+        }
+
+        if (_gridManager == null)
+        {
+            Debug.LogWarning("EventTileManager.LoadLayerEventTiles: GridManager 未注入，无法计算格子坐标");
+            return;
+        }
+
+        // 准备/清理目标层字典
+        if (!_nodesByLayer.TryGetValue(layerId, out var dict))
+        {
+            dict = new Dictionary<Vector3Int, EventNodeTile>();
+            _nodesByLayer[layerId] = dict;
+        }
+        else
+        {
+            dict.Clear();
+        }
+
+        // 批量查找该层下的所有 EventNodeTile（包括未激活的）
+        var tiles = layerRoot.GetComponentsInChildren<EventNodeTile>(true);
+        foreach (var tile in tiles)
+        {
+            if (tile == null || tile.gameObject == null) continue;
+
+            // 计算格子位置并注册
+            Vector3Int cellPos;
+            try
+            {
+                cellPos = _gridManager.MapGrid.WorldToCell(tile.transform.position);
+            }
+            catch
+            {
+                // 兜底：按世界坐标向下取整
+                var p = tile.transform.position;
+                cellPos = new Vector3Int(Mathf.FloorToInt(p.x), Mathf.FloorToInt(p.y), Mathf.FloorToInt(p.z));
+            }
+
+            tile.CellPos = cellPos;
+            dict[cellPos] = tile;
+        }
+
+        Debug.Log($"EventTileManager: 已为层 {layerId} 加载并注册 {dict.Count} 个 EventNodeTile");
     }
 
     /// <summary>
     /// 从指定格子位置注销已注册的 EventNodeTile（若存在）。
     /// </summary>
     /// <param name="cellPos">要注销的格子坐标。</param>
-    public void UnregisterEventNodeAtCell(Vector3Int cellPos)
+    public void UnregisterEventTileAtCell(Vector3Int cellPos)
     {
-        if (_nodesByCell.ContainsKey(cellPos))
-            _nodesByCell.Remove(cellPos);
+        int layerId = _globalEventVariables != null ? _globalEventVariables.GetInt(GlobalEventKey.LayerId) : 0;
+        if (_nodesByLayer.TryGetValue(layerId, out var dict))
+        {
+            if (dict.ContainsKey(cellPos))
+                dict.Remove(cellPos);
+        }
+    }
+    public void UnRegisterEventTileAtWorldPos(Vector2 worldPos)
+    {
+        Vector3Int cellPos = _gridManager.MapGrid.WorldToCell(worldPos);
+        UnregisterEventTileAtCell(cellPos);
     }
     //==============================================================================//
     //                                 节点：获取                                   //
@@ -254,7 +379,10 @@ public class EventNodeManager : MonoBehaviour
     /// <returns>若指定格子有已注册节点且不为 null 则返回 true，否则返回 false。</returns>
     public bool TryGetEventNodeAtCell(Vector3Int cellPos, out EventNodeTile node)
     {
-        return _nodesByCell.TryGetValue(cellPos, out node) && node != null;
+        int layerId = _globalEventVariables != null ? _globalEventVariables.GetInt(GlobalEventKey.LayerId) : 0;
+        node = null;
+        if (!_nodesByLayer.TryGetValue(layerId, out var dict)) return false;
+        return dict.TryGetValue(cellPos, out node) && node != null;
     }
     //==============================================================================//
     //                                 节点：触发                                   //
@@ -269,7 +397,7 @@ public class EventNodeManager : MonoBehaviour
     /// <returns>如果找到可触发的节点并成功调用其 Run 方法则返回 true，否则返回 false。</returns>
     public bool TryTriggerEventTile(Vector3Int cellPos, int layerId)
     {
-        if (!_nodesByCell.TryGetValue(cellPos, out var tileMono) || tileMono == null) return false;
+        if (!_nodesByLayer.TryGetValue(layerId, out var dict) || !dict.TryGetValue(cellPos, out var tileMono) || tileMono == null) return false;
         // 不在此处处理 OnPlayerEnter（该类型由预移动协商处理）
         if (tileMono.triggerMode == EventNodeTile.TriggerMode.OnPlayerEnter) return false;
 
@@ -277,14 +405,8 @@ public class EventNodeManager : MonoBehaviour
         {
             var ctx = CreateContext(cellPos, layerId, tileMono.gameObject);
             // 非阻塞触发：一般通过事件或到达触发调用，传入 null 回调（事件内部自管理完成时机）
-            if (_eventNodeRunner != null)
-            {
-                _eventNodeRunner.Run(tileMono.rootNode, ctx, null);
-            }
-            else
-            {
-                tileMono.Run(ctx, null);
-            }
+
+            _eventRunner.Run(tileMono.rootNode, ctx, null);
             return true;
         }
         catch (Exception ex)
@@ -307,9 +429,10 @@ public class EventNodeManager : MonoBehaviour
     {
         if (callback == null) throw new ArgumentNullException(nameof(callback));
 
-        // 优先使用基于格子的注册表查找 EventNodeTile —— 避免依赖物理 Overlap
-        if (!TryGetEventNodeAtCell(cellPos, out var tileMono) || tileMono == null)
+        // 使用指定层的注册表查找 EventNodeTile
+        if (!_nodesByLayer.TryGetValue(layerId, out var dict) || !dict.TryGetValue(cellPos, out var tileMono) || tileMono == null)
         {
+            //Debug.Log("EventTileManager:请求进入格子时未找到对应的 EventNodeTile");
             callback?.Invoke(true, false);
             onExecutionComplete?.Invoke();
             return;
@@ -323,7 +446,7 @@ public class EventNodeManager : MonoBehaviour
             return;
         }
 
-        var ctx = CreateContext(cellPos, layerId, tileMono.gameObject);
+        EventNodeTileContext ctx = CreateContext(cellPos, layerId, tileMono.gameObject);
 
         switch (tileMono.movementControl)
         {
@@ -331,7 +454,7 @@ public class EventNodeManager : MonoBehaviour
                 // 不阻塞移动：立即允许进入，事件异步触发但不阻塞玩家
                 try
                 {
-                    tileMono.Run(ctx, () => { onExecutionComplete?.Invoke(); });
+                    _eventRunner.Run(tileMono.rootNode, ctx, () => { onExecutionComplete?.Invoke(); });
                 }
                 catch (Exception ex)
                 {
@@ -351,26 +474,13 @@ public class EventNodeManager : MonoBehaviour
                 // 先运行事件决定是否允许进入
                 try
                 {
-                    if (_eventNodeRunner != null)
+                    _eventRunner.Run(tileMono.rootNode, ctx, () =>
                     {
-                        _eventNodeRunner.Run(tileMono.rootNode, ctx, () =>
-                        {
-                            bool allow = true;
-                            if (ctx.Vars != null && ctx.Vars.TryGetValue("allowEnter", out object o) && o is bool b) allow = b;
-                            callback?.Invoke(allow, false);
-                            onExecutionComplete?.Invoke();
-                        });
-                    }
-                    else
-                    {
-                        tileMono.Run(ctx, () =>
-                        {
-                            bool allow = true;
-                            if (ctx.Vars != null && ctx.Vars.TryGetValue("allowEnter", out object o) && o is bool b) allow = b;
-                            callback?.Invoke(allow, false);
-                            onExecutionComplete?.Invoke();
-                        });
-                    }
+                        bool allow = true;
+                        if (ctx.Vars != null && ctx.Vars.TryGetValue("allowEnter", out object o) && o is bool b) allow = b;
+                        callback?.Invoke(allow, false);
+                        onExecutionComplete?.Invoke();
+                    });
                 }
                 catch (Exception ex)
                 {
@@ -387,7 +497,7 @@ public class EventNodeManager : MonoBehaviour
                 break;
 
             default:
-                Debug.Log("移动方式：未识别");
+                Debug.LogWarning("EventTileManager:移动方式未识别");
                 callback?.Invoke(true, false);
                 onExecutionComplete?.Invoke();
                 break;
@@ -414,7 +524,7 @@ public class EventNodeManager : MonoBehaviour
         bool finished = false;
         try
         {
-            tile.Run(ctx, () => { finished = true; });
+           _eventRunner.Run(tile.rootNode, ctx, () => { finished = true; });
         }
         catch (Exception ex)
         {
@@ -432,51 +542,21 @@ public class EventNodeManager : MonoBehaviour
     //                                                                              //
     //==============================================================================//
     #region 辅助方法
-    // Helper: 安全地从 _gridManager 获取 MapGrid 的 WorldToCell 转换
-    private bool TryWorldToCellSafe(Vector3 worldPos, out Vector3Int cell)
-    {
-        cell = default;
-        if (_gridManager == null || _gridManager.MapGrid == null)
-            return false;
-        try
-        {
-            cell = _gridManager.MapGrid.WorldToCell(worldPos);
-            return true;
-        }
-        catch (Exception ex)
-        {
-            Debug.LogException(ex);
-            return false;
-        }
-    }
-
-    // Helper: 从全局变量安全获取当前 layer id
-    private int GetCurrentLayerIdOrDefault(int defaultValue = 0)
-    {
-        if (_globalEventVariables == null) return defaultValue;
-        try
-        {
-            return _globalEventVariables.GetInt(GlobalEventKey.LayerId);
-        }
-        catch (Exception ex)
-        {
-            Debug.LogException(ex);
-            return defaultValue;
-        }
-    }
-
-    // Helper: 创建事件上下文并注入常用服务
+    /// <summary>
+    /// 构建节点Context
+    /// </summary>
+    /// <param name="cellPos"></param>
+    /// <param name="layerId"></param>
+    /// <param name="tileObject"></param>
+    /// <returns></returns>
     private EventNodeTileContext CreateContext(Vector3Int cellPos, int layerId, GameObject tileObject)
     {
         var ctx = new EventNodeTileContext
         {
             Data = BuildEventNodeTileData(cellPos, layerId, tileObject),
+            EventTileManager = this,
             OwnerMono = this,
-            Services = _globalServiceContainer,
-            EventNodeManager = this,
         };
-        if (_dialogueManager != null)
-            ctx.Set("DialogueManager", _dialogueManager);
         return ctx;
     }
     /// <summary>

@@ -7,9 +7,9 @@ using VContainer;
 
 public class EventTileManager : MonoBehaviour
 {
-    // 按层分组的 EventNodeTile 注册表：layerId -> (cellPos -> tile)
-    private readonly Dictionary<int, Dictionary<Vector3Int, EventNodeTile>> _nodesByLayer =
-        new Dictionary<int, Dictionary<Vector3Int, EventNodeTile>>();
+    private IEventTileRegistry _registry;
+
+    private bool HasRegistry => _registry != null;
 
     private IGlobalEventVariables _globalEventVariables;
     private GridManager _gridManager;
@@ -18,6 +18,7 @@ public class EventTileManager : MonoBehaviour
     private bool _eventSubscribed = false;
 
     //==============================================================================//
+    //                                                                              //
     //                                 生命周期                                     //
     //                                                                              //
     //==============================================================================//
@@ -30,12 +31,13 @@ public class EventTileManager : MonoBehaviour
     /// <param name="globalEventVariables">用于读取运行时全局事件变量的接口。</param>
     /// <param name="gridManager">负责地图网格与坐标转换的管理器。</param>
     /// <param name="eventCenter">事件中心，用于订阅与分发全局事件。</param>
-    public void Construct(IGlobalEventVariables globalEventVariables, GridManager gridManager, EventCenter eventCenter, IEventRunner eventRunner)
+    public void Construct(IGlobalEventVariables globalEventVariables, GridManager gridManager, EventCenter eventCenter, IEventRunner eventRunner, IEventTileRegistry registry)
     {
         _globalEventVariables = globalEventVariables;
         _gridManager = gridManager;
         _eventCenter = eventCenter;
         _eventRunner = eventRunner;
+        _registry = registry;
         SubscribeEventCenter();
     }
 
@@ -81,8 +83,7 @@ public class EventTileManager : MonoBehaviour
             if (args.TriggerEvent == false) return;
             if (_gridManager.TryConvertWorldToCellPos(args.TargetWorldPos, out Vector3Int cellPos))
             {
-                int layerId = _globalEventVariables.GetInt(GlobalEventKey.LayerId);
-                TryTriggerEventTile(cellPos, layerId);
+                TryTriggerEventTile(cellPos);
             }
 
         }
@@ -98,13 +99,10 @@ public class EventTileManager : MonoBehaviour
         if (args == null) return;
         try
         {
-            // 从全局变量或事件参数确定当前层 id
-            int layerId = _globalEventVariables != null ? _globalEventVariables.GetInt(GlobalEventKey.LayerId) : 0;
-
             // 批量加载新层的 EventNodeTile（使用事件参数提供的 Tilemap）
             if (args.EventTilemap != null)
             {
-                LoadLayerEventTiles(args.EventTilemap.gameObject, layerId);
+                LoadLayerEventTiles(args.EventTilemap.gameObject);
             }
             else
             {
@@ -112,7 +110,7 @@ public class EventTileManager : MonoBehaviour
             }
 
             // 触发 GridLoaded 以便处理 OnLoad 类型节点
-            _eventCenter?.TriggerGridLoaded(new GridLoadedEventArgs());
+            _eventCenter.TriggerGridLoaded(new GridLoadedEventArgs());
         }
         catch (Exception ex)
         {
@@ -132,15 +130,14 @@ public class EventTileManager : MonoBehaviour
         // args 允许为 null（事件可能不包含额外信息）
         try
         {
-            int layerId = _globalEventVariables.GetInt(GlobalEventKey.LayerId);
-            if (!_nodesByLayer.TryGetValue(layerId, out var dict)) return;
-            // 迭代时复制 keys 防止并发修改
-            var keys = new List<Vector3Int>(dict.Keys);
+            var dictView = _registry.GetLayerRegistry();
+            // 迭代 keys 的快照以避免并发修改问题
+            var keys = new List<Vector3Int>(dictView.Keys);
             foreach (var cell in keys)
             {
-                if (!dict.TryGetValue(cell, out var tileMono) || tileMono == null) continue;
+                if (!dictView.TryGetValue(cell, out var tileMono) || tileMono == null) continue;
                 if (tileMono.triggerMode != EventNodeTile.TriggerMode.OnLoad) continue;
-                TryTriggerEventTile(cell, layerId);
+                TryTriggerEventTile(cell);
             }
         }
         catch (Exception ex)
@@ -163,13 +160,11 @@ public class EventTileManager : MonoBehaviour
         {
             // 如果有注册的 EventNode 在源格子上，移动注册并更新 Mono 的位置
             if (args.FromCell == args.ToCell) return;
-            int layerId = _globalEventVariables != null ? _globalEventVariables.GetInt(GlobalEventKey.LayerId) : 0;
-            if (!_nodesByLayer.TryGetValue(layerId, out var dict)) return;
-            if (!dict.TryGetValue(args.FromCell, out var node) || node == null) return;
+            if (!_registry.TryGetEventNodeAtCell(args.FromCell, out var node) || node == null) return;
 
-            // 移除旧注册并注册到新格子
-            dict.Remove(args.FromCell);
-            dict[args.ToCell] = node;
+            // 移除旧注册并注册到新格子（通过 registry 接口）
+            _registry.UnregisterEventTileAtCell(args.FromCell);
+            _registry.RegisterEventTileAtCell(args.ToCell, node);
             node.CellPos = args.ToCell;
 
             // 更新 gameObject 世界位置（安全检查）
@@ -202,10 +197,9 @@ public class EventTileManager : MonoBehaviour
         if (args == null) return;
         try
         {
-            int layerId = _globalEventVariables != null ? _globalEventVariables.GetInt(GlobalEventKey.LayerId) : 0;
-            if (!_nodesByLayer.TryGetValue(layerId, out var dict)) return;
-            if (!dict.TryGetValue(args.Cell, out var node) || node == null) return;
-            dict.Remove(args.Cell);
+            int layerId = ResolveLayerId(args.LayerId);
+            if (!_registry.TryGetEventNodeAtCell(args.Cell, out var node, layerId) || node == null) return;
+            _registry.UnregisterEventTileAtCell(args.Cell, layerId);
             if (node.gameObject != null)
                 GameObject.Destroy(node.gameObject);
         }
@@ -250,57 +244,6 @@ public class EventTileManager : MonoBehaviour
     //                                                                              //
     //==============================================================================//
     #region 节点管理
-    //==============================================================================//
-    //                                 节点：更新                                   //
-    //==============================================================================//
-    /// <summary>
-    /// 在指定格子位置注册一个 EventNodeTile 实例，若该位置已有注册则覆盖。
-    /// </summary>
-    /// <param name="cellPos">要注册的格子坐标。</param>
-    /// <param name="node">要注册的节点实例（不可为 null）。</param>
-    public void RegisterEventTileAtCell(Vector3Int cellPos, EventNodeTile node, int? layerId = null)
-    {
-        int effectiveLayerId = ResolveLayerId(layerId);
-        if (node == null) return;
-        if (!_nodesByLayer.TryGetValue(effectiveLayerId, out var dict))
-        {
-            dict = new Dictionary<Vector3Int, EventNodeTile>();
-            _nodesByLayer[effectiveLayerId] = dict;
-        }
-        // 更新节点的 CellPos 并注册到层字典
-        node.CellPos = cellPos;
-        dict[cellPos] = node;
-        Debug.Log($"已在层{layerId}的{cellPos}处注册节点");
-    }
-    public void RegisterEventTileAtWorldPos(Vector2 worldPos, EventNodeTile node, int? layerId = null)
-    {
-        if (node == null) return;
-        if (_gridManager.TryConvertWorldToCellPos(worldPos, out Vector3Int cellPos))
-        {
-            RegisterEventTileAtCell(cellPos, node, layerId);
-        }
-    }
-    /// <summary>
-    /// 从指定格子位置注销已注册的 EventNodeTile（若存在）。
-    /// </summary>
-    /// <param name="cellPos">要注销的格子坐标。</param>
-    public void UnregisterEventTileAtCell(Vector3Int cellPos, int? layerId = null)
-    {
-        int effectiveLayerId = ResolveLayerId(layerId);
-        if (_nodesByLayer.TryGetValue(effectiveLayerId, out var dict))
-        {
-            if (dict.ContainsKey(cellPos))
-                dict.Remove(cellPos);
-        }
-    }
-    public void UnregisterEventTileAtWorldPos(Vector2 worldPos, int? layerId = null)
-    {
-        if (_gridManager.TryConvertWorldToCellPos(worldPos, out Vector3Int cellPos))
-        {
-            UnregisterEventTileAtCell(cellPos, layerId);
-        }
-    }
-
     // 批量加载指定层的 EventNodeTile 并存入 _nodesByLayer
     public void LoadLayerEventTiles(GameObject layerRoot, int? layerId = null)
     {
@@ -316,40 +259,15 @@ public class EventTileManager : MonoBehaviour
             return;
         }
 
+        int effectiveLayerId = ResolveLayerId(layerId);
         // 批量查找该层下的所有 EventNodeTile（包括未激活的）
         var tiles = layerRoot.GetComponentsInChildren<EventNodeTile>(true);
         foreach (var tile in tiles)
         {
-            RegisterEventTileAtWorldPos(tile.transform.position, tile);
+            _registry.RegisterEventTileAtWorldPos(tile.transform.position, tile, effectiveLayerId);
         }
 
-        Debug.Log($"EventTileManager: 已为层 {layerId} 加载并注册EventNodeTile");
-    }
-    public void LoadLayerEventTiles(Tilemap eventTilemap, int? layerId)
-    {
-        if (eventTilemap == null)
-        {
-            Debug.LogWarning("EventTileManager.LoadLayerEventTiles: eventTilemap 为 null");
-            return;
-        }
-        LoadLayerEventTiles(eventTilemap.gameObject, layerId);
-    }
-
-    //==============================================================================//
-    //                                 节点：获取                                   //
-    //==============================================================================//
-    /// <summary>
-    /// 尝试获取指定格子位置的 EventNodeTile 实例。
-    /// </summary>
-    /// <param name="cellPos">要查询的格子坐标。</param>
-    /// <param name="node">输出参数，当返回 true 时包含对应的节点实例。</param>
-    /// <returns>若指定格子有已注册节点且不为 null 则返回 true，否则返回 false。</returns>
-    public bool TryGetEventNodeAtCell(Vector3Int cellPos, out EventNodeTile node, int? layerId = null)
-    {
-        int effectiveLayerId = ResolveLayerId(layerId);
-        node = null;
-        if (!_nodesByLayer.TryGetValue(effectiveLayerId, out var dict)) return false;
-        return dict.TryGetValue(cellPos, out node) && node != null;
+        Debug.Log($"EventTileManager: 已为层 {effectiveLayerId} 加载并注册 {_registry.GetLayerRegistry(effectiveLayerId).Count} 个 EventNodeTile");
     }
     //==============================================================================//
     //                                 节点：触发                                   //
@@ -362,9 +280,15 @@ public class EventTileManager : MonoBehaviour
     /// <param name="cellPos">目标格子坐标。</param>
     /// <param name="layerId">当前层 Id，将传入事件上下文以供事件使用。</param>
     /// <returns>如果找到可触发的节点并成功调用其 Run 方法则返回 true，否则返回 false。</returns>
-    public bool TryTriggerEventTile(Vector3Int cellPos, int layerId)
+    public bool TryTriggerEventTile(Vector3Int cellPos, int? layerId = null)
     {
-        if (!_nodesByLayer.TryGetValue(layerId, out var dict) || !dict.TryGetValue(cellPos, out var tileMono) || tileMono == null) return false;
+        if (_registry == null)
+        {
+            Debug.LogWarning("EventTileManager.TryTriggerEventTile: IEventTileRegistry not injected");
+            return false;
+        }
+
+        if (!_registry.TryGetEventNodeAtCell(cellPos, out var tileMono, layerId) || tileMono == null) return false;
         // 不在此处处理 OnPlayerEnter（该类型由预移动协商处理）
         if (tileMono.triggerMode == EventNodeTile.TriggerMode.OnPlayerEnter) return false;
 
@@ -397,9 +321,17 @@ public class EventTileManager : MonoBehaviour
         if (callback == null) throw new ArgumentNullException(nameof(callback));
 
         // 使用指定层的注册表查找 EventNodeTile
-        if (!_nodesByLayer.TryGetValue(layerId, out var dict) || !dict.TryGetValue(cellPos, out var tileMono) || tileMono == null)
+        EventNodeTile tileMono = null;
+        if (_registry == null)
         {
-            //Debug.Log("EventTileManager:请求进入格子时未找到对应的 EventNodeTile");
+            Debug.LogWarning("EventTileManager.RequestEnterCell_PreMove: IEventTileRegistry not injected");
+            callback?.Invoke(true, false);
+            onExecutionComplete?.Invoke();
+            return;
+        }
+
+        if (!_registry.TryGetEventNodeAtCell(cellPos, out tileMono, layerId) || tileMono == null)
+        {
             callback?.Invoke(true, false);
             onExecutionComplete?.Invoke();
             return;

@@ -16,7 +16,9 @@ public class DiBootstrap : LifetimeScope
         // 地图相关
         builder.RegisterComponentInHierarchy<GridManager>().AsSelf();
         builder.RegisterComponentInHierarchy<MapManager>().AsSelf();
-        builder.RegisterComponentInHierarchy<EventTileManager>().AsSelf();
+        // Register registry implementation and EventTileManager separately. Keep manager registered as self.
+        builder.Register<EventTileRegistry>(Lifetime.Singleton).As<IEventTileRegistry>().AsSelf(); // Register EventTileRegistry
+        builder.RegisterComponentInHierarchy<EventTileManager>().AsSelf(); // Register EventTileManager
         builder.RegisterComponentInHierarchy<CoroutineRunner>().AsSelf();
         builder.Register<EventRunnerService>(Lifetime.Singleton).As<IEventRunner>().AsSelf();
 

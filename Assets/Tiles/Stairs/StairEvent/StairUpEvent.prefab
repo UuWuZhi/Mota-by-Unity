@@ -46,10 +46,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5cd63aa8b4ee2d343afdb6fccee5b4cb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  rootNode: {fileID: 11400000, guid: e2ac8f3ca2018c842a264a0ad25e6151, type: 2}
+  actions:
+  - {fileID: 11400000, guid: e2ac8f3ca2018c842a264a0ad25e6151, type: 2}
   triggerMode: 2
-  movementControl: 0
+  enterPermission: 0
+  executionBlocking: 0
   CellPos: {x: 0, y: 0, z: 0}
+  triggerTimeoutSeconds: 10
 --- !u!61 &492118040737084567
 BoxCollider2D:
   m_ObjectHideFlags: 0

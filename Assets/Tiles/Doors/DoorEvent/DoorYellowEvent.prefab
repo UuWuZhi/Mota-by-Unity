@@ -48,9 +48,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   rootNode: {fileID: 11400000, guid: ea5d303ec21dfc04aa19c226cbf1bb16, type: 2}
+  actions:
+  - {fileID: 11400000, guid: ea5d303ec21dfc04aa19c226cbf1bb16, type: 2}
   triggerMode: 1
-  movementControl: 2
+  enterPermission: 1
+  executionBlocking: 0
   CellPos: {x: 0, y: 0, z: 0}
+  triggerTimeoutSeconds: 10
 --- !u!61 &3856851608017492117
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -156,7 +160,7 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 1647844683
-  m_SortingLayer: 3
+  m_SortingLayer: 4
   m_SortingOrder: 0
   m_Sprite: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}

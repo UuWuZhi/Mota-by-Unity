@@ -1,16 +1,11 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Tilemaps;
 using VContainer;
 
 public class EventTileManager : MonoBehaviour
 {
     private IEventTileRegistry _registry;
-
-    private bool HasRegistry => _registry != null;
-
     private IGlobalEventVariables _globalEventVariables;
     private GridManager _gridManager;
     private EventCenter _eventCenter;
@@ -75,7 +70,6 @@ public class EventTileManager : MonoBehaviour
     private void OnPlayerArrived_EventCenter(object sender, PlayerArrivedEventArgs args)
     {
         if (args == null) return;
-
         // PlayerArrivedEventArgs 中通常包含 TargetWorldPos 和 TriggerEvent 标志
         // 仅在需要触发格子事件的情况下转换并尝试触发
         try
@@ -85,7 +79,6 @@ public class EventTileManager : MonoBehaviour
             {
                 TryTriggerEventTile(cellPos);
             }
-
         }
         catch (Exception ex)
         {
@@ -108,7 +101,6 @@ public class EventTileManager : MonoBehaviour
             {
                 Debug.LogWarning("EventTileManager: OnLayerSwitched 收到的 args.EventTilemap 为 null，无法加载事件瓦片");
             }
-
             // 触发 GridLoaded 以便处理 OnLoad 类型节点
             _eventCenter.TriggerGridLoaded(new GridLoadedEventArgs());
         }
@@ -197,9 +189,8 @@ public class EventTileManager : MonoBehaviour
         if (args == null) return;
         try
         {
-            int layerId = ResolveLayerId(args.LayerId);
-            if (!_registry.TryGetEventNodeAtCell(args.Cell, out var node, layerId) || node == null) return;
-            _registry.UnregisterEventTileAtCell(args.Cell, layerId);
+            if (!_registry.TryGetEventNodeAtCell(args.Cell, out var node) || node == null) return;
+            _registry.UnregisterEventTileAtCell(args.Cell);
             if (node.gameObject != null)
                 GameObject.Destroy(node.gameObject);
         }
@@ -297,7 +288,8 @@ public class EventTileManager : MonoBehaviour
             var ctx = CreateContext(cellPos, tileMono.gameObject, layerId);
             // 非阻塞触发：一般通过事件或到达触发调用，传入 null 回调（事件内部自管理完成时机）
 
-            _eventRunner.Run(tileMono.rootNode, ctx, null);
+            // 直接按序执行 tile 上的 actions 列表（不再使用运行时临时 ScriptableObject）
+            _eventRunner?.RunActions(tileMono.actions, ctx, null);
             return true;
         }
         catch (Exception ex)
@@ -318,6 +310,8 @@ public class EventTileManager : MonoBehaviour
     /// <param name="onExecutionComplete">当事件后台执行完成时的回调（可为 null）。</param>
     public void RequestEnterCell_PreMove(Vector3Int cellPos, int layerId, Action<bool, bool> callback, Action onExecutionComplete = null)
     {
+        // 预处理
+        // 参数检查：确保 callback 不为 null（允许 onExecutionComplete 为 null）
         if (callback == null) throw new ArgumentNullException(nameof(callback));
 
         // 使用指定层的注册表查找 EventNodeTile
@@ -330,9 +324,18 @@ public class EventTileManager : MonoBehaviour
             return;
         }
 
+        // 如果格子上没有 EventNodeTile 或者获取失败，默认允许进入且不阻塞
         if (!_registry.TryGetEventNodeAtCell(cellPos, out tileMono, layerId) || tileMono == null)
         {
             callback?.Invoke(true, false);
+            onExecutionComplete?.Invoke();
+            return;
+        }
+
+        if (!tileMono.TryBeginTrigger())
+        {
+            // 如果当前节点正在触发中，默认不允许进入但不阻塞（避免重复触发和死锁）
+            callback?.Invoke(false, false);
             onExecutionComplete?.Invoke();
             return;
         }
@@ -345,94 +348,98 @@ public class EventTileManager : MonoBehaviour
             return;
         }
 
+        // 获取基本属性并构建上下文
         EventNodeTileContext ctx = CreateContext(cellPos, tileMono.gameObject, layerId);
+        var enterPermission = tileMono.enterPermission;
+        var executionBlocking = tileMono.executionBlocking == EventNodeTile.ExecutionBlocking.BlockDuringExecution;
 
-        switch (tileMono.movementControl)
-        {
-            case EventNodeTile.MovementControl.None:
-                // 不阻塞移动：立即允许进入，事件异步触发但不阻塞玩家
-                try
-                {
-                    _eventRunner.Run(tileMono.rootNode, ctx, () => { onExecutionComplete?.Invoke(); });
-                }
-                catch (Exception ex)
-                {
-                    Debug.LogException(ex);
-                    onExecutionComplete?.Invoke();
-                }
-                callback?.Invoke(true, false);
-                break;
-
-            case EventNodeTile.MovementControl.BlockPlayerDuringExecution:
-                // 允许进入，但阻塞玩家直到事件完成
-                callback?.Invoke(true, true);
-                StartCoroutine(RunAndBlockBackground(tileMono, ctx, onExecutionComplete));
-                break;
-
-            case EventNodeTile.MovementControl.PreventEnterUntilAllowed:
-                // 先运行事件决定是否允许进入
-                try
-                {
-                    _eventRunner.Run(tileMono.rootNode, ctx, () =>
-                    {
-                        bool allow = true;
-                        if (ctx.Vars != null && ctx.Vars.TryGetValue("allowEnter", out object o) && o is bool b) allow = b;
-                        callback?.Invoke(allow, false);
-                        onExecutionComplete?.Invoke();
-                    });
-                }
-                catch (Exception ex)
-                {
-                    Debug.LogException(ex);
-                    callback?.Invoke(false, false);
-                    onExecutionComplete?.Invoke();
-                }
-                break;
-
-            case EventNodeTile.MovementControl.PreventAndBlockUntilComplete:
-                // 阻止进入并等待事件完成
-                callback?.Invoke(false, true);
-                StartCoroutine(RunAndBlockBackground(tileMono, ctx, onExecutionComplete));
-                break;
-
-            default:
-                Debug.LogWarning("EventTileManager:移动方式未识别");
-                callback?.Invoke(true, false);
-                onExecutionComplete?.Invoke();
-                break;
-        }
-    }
-
-    // 在后台运行事件并阻塞玩家移动，直到事件完成
-    /// <summary>
-    /// 辅助协程：在后台调用节点的 Run 方法并等待其完成，然后执行完成回调。
-    /// 常用于需要在事件执行期间阻塞玩家移动的场景。
-    /// </summary>
-    /// <param name="tile">要执行的事件节点。</param>
-    /// <param name="ctx">事件上下文。</param>
-    /// <param name="onExecutionComplete">事件执行完成后的回调（可为 null）。param>
-    /// <returns>一个用于协程的 IEnumerator。</returns>
-    private IEnumerator RunAndBlockBackground(EventNodeTile tile, EventNodeTileContext ctx, Action onExecutionComplete)
-    {
-        if (tile == null)
-        {
-            onExecutionComplete?.Invoke();
-            yield break;
-        }
-
-        bool finished = false;
+        // 主处理
         try
         {
-            _eventRunner.Run(tile.rootNode, ctx, () => { finished = true; });
+            // 首先根据 enterPermission 预设一个初始允许状态和是否需要决策的标志
+            bool allow = true;
+            bool needDecision = false;
+            switch (enterPermission)
+            {
+                case EventNodeTile.EnterPermission.Allow:
+                    allow = true;
+                    needDecision = false;
+                    break;
+                case EventNodeTile.EnterPermission.Deny:
+                    allow = false;
+                    needDecision = false;
+                    break;
+                case EventNodeTile.EnterPermission.DecideAfterExecution:
+                    allow = false; 
+                    needDecision = true;
+                    // 如果 enterPermission 是 DecideAfterExecution，则必须阻塞以等待事件执行完成后获取决策结果。
+                    executionBlocking = true;
+                    break;
+                default:
+                    Debug.LogWarning("EventTileManager.RequestEnterCell_PreMove: 未识别的 EnterPermission");
+                    tileMono.EndTrigger();
+                    allow = true;
+                    needDecision = false;
+                    break;
+            }
+
+            // 然后根据 executionBlocking 决定触发事件的方式
+            if (executionBlocking)
+            {
+                // 阻塞触发处理：先通知调用者当前允许状态和即将阻塞的事实，然后执行事件并等待完成后根据上下文变量更新允许状态并通知调用者决策结果
+                callback?.Invoke(allow, true);
+                if (_eventRunner == null)
+                {
+                    Debug.LogError("EventTileManager.RequestEnterCell_PreMove: IEventRunner 未注入，无法阻塞执行");
+                    tileMono.EndTrigger();
+                    callback?.Invoke(allow, false);
+                    onExecutionComplete?.Invoke();
+                }
+                else
+                {
+                    StartCoroutine(_eventRunner.RunActionsAndWait(tileMono.actions, ctx, () =>
+                    {
+                        if (needDecision)
+                        {
+                            bool finalAllow = true;
+                            try
+                            {
+                                if (ctx.Vars != null && ctx.Vars.TryGetValue("allowEnter", out object o) && o is bool b) finalAllow = b;
+                            }
+                            catch (Exception ex)
+                            {
+                                Debug.LogException(ex);
+                                finalAllow = false;
+                            }
+                            // notify caller of final decision; movement is no longer blocked
+                            callback?.Invoke(finalAllow, false);
+                        }
+                        tileMono.EndTrigger();
+                        onExecutionComplete?.Invoke();
+                    }));
+                }
+            }
+            else
+            {
+                // 非阻塞触发处理：直接触发事件（不等待完成），允许状态由预设的 enterPermission 决定，执行完成后仅通知调用者事件已完成（不传递决策结果）
+                    try
+                    {
+                        _eventRunner?.RunActions(tileMono.actions, ctx, () => { tileMono.EndTrigger(); onExecutionComplete?.Invoke(); });
+                    }
+                catch (Exception ex)
+                {
+                    Debug.LogException(ex);
+                    onExecutionComplete?.Invoke();
+                }
+                callback?.Invoke(allow, false);
+            }
         }
         catch (Exception ex)
         {
             Debug.LogException(ex);
-            finished = true;
+            callback?.Invoke(true, false);
+            onExecutionComplete?.Invoke();
         }
-        // 等待事件执行完成
-        while (!finished) yield return null;
-        onExecutionComplete?.Invoke();
     }
     #endregion
     //==============================================================================//

@@ -30,7 +30,7 @@ public class ChoiceDialogueNode : EventNode
     public override void Execute(EventNodeContext ctx, Action onComplete)
     {
 
-        var dm = ctx != null ? ctx.Get<DialogueManager>("DialogueManager") : null;
+        var dm = ctx.DialogueManager;
 
         if (dm == null)
         {

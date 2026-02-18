@@ -50,6 +50,8 @@ MonoBehaviour:
   rootNode: {fileID: 11400000, guid: 0fe31b71cd0528b47bf88fdecdabee65, type: 2}
   triggerMode: 2
   movementControl: 0
+  enterPermission: 0
+  executionBlocking: 0
   CellPos: {x: 0, y: 0, z: 0}
 --- !u!61 &396340854240151644
 BoxCollider2D:

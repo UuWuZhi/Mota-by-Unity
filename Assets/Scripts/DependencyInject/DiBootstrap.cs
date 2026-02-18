@@ -20,8 +20,7 @@ public class DiBootstrap : LifetimeScope
         builder.Register<EventTileRegistry>(Lifetime.Singleton).As<IEventTileRegistry>().AsSelf(); // Register EventTileRegistry
         builder.RegisterComponentInHierarchy<EventTileManager>().AsSelf(); // Register EventTileManager
         builder.RegisterComponentInHierarchy<CoroutineRunner>().AsSelf();
-        builder.Register<EventRunnerService>(Lifetime.Singleton).As<IEventRunner>().AsSelf();
-
+        
         // 玩家相关
         builder.RegisterComponentInHierarchy<PlayerAttribute>().AsSelf();
         builder.RegisterComponentInHierarchy<PlayerState>().AsSelf();
@@ -39,6 +38,7 @@ public class DiBootstrap : LifetimeScope
         builder.Register<IMonsterBook, MonsterBookService>(Lifetime.Singleton).AsSelf();
         builder.RegisterEntryPoint<GameInitializationEntryPoint>();
 
+        builder.Register<EventRunnerService>(Lifetime.Singleton).As<IEventRunner>().AsSelf();
         // 在容器构建完成后对场景中的现有实例与动态实例执行注入
         builder.RegisterBuildCallback(container =>
         {

@@ -5,7 +5,6 @@
 public class ItemEventContext : EventNodeContext
 {
     public ItemData ItemData { get; set; }
-    public int InventorySlotIndex { get; set; } = -1;
 
     /// <summary>
     /// 标记在节点执行后物品应被消耗（调用者负责实际移除）。
@@ -14,11 +13,4 @@ public class ItemEventContext : EventNodeContext
 
     public void MarkConsumed() => Consumed = true;
 
-    public void ResetForReuse()
-    {
-        ItemData = null;
-        InventorySlotIndex = -1;
-        Consumed = false;
-        // Vars 字典 由基类管理
-    }
 }

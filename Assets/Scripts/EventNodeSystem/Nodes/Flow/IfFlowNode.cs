@@ -11,8 +11,8 @@ using UnityEngine;
 public class IfFlowNode : EventNode
 {
     public ConditionNode condition;
-    public List<EventNode> trueBranch = new List<EventNode>();
-    public List<EventNode> falseBranch = new List<EventNode>();
+    public List<EventNode> trueBranch = new();
+    public List<EventNode> falseBranch = new();
 
     public override Type[] GetRequiredServices()
     {

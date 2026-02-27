@@ -29,7 +29,25 @@ public class ChoiceDialogueNode : EventNode
 
     public override Type[] GetRequiredServices()
     {
-        return new[] { typeof(DialogueManager) };
+        var set = new HashSet<Type> { typeof(DialogueManager) };
+
+        if (choices != null)
+        {
+            foreach (var c in choices)
+            {
+                if (c == null || c.NextNode == null) continue;
+                var req = c.NextNode.GetRequiredServices();
+                if (req == null) continue;
+                foreach (var t in req)
+                {
+                    if (t != null) set.Add(t);
+                }
+            }
+        }
+
+        var result = new Type[set.Count];
+        set.CopyTo(result);
+        return result;
     }
 
     public override void Execute(EventNodeContext ctx, Action onComplete)

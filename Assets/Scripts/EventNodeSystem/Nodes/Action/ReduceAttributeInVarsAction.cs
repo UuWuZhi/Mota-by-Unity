@@ -6,13 +6,20 @@ public class ReduceAttributeInVarsAction : ActionNode
 {
     public AttributeType attributeType;
     public string valueVarName;
+
+    public override Type[] GetRequiredServices()
+    {
+        return new[] { typeof(PlayerAttribute) };
+    }
+
     public override void Execute(EventNodeContext ctx, Action onComplete)
     {
         ctx.Vars.TryGetValue(valueVarName, out object valueObj);
-        if (ctx.PlayerAttribute != null)
+        var playerAttribute = ctx.GetService<PlayerAttribute>();
+        if (playerAttribute != null)
         {
             int value = Convert.ToInt32(valueObj);
-            ctx.PlayerAttribute.ReduceAttribute(attributeType, value);
+            playerAttribute.ReduceAttribute(attributeType, value);
         }
         onComplete?.Invoke();
     }

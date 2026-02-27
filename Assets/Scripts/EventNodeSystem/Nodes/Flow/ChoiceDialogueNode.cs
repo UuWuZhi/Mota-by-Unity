@@ -27,10 +27,15 @@ public class ChoiceDialogueNode : EventNode
     public string text;
     public List<ChoiceEntry> choices = new List<ChoiceEntry>();
 
+    public override Type[] GetRequiredServices()
+    {
+        return new[] { typeof(DialogueManager) };
+    }
+
     public override void Execute(EventNodeContext ctx, Action onComplete)
     {
 
-        var dm = ctx.DialogueManager;
+        var dm = ctx?.GetService<DialogueManager>();
 
         if (dm == null)
         {

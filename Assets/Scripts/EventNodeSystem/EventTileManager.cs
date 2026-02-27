@@ -67,7 +67,7 @@ public class EventTileManager : MonoBehaviour
     /// </summary>
     /// <param name="sender">事件发送者（通常为 EventCenter）。</param>
     /// <param name="args">包含到达目标世界位置和触发标志的事件参数。</param>
-    private void OnPlayerArrived_EventCenter(object sender, PlayerArrivedEventArgs args)
+    private void OnPlayerArrived(object sender, PlayerArrivedEventArgs args)
     {
         if (args == null) return;
         // PlayerArrivedEventArgs 中通常包含 TargetWorldPos 和 TriggerEvent 标志
@@ -87,7 +87,7 @@ public class EventTileManager : MonoBehaviour
     }
 
     // 处理：楼层切换完成事件，按层批量加载该层的 EventNodeTile 并注册
-    private void OnLayerSwitched_Handler(object sender, LayerSwitchedEventArgs args)
+    private void OnLayerSwitched(object sender, LayerSwitchedEventArgs args)
     {
         if (args == null) return;
         try
@@ -117,7 +117,7 @@ public class EventTileManager : MonoBehaviour
     /// </summary>
     /// <param name="sender">事件发送者（通常为 EventCenter）。</param>
     /// <param name="args">与格子加载相关的事件参数（可为空）。</param>
-    private void OnGridLoaded_EventCenter(object sender, GridLoadedEventArgs args)
+    private void OnGridLoaded(object sender, GridLoadedEventArgs args)
     {
         // args 允许为 null（事件可能不包含额外信息）
         try
@@ -145,7 +145,7 @@ public class EventTileManager : MonoBehaviour
     /// </summary>
     /// <param name="sender">事件发送者（通常为 GridManager）。</param>
     /// <param name="args">包含源格子与目标格子信息的事件参数。</param>
-    private void OnEventTileMoved_Handler(object sender, TileMovedEventArgs args)
+    private void OnEventTileMoved(object sender, TileMovedEventArgs args)
     {
         if (args == null) return;
         try
@@ -184,7 +184,7 @@ public class EventTileManager : MonoBehaviour
     /// </summary>
     /// <param name="sender">事件发送者（通常为 GridManager）。</param>
     /// <param name="args">包含被移除格子信息的事件参数。</param>
-    private void OnEventTileRemoved_Handler(object sender, TileRemovedEventArgs args)
+    private void OnEventTileRemoved(object sender, TileRemovedEventArgs args)
     {
         if (args == null) return;
         try
@@ -206,11 +206,11 @@ public class EventTileManager : MonoBehaviour
     private void SubscribeEventCenter()
     {
         if (_eventCenter == null || _eventSubscribed) return;
-        _eventCenter.OnPlayerArrived += OnPlayerArrived_EventCenter;
-        _eventCenter.OnGridLoaded += OnGridLoaded_EventCenter;
-        _eventCenter.OnEventTileMoved += OnEventTileMoved_Handler;
-        _eventCenter.OnEventTileRemoved += OnEventTileRemoved_Handler;
-        _eventCenter.OnLayerSwitched += OnLayerSwitched_Handler;
+        _eventCenter.OnPlayerArrived += OnPlayerArrived;
+        _eventCenter.OnGridLoaded += OnGridLoaded;
+        _eventCenter.OnEventTileMoved += OnEventTileMoved;
+        _eventCenter.OnEventTileRemoved += OnEventTileRemoved;
+        _eventCenter.OnLayerSwitched += OnLayerSwitched;
         _eventSubscribed = true;
     }
 
@@ -220,11 +220,11 @@ public class EventTileManager : MonoBehaviour
     private void UnsubscribeEventCenter()
     {
         if (_eventCenter == null || !_eventSubscribed) return;
-        _eventCenter.OnPlayerArrived -= OnPlayerArrived_EventCenter;
-        _eventCenter.OnGridLoaded -= OnGridLoaded_EventCenter;
-        _eventCenter.OnEventTileMoved -= OnEventTileMoved_Handler;
-        _eventCenter.OnEventTileRemoved -= OnEventTileRemoved_Handler;
-        _eventCenter.OnLayerSwitched -= OnLayerSwitched_Handler;
+        _eventCenter.OnPlayerArrived -= OnPlayerArrived;
+        _eventCenter.OnGridLoaded -= OnGridLoaded;
+        _eventCenter.OnEventTileMoved -= OnEventTileMoved;
+        _eventCenter.OnEventTileRemoved -= OnEventTileRemoved;
+        _eventCenter.OnLayerSwitched -= OnLayerSwitched;
         _eventSubscribed = false;
     }
     #endregion
@@ -235,7 +235,9 @@ public class EventTileManager : MonoBehaviour
     //                                                                              //
     //==============================================================================//
     #region 节点管理
-    // 批量加载指定层的 EventNodeTile 并存入 _nodesByLayer
+    //==============================================================================//
+    //                                 节点：加载                                   //
+    //==============================================================================//
     public void LoadLayerEventTiles(GameObject layerRoot, int? layerId = null)
     {
         if (layerRoot == null)
@@ -310,41 +312,37 @@ public class EventTileManager : MonoBehaviour
     /// <param name="onExecutionComplete">当事件后台执行完成时的回调（可为 null）。</param>
     public void RequestEnterCell_PreMove(Vector3Int cellPos, int layerId, Action<bool, bool> callback, Action onExecutionComplete = null)
     {
-        // 预处理
+        //====================================预处理==========================================//
         // 参数检查：确保 callback 不为 null（允许 onExecutionComplete 为 null）
         if (callback == null) throw new ArgumentNullException(nameof(callback));
 
         // 使用指定层的注册表查找 EventNodeTile
-        EventNodeTile tileMono = null;
         if (_registry == null)
         {
-            Debug.LogWarning("EventTileManager.RequestEnterCell_PreMove: IEventTileRegistry not injected");
-            callback?.Invoke(true, false);
-            onExecutionComplete?.Invoke();
+            Debug.LogWarning("EventTileManager.RequestEnterCell_PreMove: IEventTileRegistry未注入!");
+            CompleteWithAllow(callback, onExecutionComplete);
             return;
         }
 
         // 如果格子上没有 EventNodeTile 或者获取失败，默认允许进入且不阻塞
-        if (!_registry.TryGetEventNodeAtCell(cellPos, out tileMono, layerId) || tileMono == null)
+        if (!_registry.TryGetEventNodeAtCell(cellPos, out EventNodeTile tileMono, layerId) || tileMono == null)
         {
-            callback?.Invoke(true, false);
-            onExecutionComplete?.Invoke();
+            Debug.Log($"EventTileManager.RequestEnterCell_PreMove: 在格子 {cellPos} 上未找到 EventNodeTile，默认允许进入");
+            CompleteWithAllow(callback, onExecutionComplete);
             return;
         }
 
         if (!tileMono.TryBeginTrigger())
         {
-            // 如果当前节点正在触发中，默认不允许进入但不阻塞（避免重复触发和死锁）
-            callback?.Invoke(false, false);
-            onExecutionComplete?.Invoke();
+            Debug.Log($"EventTileManager.RequestEnterCell_PreMove: EventNodeTile 在格子 {cellPos} 上已被触发且未完成，拒绝进入以避免重复触发");
+            CompleteWithDeny(callback, onExecutionComplete);
             return;
         }
 
-        // 仅 OnPlayerEnter 类型在预移动阶段处理
         if (tileMono.triggerMode != EventNodeTile.TriggerMode.OnPlayerEnter)
         {
-            callback?.Invoke(true, false);
-            onExecutionComplete?.Invoke();
+            Debug.Log($"EventTileManager.RequestEnterCell_PreMove: EventNodeTile 在格子 {cellPos} 上触发模式为 {tileMono.triggerMode}，不处理预移动请求");
+            CompleteWithAllow(callback, onExecutionComplete);
             return;
         }
 
@@ -353,7 +351,7 @@ public class EventTileManager : MonoBehaviour
         var enterPermission = tileMono.enterPermission;
         var executionBlocking = tileMono.executionBlocking == EventNodeTile.ExecutionBlocking.BlockDuringExecution;
 
-        // 主处理
+        //====================================主处理==========================================//
         try
         {
             // 首先根据 enterPermission 预设一个初始允许状态和是否需要决策的标志
@@ -437,8 +435,7 @@ public class EventTileManager : MonoBehaviour
         catch (Exception ex)
         {
             Debug.LogException(ex);
-            callback?.Invoke(true, false);
-            onExecutionComplete?.Invoke();
+            CompleteWithAllow(callback, onExecutionComplete);
         }
     }
     #endregion
@@ -460,8 +457,8 @@ public class EventTileManager : MonoBehaviour
         var ctx = new EventNodeTileContext
         {
             Data = BuildEventNodeTileData(cellPos, tileObject, layerId),
-            EventTileManager = this,
         };
+            ctx.RegisterService<EventTileManager>(this);
         return ctx;
     }
     /// <summary>
@@ -484,6 +481,20 @@ public class EventTileManager : MonoBehaviour
     {
         if (layerId.HasValue) return layerId.Value;
         return _globalEventVariables != null ? _globalEventVariables.GetInt(GlobalEventKey.LayerId) : 0;
+    }
+
+    /// <summary>
+    /// 统一处理异常场景下的回调，默认允许进入并结束执行。
+    /// </summary>
+    private void CompleteWithAllow(Action<bool, bool> callback, Action onExecutionComplete)
+    {
+        callback?.Invoke(true, false);
+        onExecutionComplete?.Invoke();
+    }
+    private void CompleteWithDeny(Action<bool, bool> callback, Action onExecutionComplete)
+    {
+        callback?.Invoke(false, false);
+        onExecutionComplete?.Invoke();
     }
     #endregion
 }

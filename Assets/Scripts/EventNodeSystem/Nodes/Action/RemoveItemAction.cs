@@ -7,17 +7,23 @@ public class RemoveAction : ActionNode
     public ItemType itemType;
     public int count = 1;
 
+    public override Type[] GetRequiredServices()
+    {
+        return new[] { typeof(IInventoryService) };
+    }
+
     public override void Execute(EventNodeContext ctx, Action onComplete)
     {
-        // Ê¹ÓÃ½Ó¿Ú·şÎñ½øĞĞÒÆ³ı
-        if (ctx.InventoryService != null)
+        // ä½¿ç”¨æ¥å£æœåŠ¡è¿›è¡Œç§»é™¤
+        var inventoryService = ctx.GetService<IInventoryService>();
+        if (inventoryService != null)
         {
-            ctx.InventoryService.RemoveItem(itemType, count);
-            Debug.Log("Ê¹ÓÃ InventoryService ÒÆ³ıµÀ¾ß¡£");
+            inventoryService.RemoveItem(itemType, count);
+            Debug.Log("ä½¿ç”¨ InventoryService ç§»é™¤é“å…·ã€‚");
         }
         else
         {
-            Debug.LogError("RemoveAction: InventoryService Î´ÅäÖÃ£¬ÎŞ·¨ÒÆ³ıµÀ¾ß¡£ÇëÈ·±£ InventoryAdapter ÒÑÍ¨¹ıÈİÆ÷×¢²á¡£");
+            Debug.LogError("RemoveAction: InventoryService æœªé…ç½®ï¼Œæ— æ³•ç§»é™¤é“å…·ã€‚è¯·ç¡®ä¿ InventoryAdapter å·²é€šè¿‡å®¹å™¨æ³¨å†Œã€‚");
         }
         onComplete?.Invoke();
     }

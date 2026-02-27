@@ -4,6 +4,11 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "CanDefeatCondition", menuName = "EventNodes/Condition/CanDefeat")]
 public class CanDefeatCondition : TileConditionNode
 {
+    public override Type[] GetRequiredServices()
+    {
+        return new[] { typeof(PlayerAttribute) };
+    }
+
     public override void EvaluateTile(EventNodeTileContext ctx, Action<bool> onResult)
     {
         //Debug.Log("Node:对战检测开始");
@@ -16,7 +21,14 @@ public class CanDefeatCondition : TileConditionNode
             return;
         }
         // 构建玩家数据（与之前 EventManager 的做法一致）
-        BattleUnitData playerData = ctx.PlayerAttribute.GetPlayerUnitData();
+        var playerAttribute = ctx?.GetService<PlayerAttribute>();
+        if (playerAttribute == null)
+        {
+            Debug.LogWarning("CanDefeatCondition: PlayerAttribute 未配置，无法计算战斗结果。");
+            onResult?.Invoke(false);
+            return;
+        }
+        BattleUnitData playerData = playerAttribute.GetPlayerUnitData();
         BattleUnitData enemyData = enemyUnit.GetBattleUnitData();
         try
         {

@@ -2,6 +2,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using VContainer;
+using VContainer.Unity;
 
 /// <summary>
 /// Service-based event runner. Explicitly inject dependencies via constructor.
@@ -18,22 +20,17 @@ public class EventRunnerService : IEventRunner
     private readonly MapManager _mapManager;
     private readonly DialogueManager _dialogueManager;
 
-    public EventRunnerService(
-        CoroutineRunner coroutineRunner,
-        GridManager gridManager,
-        IInventoryService inventoryService,
-        PlayerAttribute playerAttribute,
-        EventCenter eventCenter,
-        MapManager mapManager,
-        DialogueManager dialogueManager)
+    [Inject]
+    public EventRunnerService(IObjectResolver resolver)
     {
-        _coroutineRunner = coroutineRunner;
-        _gridManager = gridManager;
-        _inventoryService = inventoryService;
-        _playerAttribute = playerAttribute;
-        _eventCenter = eventCenter;
-        _mapManager = mapManager;
-        _dialogueManager = dialogueManager;
+        if (resolver == null) throw new ArgumentNullException(nameof(resolver));
+        _coroutineRunner = resolver.Resolve<CoroutineRunner>();
+        _gridManager = resolver.Resolve<GridManager>();
+        _inventoryService = resolver.Resolve<IInventoryService>();
+        _playerAttribute = resolver.Resolve<PlayerAttribute>();
+        _eventCenter = resolver.Resolve<EventCenter>();
+        _mapManager = resolver.Resolve<MapManager>();
+        _dialogueManager = resolver.Resolve<DialogueManager>();
     }
 
     public void Run(EventNode rootNode, EventNodeContext ctx, Action onComplete)
@@ -41,12 +38,9 @@ public class EventRunnerService : IEventRunner
         if (rootNode == null) { onComplete?.Invoke(); return; }
         ctx ??= new EventNodeContext();
         ctx.OwnerMono = _coroutineRunner;
-        ctx.GridManager = _gridManager;
-        ctx.InventoryService = _inventoryService;
-        ctx.PlayerAttribute = _playerAttribute;
-        ctx.EventCenter = _eventCenter;
-        ctx.MapManager = _mapManager;
-        ctx.DialogueManager = _dialogueManager;
+
+        var required = new HashSet<Type>(rootNode.GetRequiredServices() ?? Array.Empty<Type>());
+        RegisterRequiredServices(required, ctx);
 
         try
         {
@@ -96,12 +90,21 @@ public class EventRunnerService : IEventRunner
         if (actions == null || actions.Count == 0) { onComplete?.Invoke(); return; }
         ctx ??= new EventNodeContext();
         ctx.OwnerMono = _coroutineRunner;
-        ctx.GridManager = _gridManager;
-        ctx.InventoryService = _inventoryService;
-        ctx.PlayerAttribute = _playerAttribute;
-        ctx.EventCenter = _eventCenter;
-        ctx.MapManager = _mapManager;
-        ctx.DialogueManager = _dialogueManager;
+
+        var required = new HashSet<Type>();
+        foreach (var node in actions)
+        {
+            if (node == null) continue;
+            var list = node.GetRequiredServices();
+            if (list == null) continue;
+            foreach (var type in list)
+            {
+                Debug.Log($"Node {node.GetType().Name} 需要服务 {type.Name}");
+                required.Add(type);
+            }
+        }
+
+        RegisterRequiredServices(required, ctx, true);
 
         _coroutineRunner?.Run(RunActionsSequence(actions, ctx, onComplete));
     }
@@ -149,5 +152,37 @@ public class EventRunnerService : IEventRunner
             while (!finished) yield return null;
         }
         onComplete?.Invoke();
+    }
+
+    private void RegisterRequiredServices(IEnumerable<Type> required, EventNodeContext ctx, bool logRegistration = false)
+    {
+        if (required == null || ctx == null) return;
+        foreach (var type in required)
+        {
+            if (TryGetKnownService(type, out var service))
+            {
+                if (logRegistration)
+                {
+                    Debug.Log($"注册服务 {type.Name} 到上下文");
+                }
+                ctx.RegisterService(type, service);
+            }
+        }
+    }
+
+    private bool TryGetKnownService(Type type, out object service)
+    {
+        service = null;
+        if (type == null) return false;
+
+        if (type == typeof(CoroutineRunner)) service = _coroutineRunner;
+        else if (type == typeof(GridManager)) service = _gridManager;
+        else if (type == typeof(IInventoryService)) service = _inventoryService;
+        else if (type == typeof(PlayerAttribute)) service = _playerAttribute;
+        else if (type == typeof(EventCenter)) service = _eventCenter;
+        else if (type == typeof(MapManager)) service = _mapManager;
+        else if (type == typeof(DialogueManager)) service = _dialogueManager;
+
+        return service != null;
     }
 }

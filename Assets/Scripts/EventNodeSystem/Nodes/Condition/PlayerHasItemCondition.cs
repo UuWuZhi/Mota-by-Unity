@@ -7,18 +7,24 @@ public class PlayerHasItemCondition : ConditionNode
     public ItemType itemType;
     public int requiredCount = 1;
 
+    public override Type[] GetRequiredServices()
+    {
+        return new[] { typeof(IInventoryService) };
+    }
+
     public override void Evaluate(EventNodeContext ctx, Action<bool> onResult)
     {
         bool hasItem = false;
         try
         {
-            if (ctx.InventoryService != null)
+            var inventoryService = ctx?.GetService<IInventoryService>();
+            if (inventoryService != null)
             {
-                hasItem = ctx.InventoryService.HasItem(itemType, requiredCount);
+                hasItem = inventoryService.HasItem(itemType, requiredCount);
             }
             else
             {
-                Debug.LogError("PlayerHasItemCondition: InventoryService Î´ÅäÖÃ£¬ÎŞ·¨ÅĞ¶ÏµÀ¾ßÊıÁ¿¡£ÇëÈ·±£ InventoryAdapter ÒÑÍ¨¹ıÈİÆ÷×¢²á¡£");
+                Debug.LogError("PlayerHasItemCondition: InventoryService æœªé…ç½®ï¼Œæ— æ³•åˆ¤æ–­ç©å®¶ç‰©å“æ•°é‡ã€‚");
             }
         }
         catch { hasItem = false; }

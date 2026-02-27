@@ -39,22 +39,5 @@ public class DiBootstrap : LifetimeScope
         builder.RegisterEntryPoint<GameInitializationEntryPoint>();
 
         builder.Register<EventRunnerService>(Lifetime.Singleton).As<IEventRunner>().AsSelf();
-        // 在容器构建完成后对场景中的现有实例与动态实例执行注入
-        builder.RegisterBuildCallback(container =>
-        {
-
-            foreach (var ui in GameObject.FindObjectsOfType<MonsterBar>())
-            {
-                if (ui != null && ui.gameObject != null)
-                    container.InjectGameObject(ui.gameObject);
-            }
-
-            // 也尝试注入 EventNodeTile owners if needed (inject their components)
-            foreach (var tile in GameObject.FindObjectsOfType<EventNodeTile>())
-            {
-                if (tile != null && tile.gameObject != null)
-                    container.InjectGameObject(tile.gameObject);
-            }
-        });
     }
 }

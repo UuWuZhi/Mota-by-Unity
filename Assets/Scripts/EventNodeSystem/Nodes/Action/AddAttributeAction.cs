@@ -4,15 +4,20 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "AddAttributeAction", menuName = "EventNodes/Action/AddAttribute")]
 public class AddAttributeAction : ActionNode
 {
+    public override Type[] GetRequiredServices()
+    {
+        return new[] { typeof(PlayerAttribute) };
+    }
+
     public AttributeType attributeType;
     public int value = 1;
 
     public override void Execute(EventNodeContext ctx, Action onComplete)
     {
-        // 简单调用背包接口
-        if (ctx.PlayerAttribute != null)
+        var playerAttribute = ctx.GetService<PlayerAttribute>();
+        if (playerAttribute != null)
         {
-            ctx.PlayerAttribute.AddAttribute(attributeType, value);
+            playerAttribute.AddAttribute(attributeType, value);
         }
         onComplete?.Invoke();
     }

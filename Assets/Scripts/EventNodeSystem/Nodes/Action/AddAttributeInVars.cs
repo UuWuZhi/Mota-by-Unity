@@ -6,14 +6,20 @@ public class AddAttributeInVarsAction : ActionNode
 {
     public AttributeType attributeType;
     public string valueVarName;
+
+    public override Type[] GetRequiredServices()
+    {
+        return new[] { typeof(PlayerAttribute) };
+    }
+
     public override void Execute(EventNodeContext ctx, Action onComplete)
     {
         ctx.Vars.TryGetValue(valueVarName, out object valueObj);
-        // 简单调用背包接口
-        if (ctx.PlayerAttribute != null)
+        var playerAttribute = ctx.GetService<PlayerAttribute>();
+        if (playerAttribute != null)
         {
             int value = Convert.ToInt32(valueObj);
-            ctx.PlayerAttribute.AddAttribute(attributeType, value);
+            playerAttribute.AddAttribute(attributeType, value);
         }
         onComplete?.Invoke();
     }

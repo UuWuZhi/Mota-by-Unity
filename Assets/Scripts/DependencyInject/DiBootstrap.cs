@@ -27,6 +27,8 @@ public class DiBootstrap : LifetimeScope
         builder.RegisterComponentInHierarchy<PlayerMovement>().AsSelf();
         builder.RegisterComponentInHierarchy<MovementInputManager>().AsSelf();
         builder.RegisterComponentInHierarchy<PlayerInventory>().AsSelf().As<IInventoryService>();
+        // UI slots in scene should be injected as components in hierarchy so their [Inject] methods run
+        builder.RegisterComponentInHierarchy<InventorySlot>().AsSelf();
 
         // UI相关
         builder.RegisterComponentInHierarchy<UIDialogue>().AsSelf();
@@ -39,5 +41,7 @@ public class DiBootstrap : LifetimeScope
         builder.RegisterEntryPoint<GameInitializationEntryPoint>();
 
         builder.Register<EventRunnerService>(Lifetime.Singleton).As<IEventRunner>().AsSelf();
+        // Register ItemUseHandler to allow UI and other systems to use items via a unified handler
+        builder.Register<ItemUseHandler>(Lifetime.Singleton).AsSelf();
     }
 }

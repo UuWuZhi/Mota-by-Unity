@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 6567645563763990593}
   - component: {fileID: 5863455508743872378}
   m_Layer: 0
-  m_Name: MonsterBookEvent
+  m_Name: Pickaxe
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -49,7 +49,7 @@ MonoBehaviour:
   enterPermission: 0
   executionBlocking: 0
   actions:
-  - {fileID: 11400000, guid: 1c506a90f5f86844bb6766cea6f12706, type: 2}
+  - {fileID: 11400000, guid: 5b23bb5090637604d9367283b53ec076, type: 2}
   CellPos: {x: 0, y: 0, z: 0}
   triggerTimeoutSeconds: 10
 --- !u!95 &5863455508743872378

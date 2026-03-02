@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 [CreateAssetMenu(fileName = "ItemData", menuName = "Data/Item/ItemData", order = 3)]
 public class ItemData : ScriptableObject
@@ -18,5 +19,12 @@ public class ItemData : ScriptableObject
     public ItemUseMode useMode  // 使用模式
         = ItemUseMode.Unusable; // 不可用 / 消耗性 / 可重复使用
 
+    // 旧字段保留以兼容历史数据（可在迁移后移除）
+    [Header("Deprecated - use 'useNodes' instead")] 
     public BaseItem behavior;   // 物品行为定义（ScriptableObject，包含使用效果等逻辑）
+
+    // 新：物品使用时按序执行的节点列表（可包含 Sequence/If/Action 等节点）
+    public List<EventNode> useNodes = new();
+
+    public bool IsUsable => useNodes != null && useNodes.Count > 0 && useMode != ItemUseMode.Unusable;
 }

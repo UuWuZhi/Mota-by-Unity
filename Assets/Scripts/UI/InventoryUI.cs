@@ -73,35 +73,23 @@ public class InventoryUI : BaseUI
     {
         if (slotParent == null || slotPrefab == null) return;
         if (maxSlots <= 0) maxSlots = 36;
-
-        // Clear existing slots and destroy their GameObjects to rebuild from scratch
-        if (_slots.Count > 0)
+        // 如果已经存在槽位，则尽量复用它们；否则收集 slotParent 下已有的 InventorySlot
+        if (_slots.Count == 0)
         {
-            for (int i = 0; i < _slots.Count; i++)
-            {
-                var s = _slots[i];
-                if (s != null && s.gameObject != null)
-                {
-                    Destroy(s.gameObject);
-                }
-            }
-            _slots.Clear();
-        }
-        else
-        {
-            // Also ensure any leftover children under slotParent are removed
-            for (int i = slotParent.childCount - 1; i >= 0; i--)
+            for (int i = 0; i < slotParent.childCount; i++)
             {
                 var child = slotParent.GetChild(i);
-                if (child != null)
+                if (child == null) continue;
+                var slot = child.GetComponent<InventorySlot>();
+                if (slot != null)
                 {
-                    Destroy(child.gameObject);
+                    _slots.Add(slot);
                 }
             }
         }
 
-        // Instantiate new slots
-        for (int i = 0; i < maxSlots; i++)
+        // 如果当前槽少于目标数量，实例化缺失的槽位并添加到列表
+        for (int i = _slots.Count; i < maxSlots; i++)
         {
             var go = Instantiate(slotPrefab, slotParent);
             go.name = $"InventorySlot_{i}";
@@ -113,6 +101,16 @@ public class InventoryUI : BaseUI
                 continue;
             }
             _slots.Add(slot);
+        }
+
+        // 如果当前槽多于目标数量，禁用多余槽位（不销毁，以便恢复或调试）
+        if (_slots.Count > maxSlots)
+        {
+            for (int i = maxSlots; i < _slots.Count; i++)
+            {
+                var s = _slots[i];
+                if (s != null && s.gameObject != null) s.gameObject.SetActive(false);
+            }
         }
     }
 

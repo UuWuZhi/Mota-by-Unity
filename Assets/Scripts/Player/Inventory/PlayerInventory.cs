@@ -5,7 +5,7 @@ using VContainer;
 
 public class PlayerInventory : MonoBehaviour, IInventoryService
 {
-    private readonly List<InventoryEntry> entries = new List<InventoryEntry>();
+    private readonly List<InventoryEntry> entries = new();
 
     private EventCenter _eventCenter;
     [Inject]

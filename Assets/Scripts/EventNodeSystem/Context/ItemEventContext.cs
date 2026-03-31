@@ -5,13 +5,7 @@
 public class ItemEventContext : EventNodeContext
 {
     public ItemData ItemData { get; set; }
-    /// <summary>
-    /// 表示物品使用是否成功（节点执行结果）。
-    /// 使用下划线前缀以突出这是上下文内的运行时标志。
-    /// 节点应调用 MarkUseSucceeded() 来标记成功。
-    /// </summary>
-    public bool UseSucceeded { get; private set; } = false;
-
+    public bool UseSucceeded { get; private set; } = false; //表示物品使用是否成功
     public void MarkUseSucceeded() => UseSucceeded = true;
 
 }

@@ -39,10 +39,9 @@ public class ItemUseHandler
         // Runner 会根据节点的 GetRequiredServices 自动注册已知服务到 ctx
         _runner.RunActions(item.useNodes, ctx, () =>
         {
-            // 兼容多种约定：优先读取 vars 中的 use_succeeded，其次检查 ItemEventContext.Consumed
+            // 约定：节点在成功时应调用 ItemEventContext.MarkUseSucceeded(); 默认为未成功
             bool succeeded = false;
-            if (ctx.Vars != null && ctx.Vars.TryGetValue("use_succeeded", out var o) && o is bool b && b) succeeded = true;
-            else if (ctx is ItemEventContext iec && iec.UseSucceeded) succeeded = true;
+            if (ctx is ItemEventContext iec && iec.UseSucceeded) succeeded = true;
 
             if (succeeded && item.useMode == ItemData.ItemUseMode.Consumable)
             {

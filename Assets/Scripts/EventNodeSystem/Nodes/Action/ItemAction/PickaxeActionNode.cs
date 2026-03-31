@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "PickaxeAction", menuName = "EventNodes/Action/Item/Pickaxe")]
-public class PickaxeActionNode : ActionNode
+public class PickaxeActionNode : ItemActionNode
 {
     // 可配置是否需要特定工具或伤害等（留作扩展）
     public ItemType requiredTool = ItemType.Pickaxe;
@@ -13,7 +13,7 @@ public class PickaxeActionNode : ActionNode
         return new[] { typeof(GridManager), typeof(IInventoryService) };
     }
 
-    public override void Execute(EventNodeContext ctx, Action onComplete)
+    public override void ExecuteItem(ItemEventContext ctx, Action onComplete)
     {
         try
         {
@@ -35,8 +35,6 @@ public class PickaxeActionNode : ActionNode
             if (grid == null || player == null)
             {
                 Debug.LogWarning("PickaxeActionNode: 缺少 GridManager 或 PlayerState，跳过执行");
-                // 标记失败
-                if (ctx != null && ctx.Vars != null) ctx.Vars["use_succeeded"] = false;
                 onComplete?.Invoke();
                 return;
             }
@@ -55,7 +53,6 @@ public class PickaxeActionNode : ActionNode
 
             if (!grid.IsInGridBounds(targetCell))
             {
-                ctx.Vars["use_succeeded"] = false;
                 Debug.LogWarning($"PickaxeActionNode: 目标格子 {targetCell} 超出地图边界");
                 onComplete?.Invoke();
                 return;
@@ -64,7 +61,6 @@ public class PickaxeActionNode : ActionNode
             var obstacle = grid.GetObstacleTileAtCell(targetCell);
             if (obstacle == null || !obstacle.IsBreakable)
             {
-                ctx.Vars["use_succeeded"] = false;
                 Debug.LogWarning($"PickaxeActionNode: 目标格子 {targetCell} 没有可挖掘的障碍物");
                 onComplete?.Invoke();
                 return;
@@ -81,7 +77,6 @@ public class PickaxeActionNode : ActionNode
                 if (!hasRequired)
                 {
                     Debug.LogWarning($"PickaxeActionNode: 目标格子 {targetCell} 的障碍物需要特定工具 {requiredTool}，但玩家没有");
-                    ctx.Vars["use_succeeded"] = false;
                     onComplete?.Invoke();
                     return;
                 }
@@ -91,14 +86,12 @@ public class PickaxeActionNode : ActionNode
             if (!removed)
             {
                 Debug.LogWarning($"PickaxeActionNode: 无法移除目标格子 {targetCell} 的障碍物");
-                ctx.Vars["use_succeeded"] = false;
                 onComplete?.Invoke();
                 return;
             }
 
-            // 标记成功：优先使用 ItemEventContext 的约定
-            if (ctx is ItemEventContext iec2) iec2.MarkUseSucceeded();
-            else ctx.Vars["use_succeeded"] = true;
+            // 标记成功：使用 ItemEventContext 的约定
+            ctx.MarkUseSucceeded();
             Debug.Log($"PickaxeActionNode: 成功挖掘格子 {targetCell} 的障碍物");
 
             // 如果希望节点直接消费物品，可以在此调用 inventory.RemoveItem
@@ -108,7 +101,6 @@ public class PickaxeActionNode : ActionNode
         catch (Exception ex)
         {
             Debug.LogException(ex);
-            if (ctx != null && ctx.Vars != null) ctx.Vars["use_succeeded"] = false;
         }
         finally
         {

@@ -13,16 +13,14 @@ public class InventoryUI : BaseUI
     private int maxSlots = 36;                  // 固定槽位数量
     private List<InventorySlot> _slots = new(); // 已创建的槽位列表
 
-    private EventCenter _eventCenter;
     private IInventoryService _inventory;
     private ItemDatabase _itemDatabase;
 
     private bool _subscribed = false;           // 是否已订阅事件
 
     [Inject]
-    public void Construct(EventCenter eventCenter, IInventoryService inventory, ItemDatabase itemDatabase = null)
+    public void Construct(IInventoryService inventory, ItemDatabase itemDatabase = null)
     {
-        _eventCenter = eventCenter;
         _inventory = inventory;
         _itemDatabase = itemDatabase;
         TrySubscribe();
@@ -43,15 +41,15 @@ public class InventoryUI : BaseUI
     private void TrySubscribe()
     {
         if (_subscribed) return;
-        if (_eventCenter == null) return;
-        _eventCenter.OnInventoryChanged += OnInventoryChanged;
+        if (_inventory == null) return;
+        _inventory.InventoryChanged += OnInventoryChanged;
         _subscribed = true;
     }
 
     private void TryUnsubscribe()
     {
         if (!_subscribed) return;
-        if (_eventCenter != null) _eventCenter.OnInventoryChanged -= OnInventoryChanged;
+        if (_inventory != null) _inventory.InventoryChanged -= OnInventoryChanged;
         _subscribed = false;
     }
 

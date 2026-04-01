@@ -21,6 +21,7 @@ public enum Facing
 public class PlayerState : MonoBehaviour
 {
     private EventCenter _eventCenter;
+    private PlayerMovement _playerMovement;
     private GridManager _gridManager;
     private bool _subscribed = false;
 
@@ -30,9 +31,10 @@ public class PlayerState : MonoBehaviour
     public Facing Facing { get; private set; }
 
     [Inject]
-    public void Inject(EventCenter eventCenter, GridManager gridManager)
+    public void Inject(EventCenter eventCenter, PlayerMovement playerMovement, GridManager gridManager)
     {
         _eventCenter = eventCenter;
+        _playerMovement = playerMovement;
         _gridManager = gridManager;
         Subscribe();
     }
@@ -46,7 +48,10 @@ public class PlayerState : MonoBehaviour
     {
         if (_eventCenter == null || _subscribed) return;
         _eventCenter.OnPlayerArrived += OnPlayerArrived;
-        _eventCenter.OnPlayerMoveInput += OnPlayerMoveInput;
+        if (_playerMovement != null)
+        {
+            _playerMovement.OnMoveInput += OnPlayerMoveInput;
+        }
         _subscribed = true;
     }
 
@@ -54,7 +59,10 @@ public class PlayerState : MonoBehaviour
     {
         if (_eventCenter == null || !_subscribed) return;
         _eventCenter.OnPlayerArrived -= OnPlayerArrived;
-        _eventCenter.OnPlayerMoveInput -= OnPlayerMoveInput;
+        if (_playerMovement != null)
+        {
+            _playerMovement.OnMoveInput -= OnPlayerMoveInput;
+        }
         _subscribed = false;
     }
 

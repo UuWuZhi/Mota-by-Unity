@@ -9,15 +9,13 @@ public class GameInitializationEntryPoint : IStartable
     private readonly IInventoryService _inventoryService;
     private readonly MapManager _mapManager;
     private readonly PlayerAttribute _playerAttribute;
-    private readonly EventCenter _eventCenter;
 
     // If you need the player GameObject reference, keep an inspector-assigned reference on a small MonoBehaviour and register its instance.
-    public GameInitializationEntryPoint(IInventoryService inventoryService, MapManager mapManager, PlayerAttribute playerAttribute, EventCenter eventCenter)
+    public GameInitializationEntryPoint(IInventoryService inventoryService, MapManager mapManager, PlayerAttribute playerAttribute)
     {
         _inventoryService = inventoryService;
         _mapManager = mapManager;
         _playerAttribute = playerAttribute;
-        _eventCenter = eventCenter;
     }
 
     // IStartable.Start runs when the container builds and starts entrypoints
@@ -34,7 +32,7 @@ public class GameInitializationEntryPoint : IStartable
         // 3. 初始化背包道具
         _inventoryService.InitItemCounts();
         //Debug.Log("背包道具初始化完成！（Container EntryPoint）");
-        _eventCenter.TriggerLayerSwitchRequest(new LayerSwitchRequestEventArgs
+        _mapManager.RequestLayerSwitch(new LayerSwitchRequestEventArgs
         {
             TargetLayerId = 0,
             SpawnPointId = 0

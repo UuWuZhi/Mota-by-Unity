@@ -10,7 +10,7 @@ public class PlayerAnimationController : MonoBehaviour
     public string walkAnimClipName = "Player_Walk";
     private float _walkAnimRawLength; // 缓存Walk动画原始时长
 
-    private EventCenter _eventCenter;
+    private PlayerMovement _playerMovement;
 
     private void Awake()
     {
@@ -19,23 +19,25 @@ public class PlayerAnimationController : MonoBehaviour
         _walkAnimRawLength = GetAnimClipLength(walkAnimClipName);
     }
     [Inject]
-    public void Inject(EventCenter eventCenter)
+    public void Inject(PlayerMovement playerMovement)
     {
-        _eventCenter = eventCenter;
+        _playerMovement = playerMovement;
     }
 
     // 订阅动画相关事件
     private void OnEnable()
     {
-        _eventCenter.OnMoveDirectionChanged += OnMoveDirectionChanged;
-        _eventCenter.OnMoveStateChanged += OnMoveStateChanged;
+        if (_playerMovement == null) return;
+        _playerMovement.OnMoveDirectionChanged += OnMoveDirectionChanged;
+        _playerMovement.OnMoveStateChanged += OnMoveStateChanged;
     }
 
     // 取消订阅（避免内存泄漏）
     private void OnDisable()
     {
-        _eventCenter.OnMoveDirectionChanged -= OnMoveDirectionChanged;
-        _eventCenter.OnMoveStateChanged -= OnMoveStateChanged;
+        if (_playerMovement == null) return;
+        _playerMovement.OnMoveDirectionChanged -= OnMoveDirectionChanged;
+        _playerMovement.OnMoveStateChanged -= OnMoveStateChanged;
     }
 
     // 处理方向更新事件（更新混合树参数）

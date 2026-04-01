@@ -102,7 +102,7 @@ public class EventTileManager : MonoBehaviour
                 Debug.LogWarning("EventTileManager: OnLayerSwitched 收到的 args.EventTilemap 为 null，无法加载事件瓦片");
             }
             // 触发 GridLoaded 以便处理 OnLoad 类型节点
-            _eventCenter.TriggerGridLoaded(new GridLoadedEventArgs());
+            OnGridLoaded(this, new GridLoadedEventArgs());
         }
         catch (Exception ex)
         {
@@ -205,12 +205,17 @@ public class EventTileManager : MonoBehaviour
     /// </summary>
     private void SubscribeEventCenter()
     {
-        if (_eventCenter == null || _eventSubscribed) return;
-        _eventCenter.OnPlayerArrived += OnPlayerArrived;
-        _eventCenter.OnGridLoaded += OnGridLoaded;
-        _eventCenter.OnEventTileMoved += OnEventTileMoved;
-        _eventCenter.OnEventTileRemoved += OnEventTileRemoved;
-        _eventCenter.OnLayerSwitched += OnLayerSwitched;
+        if (_eventSubscribed) return;
+        if (_eventCenter != null)
+        {
+            _eventCenter.OnPlayerArrived += OnPlayerArrived;
+            _eventCenter.OnLayerSwitched += OnLayerSwitched;
+        }
+        if (_gridManager != null)
+        {
+            _gridManager.OnEventTileMoved += OnEventTileMoved;
+            _gridManager.OnEventTileRemoved += OnEventTileRemoved;
+        }
         _eventSubscribed = true;
     }
 
@@ -219,12 +224,17 @@ public class EventTileManager : MonoBehaviour
     /// </summary>
     private void UnsubscribeEventCenter()
     {
-        if (_eventCenter == null || !_eventSubscribed) return;
-        _eventCenter.OnPlayerArrived -= OnPlayerArrived;
-        _eventCenter.OnGridLoaded -= OnGridLoaded;
-        _eventCenter.OnEventTileMoved -= OnEventTileMoved;
-        _eventCenter.OnEventTileRemoved -= OnEventTileRemoved;
-        _eventCenter.OnLayerSwitched -= OnLayerSwitched;
+        if (!_eventSubscribed) return;
+        if (_eventCenter != null)
+        {
+            _eventCenter.OnPlayerArrived -= OnPlayerArrived;
+            _eventCenter.OnLayerSwitched -= OnLayerSwitched;
+        }
+        if (_gridManager != null)
+        {
+            _gridManager.OnEventTileMoved -= OnEventTileMoved;
+            _gridManager.OnEventTileRemoved -= OnEventTileRemoved;
+        }
         _eventSubscribed = false;
     }
     #endregion

@@ -1,6 +1,6 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
-using VContainer;
 
 /// <summary>
 /// 玩家属性管理器（单例）：管理玩家的HP、攻击、防御等基础属性
@@ -11,12 +11,7 @@ public class PlayerAttribute : MonoBehaviour
     [SerializeField] private List<AttributeBonus> InitAttributes = new List<AttributeBonus>();
     private Dictionary<AttributeType, int> _attributes; // 用字典存储属性值（键：属性类型，值：属性值）
 
-    private EventCenter _eventCenter;
-    [Inject]
-    public void Inject(EventCenter eventCenter)
-    {
-        _eventCenter = eventCenter;
-    }
+    public event EventHandler<AttributeChangedEventArgs> AttributeChanged;
 
     /// <summary>
     /// 重置属性为初始值（新游戏/复活时调用）
@@ -36,7 +31,7 @@ public class PlayerAttribute : MonoBehaviour
         }
 
         // 通过事件中心触发全属性更新事件
-        _eventCenter.TriggerAttributeChanged(new AttributeChangedEventArgs
+        AttributeChanged?.Invoke(this, new AttributeChangedEventArgs
         {
             ChangedType = AttributeType.All
         });
@@ -69,7 +64,7 @@ public class PlayerAttribute : MonoBehaviour
         _attributes[type] = value;
         Debug.Log($"{type}设置为{value}！");
         // 通过事件中心触发属性变化事件
-        _eventCenter.TriggerAttributeChanged(new AttributeChangedEventArgs
+        AttributeChanged?.Invoke(this, new AttributeChangedEventArgs
         {
             ChangedType = type
         });
@@ -98,7 +93,7 @@ public class PlayerAttribute : MonoBehaviour
         _attributes[type] += value;
         Debug.Log($"{type}+{value}！当前{type}：{_attributes[type]}");
         // 通过事件中心触发属性变化事件
-        _eventCenter.TriggerAttributeChanged(new AttributeChangedEventArgs
+        AttributeChanged?.Invoke(this, new AttributeChangedEventArgs
         {
             ChangedType = type
         });
@@ -117,7 +112,7 @@ public class PlayerAttribute : MonoBehaviour
         Debug.Log($"{type}-{value}！当前{type}：{_attributes[type]}");
 
         // 通过事件中心触发属性变化事件
-        _eventCenter.TriggerAttributeChanged(new AttributeChangedEventArgs
+        AttributeChanged?.Invoke(this, new AttributeChangedEventArgs
         {
             ChangedType = type
         });

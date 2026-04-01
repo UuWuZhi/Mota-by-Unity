@@ -9,13 +9,13 @@ using VContainer;
 /// </summary>
 public class InventoryUIInput : MonoBehaviour
 {
-    private EventCenter _eventCenter;
+    private UIManager _uiManager;
     private IGlobalEventVariables _globalEventVariables;
 
     [Inject]
-    public void Inject(EventCenter eventCenter, IGlobalEventVariables globalEventVariables)
+    public void Inject(UIManager uiManager, IGlobalEventVariables globalEventVariables)
     {
-        _eventCenter = eventCenter;
+        _uiManager = uiManager;
         _globalEventVariables = globalEventVariables;
     }
 
@@ -29,12 +29,10 @@ public class InventoryUIInput : MonoBehaviour
 
     private void ToggleInventory()
     {
+        if (_uiManager == null) return;
         if (_globalEventVariables.GetEnum<UIState>(GlobalEventKey.UIState) == UIState.Main)
         {
-            _eventCenter.TriggerToggleUI(new UIToggleEventArgs
-            {
-                UITypes = new List<UIRootType> { UIRootType.Inventory }
-            });
+            _uiManager.ToggleUI(new List<UIRootType> { UIRootType.Inventory });
         }
     }
 }

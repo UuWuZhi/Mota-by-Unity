@@ -17,7 +17,6 @@ public class UIMain : BaseUI
     [SerializeField] private TextMeshProUGUI textRedkey;
 
     private PlayerAttribute _playerAttribute;
-    private EventCenter _eventCenter;
     private IInventoryService _inventoryService;
 
     protected override bool ShowOnAwake => true;
@@ -25,10 +24,9 @@ public class UIMain : BaseUI
 
     // VContainer 注入
     [Inject]
-    public void Construct(PlayerAttribute playerAttribute, EventCenter eventCenter, IInventoryService inventory)
+    public void Construct(PlayerAttribute playerAttribute, IInventoryService inventory)
     {
         _playerAttribute = playerAttribute;
-        _eventCenter = eventCenter;
         _inventoryService = inventory;
     }
 
@@ -52,22 +50,30 @@ public class UIMain : BaseUI
 
     private void SubscribeEventCenter()
     {
-        if (!_subscribed && _eventCenter != null)
+        if (_subscribed) return;
+        if (_playerAttribute != null)
         {
-            _eventCenter.OnAttributeChanged += OnAttributeChanged;
-            _eventCenter.OnInventoryChanged += OnInventoryChanged_EventCenter;
-            _subscribed = true;
+            _playerAttribute.AttributeChanged += OnAttributeChanged;
         }
+        if (_inventoryService != null)
+        {
+            _inventoryService.InventoryChanged += OnInventoryChanged_EventCenter;
+        }
+        _subscribed = true;
     }
 
     private void UnsubscribeEventCenter()
     {
-        if (_subscribed && _eventCenter != null)
+        if (!_subscribed) return;
+        if (_playerAttribute != null)
         {
-            _eventCenter.OnAttributeChanged -= OnAttributeChanged;
-            _eventCenter.OnInventoryChanged -= OnInventoryChanged_EventCenter;
-            _subscribed = false;
+            _playerAttribute.AttributeChanged -= OnAttributeChanged;
         }
+        if (_inventoryService != null)
+        {
+            _inventoryService.InventoryChanged -= OnInventoryChanged_EventCenter;
+        }
+        _subscribed = false;
     }
 
     private void OnAttributeChanged(object sender, AttributeChangedEventArgs args)

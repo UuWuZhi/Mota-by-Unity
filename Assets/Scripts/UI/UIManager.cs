@@ -1,7 +1,5 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
-using VContainer; // for [Inject]
 
 // 中央 UI 管理器：负责注册场景中所有可控制的 UI 根对象，并统一显示/隐藏
 public class UIManager : MonoBehaviour
@@ -12,9 +10,6 @@ public class UIManager : MonoBehaviour
     // 改为持有 BaseUI，便于通过 Show/Hide/Toggle 调用而不是直接 SetActive
     private readonly Dictionary<UIRootType, BaseUI> _rootsByType = new Dictionary<UIRootType, BaseUI>();
 
-    // injected EventCenter (via VContainer)
-    private EventCenter _eventCenter;
-    private bool _subscribedToEvents = false;
 
     //==============================================================================//
     //                                                                              //
@@ -23,72 +18,6 @@ public class UIManager : MonoBehaviour
     //==============================================================================//
     #region 生命周期
 
-    private void OnEnable()
-    {
-        // Try to subscribe; if DI hasn't injected EventCenter yet, Inject(...) will call TrySubscribe later
-        TrySubscribeEvents();
-    }
-    private void OnDisable()
-    {
-        TryUnsubscribeEvents();
-    }
-
-    [Inject]
-    public void Inject(EventCenter eventCenter)
-    {
-        _eventCenter = eventCenter;
-        TrySubscribeEvents();
-    }
-
-    private void TrySubscribeEvents()
-    {
-        if (_subscribedToEvents) return;
-        if (_eventCenter == null) return;
-        _eventCenter.OnShowUI += OnShowUI;
-        _eventCenter.OnHideUI += OnHideUI;
-        _eventCenter.OnToggleUI += OnToggleUI;
-        // 订阅请求隐藏并记录 / 显示已记录的事件
-        _eventCenter.OnHideAndRecordRequested += OnHideAndRecordRequested;
-        _eventCenter.OnShowRecordedRequested += OnShowRecordedRequested;
-        _subscribedToEvents = true;
-    }
-
-    private void TryUnsubscribeEvents()
-    {
-        if (!_subscribedToEvents) return;
-        if (_eventCenter != null)
-        {
-            _eventCenter.OnShowUI -= OnShowUI;
-            _eventCenter.OnHideUI -= OnHideUI;
-            _eventCenter.OnToggleUI -= OnToggleUI;
-            _eventCenter.OnHideAndRecordRequested -= OnHideAndRecordRequested;
-            _eventCenter.OnShowRecordedRequested -= OnShowRecordedRequested;
-        }
-        _subscribedToEvents = false;
-    }
-    #endregion
-    //==============================================================================//
-    //                                                                              //
-    //                                 事件系统                                     //
-    //                                                                              //
-    //==============================================================================//
-    #region 事件系统
-    private void OnShowUI(object sender, UIShowEventArgs args)
-    {
-        ShowUI(args?.UITypes);
-    }
-
-    private void OnHideUI(object sender, UIHideEventArgs args)
-    {
-        Debug.Log("UIManager 收到 HideUI 事件");
-        Debug.Log("args.UITypes 内容： " + (args?.UITypes == null ? "null" : string.Join(", ", args.UITypes)));
-        HideUI(args?.UITypes);
-    }
-
-    private void OnToggleUI(object sender, UIToggleEventArgs args)
-    {
-        ToggleUI(args?.UITypes);
-    }
     #endregion
     //==============================================================================//
     //                                                                              //
@@ -227,17 +156,6 @@ public class UIManager : MonoBehaviour
         }
         RecordedUITypes = active;
         return active ?? new List<UIRootType>();
-    }
-
-    // Event handlers for EventCenter-driven hide/show-recorded requests
-    private void OnHideAndRecordRequested(object sender, EventArgs args)
-    {
-        HideAndRecordVisible();
-    }
-
-    private void OnShowRecordedRequested(object sender, EventArgs args)
-    {
-        ShowRecordedVisible();
     }
 
     // 枚举版本 HideAndRecordVisible

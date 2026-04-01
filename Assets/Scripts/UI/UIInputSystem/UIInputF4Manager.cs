@@ -5,12 +5,12 @@ using VContainer;
 public class UIInputF4Manager : MonoBehaviour
 {
     private IGlobalEventVariables _globalEventVariables;
-    private EventCenter _eventCenter;
+    private UIManager _uiManager;
 
     [Inject]
-    public void Inject(EventCenter eventCenter, IGlobalEventVariables globalEventVariables)
+    public void Inject(UIManager uiManager, IGlobalEventVariables globalEventVariables)
     {
-        _eventCenter = eventCenter;
+        _uiManager = uiManager;
         _globalEventVariables = globalEventVariables;
     }
 
@@ -19,16 +19,17 @@ public class UIInputF4Manager : MonoBehaviour
         // F4：隐藏全部并记住当前可见列表；再次按恢复（仅恢复先前可见的）
         if (Input.GetKeyDown(KeyCode.F4))
         {
+            if (_uiManager == null) return;
             if (_globalEventVariables.GetEnum<UIState>(GlobalEventKey.UIState) == UIState.Main)
             {
-                // 发布事件，请求隐藏并记录当前可见 UI
-                _eventCenter.TriggerHideAndRecord();
+                // 直接隐藏并记录当前可见 UI
+                _uiManager.HideAndRecordVisible();
                 _globalEventVariables.SetEnum(GlobalEventKey.UIState, UIState.Hidden);
             }
             else if (_globalEventVariables.GetEnum<UIState>(GlobalEventKey.UIState) == UIState.Hidden)
             {
-                // 发布事件，请求显示先前记录的 UI
-                _eventCenter.TriggerShowRecorded();
+                // 直接显示先前记录的 UI
+                _uiManager.ShowRecordedVisible();
                 _globalEventVariables.SetEnum(GlobalEventKey.UIState, UIState.Main);
             }
         }

@@ -16,6 +16,10 @@ public class GridManager : MonoBehaviour
     private IGlobalEventVariables _globalEventVariables;
     private EventCenter _eventCenter;
 
+    // 事件瓦片变化（局部事件，供 EventTileManager 订阅）
+    public event System.EventHandler<TileMovedEventArgs> OnEventTileMoved;
+    public event System.EventHandler<TileRemovedEventArgs> OnEventTileRemoved;
+
     private bool _eventSubscribed = false;
     //==============================================================================//
     //                                                                              //
@@ -179,13 +183,18 @@ public class GridManager : MonoBehaviour
 
         int layerId = _globalEventVariables.GetInt(GlobalEventKey.LayerId);
         targetTilemap.SetTile(cellPos, null);
-        _eventCenter.TriggerEventTileRemoved(new TileRemovedEventArgs
+        OnEventTileRemoved?.Invoke(this, new TileRemovedEventArgs
         {
             Cell = cellPos,
             LayerId = layerId,
             TileAsset = removed
         });
         return true;
+    }
+
+    public void TriggerEventTileMoved(TileMovedEventArgs args)
+    {
+        OnEventTileMoved?.Invoke(this, args);
     }
     public bool RemoveTileAtWorldPos(Vector2 worldPos, TileMapType tileMapType)
     {

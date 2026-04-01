@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using UnityEngine;
 using VContainer;
@@ -20,6 +21,10 @@ public class PlayerMovement : MonoBehaviour
     private EventCenter _eventCenter;
 
     private bool _eventSubscribed = false;
+
+    public event EventHandler<PlayerInputEventArgs> OnMoveInput;
+    public event EventHandler<PlayerMoveDirectionChangedEventArgs> OnMoveDirectionChanged;
+    public event EventHandler<PlayerMoveStateChangedEventArgs> OnMoveStateChanged;
     private bool _isMoving = false;
     private bool _waitingForEventExecution = false;
     //==============================================================================//
@@ -60,8 +65,9 @@ public class PlayerMovement : MonoBehaviour
     }
 
     // 接收输入事件
-    private void OnReceiveMoveInput(object sender, PlayerInputEventArgs args)
+    public void HandleMoveInput(PlayerInputEventArgs args)
     {
+        OnMoveInput?.Invoke(this, args);
         // 若我们正在等待事件执行完成（被阻塞），忽略新的输入
         if (_waitingForEventExecution)
             return;
@@ -79,7 +85,7 @@ public class PlayerMovement : MonoBehaviour
         float horizontal = dir.x;
         float vertical = dir.y;
         // 2. 同步Blender混合树的horizontal/vertical参数
-        _eventCenter.TriggerMoveDirectionChanged(new PlayerMoveDirectionChangedEventArgs
+        OnMoveDirectionChanged?.Invoke(this, new PlayerMoveDirectionChangedEventArgs
         {
             Horizontal = horizontal,
             Vertical = vertical
@@ -139,14 +145,12 @@ public class PlayerMovement : MonoBehaviour
     private void SubscribeEventCenter()
     {
         if (_eventCenter == null || _eventSubscribed) return;
-        _eventCenter.OnPlayerMoveInput += OnReceiveMoveInput;
         _eventCenter.OnLayerSwitched += OnLayerSwitched;
         _eventSubscribed = true;
     }
     private void UnsubscribeEventCenter()
     {
         if (_eventCenter == null || !_eventSubscribed) return;
-        _eventCenter.OnPlayerMoveInput -= OnReceiveMoveInput;
         _eventCenter.OnLayerSwitched -= OnLayerSwitched;
         _eventSubscribed = false;
     }
@@ -154,7 +158,7 @@ public class PlayerMovement : MonoBehaviour
     // 统一处理无法移动时的事件发布
     private void NotifyBlockedMovement(Vector2 blockedTargetWorldPos)
     {
-        _eventCenter.TriggerMoveStateChanged(new PlayerMoveStateChangedEventArgs { IsMoving = false, MoveTime = 0 });
+        OnMoveStateChanged?.Invoke(this, new PlayerMoveStateChangedEventArgs { IsMoving = false, MoveTime = 0 });
         _eventCenter.TriggerPlayerArrived(new PlayerArrivedEventArgs { TriggerEvent = false, TargetWorldPos = blockedTargetWorldPos });
     }
     #endregion
@@ -167,7 +171,7 @@ public class PlayerMovement : MonoBehaviour
     private void StartMoveProcess(Vector2 targetPos, Vector3Int cellPos, bool blockUntilComplete, System.Action onExecutionComplete)
     {
         float moveTime = _gridManager.tileSize / moveSpeed;
-        _eventCenter.TriggerMoveStateChanged(new PlayerMoveStateChangedEventArgs { IsMoving = true, MoveTime = moveTime });
+        OnMoveStateChanged?.Invoke(this, new PlayerMoveStateChangedEventArgs { IsMoving = true, MoveTime = moveTime });
 
         if (moveCoroutine != null)
         {
@@ -209,7 +213,7 @@ public class PlayerMovement : MonoBehaviour
         transform.position = targetPos;
         rb.position = targetPos;
         _isMoving = false;
-        _eventCenter.TriggerMoveStateChanged(new PlayerMoveStateChangedEventArgs
+        OnMoveStateChanged?.Invoke(this, new PlayerMoveStateChangedEventArgs
         {
             IsMoving = false,
             MoveTime = 0
@@ -229,7 +233,7 @@ public class PlayerMovement : MonoBehaviour
 
         _isMoving = false;
         _waitingForEventExecution = false;
-        _eventCenter.TriggerMoveStateChanged(new PlayerMoveStateChangedEventArgs
+        OnMoveStateChanged?.Invoke(this, new PlayerMoveStateChangedEventArgs
         {
             IsMoving = false,
             MoveTime = 0

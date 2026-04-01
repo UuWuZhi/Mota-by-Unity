@@ -12,11 +12,11 @@ public class MovementInputManager : MonoBehaviour
 
     public bool IsInputBlocked { get; set; } = false;       // 输入屏蔽开关（如对话/战斗时禁用移动输入）
 
-    private EventCenter _eventCenter;
+    private PlayerMovement _playerMovement;
     [Inject]
-    public void Inject(EventCenter eventCenter)
+    public void Inject(PlayerMovement playerMovement)
     {
-        _eventCenter = eventCenter;
+        _playerMovement = playerMovement;
     }
 
     // 抽象按键枚举（UP/LEFT/DOWN/RIGHT），用于在代码中统一表示方向输入
@@ -77,11 +77,14 @@ public class MovementInputManager : MonoBehaviour
             if (!useInputInterval || (Time.time - _lastInputTime >= inputInterval))
             {
                 _lastInputTime = Time.time; // 更新上次输入时间（无论是否启用间隔都记录，方便后续扩展）
-                _eventCenter.TriggerPlayerMoveInput(new PlayerInputEventArgs
+                if (_playerMovement != null)
                 {
-                    MoveDirection = moveDir,
-                    IsValidInput = true
-                });
+                    _playerMovement.HandleMoveInput(new PlayerInputEventArgs
+                    {
+                        MoveDirection = moveDir,
+                        IsValidInput = true
+                    });
+                }
             }
         }
     }

@@ -8,23 +8,22 @@ public class SwitchLayerAction : ActionNode
 
     public override Type[] GetRequiredServices()
     {
-        return new[] { typeof(MapManager), typeof(EventCenter) };
+        return new[] { typeof(MapManager) };
     }
 
     public override void Execute(EventNodeContext ctx, Action onComplete)
     {
         var mapManager = ctx?.GetService<MapManager>();
-        var eventCenter = ctx?.GetService<EventCenter>();
 
-        if (mapManager == null || eventCenter == null)
+        if (mapManager == null)
         {
-            Debug.LogError("SwitchLayerAction: MapManager 或 EventCenter 未配置，无法切换楼层。");
+            Debug.LogError("SwitchLayerAction: MapManager 未配置，无法切换楼层。");
             onComplete?.Invoke();
             return;
         }
 
         mapManager.GetLayerAndSpawnPosIDbyStairType(stairType, out int targetLayerId, out int spawnPointId);
-        eventCenter.TriggerLayerSwitchRequest(new LayerSwitchRequestEventArgs
+        mapManager.RequestLayerSwitch(new LayerSwitchRequestEventArgs
         {
             TargetLayerId = targetLayerId,
             SpawnPointId = spawnPointId

@@ -21,28 +21,18 @@ public class MapManager : MonoBehaviour
     private EventCenter _eventCenter;
     private IGlobalEventVariables _globalEventVariables;
 
-    private bool _eventSubscribed = false;
     //==============================================================================//
     //                                                                              //
     //                                 生命周期                                     //
     //                                                                              //
     //==============================================================================//
     #region 生命周期
-    private void OnEnable()
-    {
-        SubscribeEventCenter();
-    }
     [Inject]
     public void Construct(GridManager gridManager, EventCenter eventCenter, IGlobalEventVariables globalEventVariables)
     {
         _gridManager = gridManager;
         _eventCenter = eventCenter;
         _globalEventVariables = globalEventVariables;
-        SubscribeEventCenter();
-    }
-    private void OnDisable()
-    {
-        UnsubscribeEventCenter();
     }
     #endregion
     //==============================================================================//
@@ -54,9 +44,8 @@ public class MapManager : MonoBehaviour
     /// <summary>
     /// 处理楼层切换请求（隐藏当前层，显示目标层，触发切换完成事件）
     /// </summary>
-    private void OnLayerSwitchRequested(object sender, System.EventArgs args)
+    public void RequestLayerSwitch(LayerSwitchRequestEventArgs switchArgs)
     {
-        var switchArgs = args as LayerSwitchRequestEventArgs;
         if (switchArgs == null || !_layerDataCache.ContainsKey(switchArgs.TargetLayerId))
         {
             Debug.LogError($"楼层{switchArgs?.TargetLayerId}不存在！");
@@ -106,21 +95,6 @@ public class MapManager : MonoBehaviour
             });
         }
         Debug.Log($"已切换到楼层{_currentLayerId}，出生点ID：{switchArgs.SpawnPointId}");
-    }
-    private void SubscribeEventCenter()
-    {
-        if (_eventCenter == null || _eventSubscribed) return;
-        _eventCenter.OnLayerSwitchRequested += OnLayerSwitchRequested;
-        _eventSubscribed = true;
-        //Debug.Log("MapManager已订阅EventCenter事件");
-    }
-
-    private void UnsubscribeEventCenter()
-    {
-        if (_eventCenter == null || !_eventSubscribed) return;
-        _eventCenter.OnLayerSwitchRequested -= OnLayerSwitchRequested;
-        _eventSubscribed = false;
-        //Debug.Log("MapManager已取消订阅EventCenter事件");
     }
     #endregion
 

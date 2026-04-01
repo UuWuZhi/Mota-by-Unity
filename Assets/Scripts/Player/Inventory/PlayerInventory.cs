@@ -1,18 +1,13 @@
 // 玩家背包管理器
+using System;
 using System.Collections.Generic;
 using UnityEngine;
-using VContainer;
 
 public class PlayerInventory : MonoBehaviour, IInventoryService
 {
     private readonly List<InventoryEntry> entries = new();
 
-    private EventCenter _eventCenter;
-    [Inject]
-    public void Inject(EventCenter eventCenter)
-    {
-        _eventCenter = eventCenter;
-    }
+    public event EventHandler<InventoryChangedEventArgs> InventoryChanged;
     //==============================================================================//
     //                                                                              //
     //                                 道具操作                                     //
@@ -26,7 +21,7 @@ public class PlayerInventory : MonoBehaviour, IInventoryService
     {
         entries.Clear();
         // 通过 EventCenter 广播全量更新
-        _eventCenter.TriggerInventoryChanged(new InventoryChangedEventArgs(ItemType.All));
+        InventoryChanged?.Invoke(this, new InventoryChangedEventArgs(ItemType.All));
     }
     /// <summary>
     /// 添加道具（简单实现：在末尾追加新条目）
@@ -36,7 +31,7 @@ public class PlayerInventory : MonoBehaviour, IInventoryService
         if (type == ItemType.None || count <= 0) return;
 
         entries.Add(new InventoryEntry(type, count));
-        _eventCenter.TriggerInventoryChanged(new InventoryChangedEventArgs(type));
+        InventoryChanged?.Invoke(this, new InventoryChangedEventArgs(type));
         Debug.Log($"获得{type}×{count}！当前条目数：{entries.Count}");
     }
     /// <summary>
@@ -75,7 +70,7 @@ public class PlayerInventory : MonoBehaviour, IInventoryService
         }
 
         // 广播全量更新
-        _eventCenter.TriggerInventoryChanged(new InventoryChangedEventArgs(type));
+        InventoryChanged?.Invoke(this, new InventoryChangedEventArgs(type));
         return true;
     }
     /// <summary>

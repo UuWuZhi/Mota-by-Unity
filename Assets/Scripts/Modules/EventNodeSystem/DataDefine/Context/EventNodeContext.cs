@@ -10,7 +10,7 @@ using UnityEngine;
 public class EventNodeContext
 {
     public MonoBehaviour OwnerMono; // 用于 StartCoroutine 等，通常由 Runner 注入
-    public Dictionary<string, object> Vars 
+    public Dictionary<ContextVarKey, object> Vars 
         = new();                    // 临时/扩展数据
     private readonly Dictionary<Type, object> _services 
         = new();                    //按类型存储运行时服务实例
@@ -55,20 +55,27 @@ public class EventNodeContext
         return _services.ContainsKey(typeof(T));
     }
 
-    public void Set<T>(string key, T value) where T : class
+    public void Set<T>(ContextVarKey key, T value)
     {
-        if (string.IsNullOrEmpty(key)) return;
         Vars[key] = value;
     }
 
-    public T Get<T>(string key) where T : class
+    public T Get<T>(ContextVarKey key)
     {
-        if (string.IsNullOrEmpty(key)) return null;
-        if (Vars.TryGetValue(key, out var o))
+        if (TryGet(key, out T value)) return value;
+        return default;
+    }
+
+    public bool TryGet<T>(ContextVarKey key, out T value)
+    {
+        if (Vars.TryGetValue(key, out var o) && o is T castValue)
         {
-            return o as T;
+            value = castValue;
+            return true;
         }
-        return null;
+
+        value = default;
+        return false;
     }
 
 }

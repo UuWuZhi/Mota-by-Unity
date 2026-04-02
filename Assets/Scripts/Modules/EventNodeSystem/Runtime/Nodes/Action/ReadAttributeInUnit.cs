@@ -5,8 +5,9 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "ReadAttributeInUnitAction", menuName = "EventNodes/Action/ReadAttributeInUnit")]
 public class ReadAttributeInUnitAction : TileActionNode
 {
-    // 写入到 ctx.Vars 的 key 前缀，可在 Inspector 中调整
-    public string variablePrefix = "attribute";
+    // 写入到 ctx.Vars 的临时数据
+    public ContextVarKey valueMapKey = ContextVarKey.AttributeValueMap;
+    public ContextVarKey bonusListKey = ContextVarKey.AttributeBonusList;
 
     public override void ExecuteTile(EventNodeTileContext ctx, Action onComplete)
     {
@@ -28,7 +29,8 @@ public class ReadAttributeInUnitAction : TileActionNode
         if (list == null || list.Count == 0)
         {
             // 清理可能存在的旧变量（可选）
-            ctx.Vars[$"{variablePrefix}list"] = new List<AttributeBonus>();
+            ctx.Set(bonusListKey, new List<AttributeBonus>());
+            ctx.Set(valueMapKey, new Dictionary<AttributeType, int>());
             onComplete?.Invoke();
             return;
         }
@@ -42,12 +44,8 @@ public class ReadAttributeInUnitAction : TileActionNode
             aggregated[ab.Type] += ab.Value;
         }
 
-        // 写入单项属性到 ctx.Vars，键名示例： "attribute_HP"
-        foreach (var kv in aggregated)
-        {
-            string key = $"{variablePrefix}{kv.Key}";
-            ctx.Vars[key] = kv.Value;
-        }
+        ctx.Set(valueMapKey, aggregated);
+        ctx.Set(bonusListKey, new List<AttributeBonus>(list));
 
         Debug.Log($"ReadAttributeInUnitAction: 写入 {aggregated.Count} 个属性到 ctx.Vars");
 

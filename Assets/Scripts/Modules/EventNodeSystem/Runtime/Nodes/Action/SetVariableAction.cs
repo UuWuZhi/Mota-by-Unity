@@ -4,7 +4,7 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "SetVariableAction", menuName = "EventNodes/Action/SetVariable")]
 public class SetVariableAction : ActionNode
 {
-    public string key = "allowEnter";
+    public ContextVarKey key = ContextVarKey.AllowEnter;
 
     public enum VarType { Bool, Int, Float, String }
     public VarType varType = VarType.Bool;
@@ -33,7 +33,7 @@ public class SetVariableAction : ActionNode
                 case VarType.Bool:
                     {
                         bool current = false;
-                        if (ctx.Vars.TryGetValue(key, out var o) && o is bool b) current = b;
+                        if (ctx.TryGet(key, out bool b)) current = b;
                         bool result = current;
                         switch (operation)
                         {
@@ -41,13 +41,13 @@ public class SetVariableAction : ActionNode
                             case Operation.Toggle: result = !current; break;
                             default: result = boolValue; break;
                         }
-                        ctx.Vars[key] = result;
+                        ctx.Set(key, result);
                     }
                     break;
                 case VarType.Int:
                     {
                         int current = 0;
-                        if (ctx.Vars.TryGetValue(key, out var o) && o is int iv) current = iv;
+                        if (ctx.TryGet(key, out int iv)) current = iv;
                         int result = current;
                         switch (operation)
                         {
@@ -56,13 +56,13 @@ public class SetVariableAction : ActionNode
                             case Operation.Decrement: result = current - intValue; break;
                             default: result = intValue; break;
                         }
-                        ctx.Vars[key] = result;
+                        ctx.Set(key, result);
                     }
                     break;
                 case VarType.Float:
                     {
                         float current = 0f;
-                        if (ctx.Vars.TryGetValue(key, out var o) && o is float fv) current = fv;
+                        if (ctx.TryGet(key, out float fv)) current = fv;
                         float result = current;
                         switch (operation)
                         {
@@ -71,12 +71,12 @@ public class SetVariableAction : ActionNode
                             case Operation.Decrement: result = current - floatValue; break;
                             default: result = floatValue; break;
                         }
-                        ctx.Vars[key] = result;
+                        ctx.Set(key, result);
                     }
                     break;
                 case VarType.String:
                     {
-                        ctx.Vars[key] = stringValue ?? string.Empty;
+                        ctx.Set(key, stringValue ?? string.Empty);
                     }
                     break;
             }

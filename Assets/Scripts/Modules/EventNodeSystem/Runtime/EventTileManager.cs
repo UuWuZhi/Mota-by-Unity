@@ -412,7 +412,7 @@ public class EventTileManager : MonoBehaviour
                             bool finalAllow = true;
                             try
                             {
-                                if (ctx.Vars != null && ctx.Vars.TryGetValue("allowEnter", out object o) && o is bool b) finalAllow = b;
+                                if (ctx.TryGet(ContextVarKey.AllowEnter, out bool b)) finalAllow = b;
                             }
                             catch (Exception ex)
                             {

@@ -11,8 +11,8 @@ public class ModifyAttributeAction : ActionNode
     public AttributeType attributeType;
     public int value = 1;
 
-    public string attributeTypeVarKey = "attributeType";
-    public string valueVarKey = "value";
+    public ContextVarKey attributeTypeVarKey = ContextVarKey.AttributeType;
+    public ContextVarKey valueVarKey = ContextVarKey.AttributeValue;
 
     public override Type[] GetRequiredServices()
     {
@@ -135,13 +135,13 @@ public class ModifyAttributeAction : ActionNode
             return false;
         }
 
-        if (!ctx.Vars.TryGetValue(attributeTypeVarKey, out var typeObj))
+        if (!ctx.TryGet(attributeTypeVarKey, out object typeObj))
         {
             Debug.LogWarning("ModifyAttributeAction: Vars 中未找到 attributeType。");
             return false;
         }
 
-        if (!ctx.Vars.TryGetValue(valueVarKey, out var valueObj))
+        if (!ctx.TryGet(valueVarKey, out object valueObj))
         {
             Debug.LogWarning("ModifyAttributeAction: Vars 中未找到 value。");
             return false;
@@ -153,7 +153,16 @@ public class ModifyAttributeAction : ActionNode
             return false;
         }
 
-        if (!TryParseInt(valueObj, out var resolvedValue))
+        int resolvedValue = 0;
+        if (valueObj is Dictionary<AttributeType, int> valueMap)
+        {
+            if (!valueMap.TryGetValue(resolvedType, out resolvedValue))
+            {
+                Debug.LogWarning("ModifyAttributeAction: Vars 中的 valueMap 不包含指定属性类型。");
+                return false;
+            }
+        }
+        else if (!TryParseInt(valueObj, out resolvedValue))
         {
             Debug.LogWarning("ModifyAttributeAction: Vars 中的 value 无法解析。");
             return false;

@@ -10,8 +10,8 @@ public class ModifyItemAction : ActionNode
     public ItemType itemType;
     public int count = 1;
 
-    public string itemTypeVarKey = "itemType";
-    public string countVarKey = "count";
+    public ContextVarKey itemTypeVarKey = ContextVarKey.ItemType;
+    public ContextVarKey countVarKey = ContextVarKey.ItemCount;
 
     public override Type[] GetRequiredServices()
     {
@@ -141,13 +141,13 @@ public class ModifyItemAction : ActionNode
             return false;
         }
 
-        if (!ctx.Vars.TryGetValue(itemTypeVarKey, out var itemObj))
+        if (!ctx.TryGet(itemTypeVarKey, out object itemObj))
         {
             Debug.LogWarning("ModifyItemAction: Vars 中未找到 itemType。");
             return false;
         }
 
-        if (!ctx.Vars.TryGetValue(countVarKey, out var countObj))
+        if (!ctx.TryGet(countVarKey, out object countObj))
         {
             Debug.LogWarning("ModifyItemAction: Vars 中未找到 count。");
             return false;

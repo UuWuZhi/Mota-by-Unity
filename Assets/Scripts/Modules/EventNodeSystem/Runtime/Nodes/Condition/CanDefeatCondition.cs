@@ -36,8 +36,8 @@ public class CanDefeatCondition : TileConditionNode
             if (result == BattleResult.PlayerWin)
             {
                 canDefeat = true;
-                ctx.Vars["PlayerHPLoss"] = playerHPLoss;
-                ctx.Vars["GoldReward"] = enemyUnit.enemyData.goldReward;
+                ctx.Set(ContextVarKey.PlayerHPLoss, playerHPLoss);
+                ctx.Set(ContextVarKey.GoldReward, enemyUnit.enemyData.goldReward);
             }
             else
             {

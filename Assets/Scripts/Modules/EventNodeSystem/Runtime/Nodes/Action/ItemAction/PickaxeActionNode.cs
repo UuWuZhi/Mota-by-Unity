@@ -27,7 +27,7 @@ public class PickaxeActionNode : ItemActionNode
             // 尝试获取 PlayerState：优先从 ctx 服务取，其次尝试从 vars 中的 caller 获取组件
             PlayerState player = null;
             if (ctx.TryGetService<PlayerState>(out var ps)) player = ps;
-            else if (ctx.Vars != null && ctx.Vars.TryGetValue("caller", out var callerObj) && callerObj is GameObject go)
+            else if (ctx.TryGet(ContextVarKey.Caller, out GameObject go))
             {
                 player = go.GetComponent<PlayerState>();
             }

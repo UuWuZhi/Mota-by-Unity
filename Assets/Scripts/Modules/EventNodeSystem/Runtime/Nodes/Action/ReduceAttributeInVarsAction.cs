@@ -1,11 +1,12 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "ReduceAttributeInVarsAction", menuName = "EventNodes/Action/ReduceAttributeInVars")]
 public class ReduceAttributeInVarsAction : ActionNode
 {
     public AttributeType attributeType;
-    public string valueVarName;
+    public ContextVarKey valueVarKey = ContextVarKey.AttributeValue;
 
     public override Type[] GetRequiredServices()
     {
@@ -14,13 +15,33 @@ public class ReduceAttributeInVarsAction : ActionNode
 
     public override void Execute(EventNodeContext ctx, Action onComplete)
     {
-        ctx.Vars.TryGetValue(valueVarName, out object valueObj);
+        if (ctx == null)
+        {
+            onComplete?.Invoke();
+            return;
+        }
+
+        if (!ctx.TryGet(valueVarKey, out object valueObj))
+        {
+            onComplete?.Invoke();
+            return;
+        }
         var playerAttribute = ctx.GetService<PlayerAttribute>();
         if (playerAttribute != null)
         {
-            int value = Convert.ToInt32(valueObj);
+            int value = ResolveValue(valueObj);
             playerAttribute.ReduceAttribute(attributeType, value);
         }
         onComplete?.Invoke();
+    }
+
+    private int ResolveValue(object valueObj)
+    {
+        if (valueObj is Dictionary<AttributeType, int> valueMap && valueMap.TryGetValue(attributeType, out var mapped))
+        {
+            return mapped;
+        }
+
+        return Convert.ToInt32(valueObj);
     }
 }

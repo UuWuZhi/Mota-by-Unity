@@ -10,9 +10,8 @@ GameObject:
   m_Component:
   - component: {fileID: 3712788887668004683}
   - component: {fileID: 143711895030379642}
-  - component: {fileID: 396340854240151644}
+  - component: {fileID: -8998875975428485148}
   - component: {fileID: 5149795867562891262}
-  - component: {fileID: 7300676907582352900}
   m_Layer: 0
   m_Name: GemAttackEvent
   m_TagString: Untagged
@@ -47,57 +46,28 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5cd63aa8b4ee2d343afdb6fccee5b4cb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  rootNode: {fileID: 11400000, guid: 0fe31b71cd0528b47bf88fdecdabee65, type: 2}
   triggerMode: 2
-  movementControl: 0
   enterPermission: 0
   executionBlocking: 0
+  actions:
+  - {fileID: 11400000, guid: 1c506a90f5f86844bb6766cea6f12706, type: 2}
   CellPos: {x: 0, y: 0, z: 0}
---- !u!61 &396340854240151644
-BoxCollider2D:
+  triggerTimeoutSeconds: 10
+--- !u!114 &-8998875975428485148
+MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5726099230285475815}
   m_Enabled: 1
-  m_Density: 1
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_ForceSendLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ForceReceiveLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ContactCaptureLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_CallbackLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_IsTrigger: 0
-  m_UsedByEffector: 0
-  m_UsedByComposite: 0
-  m_Offset: {x: 0, y: 0}
-  m_SpriteTilingProperty:
-    border: {x: 0, y: 0, z: 0, w: 0}
-    pivot: {x: 0.5, y: 0.5}
-    oldSize: {x: 1, y: 1}
-    newSize: {x: 1, y: 1}
-    adaptiveTilingThreshold: 0.5
-    drawMode: 0
-    adaptiveTiling: 0
-  m_AutoTiling: 0
-  serializedVersion: 2
-  m_Size: {x: 0.8, y: 0.8}
-  m_EdgeRadius: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6da78bde2d097f546b15e465245fac5a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  itemBonuses:
+  - type: 6
+    value: 0
 --- !u!95 &5149795867562891262
 Animator:
   serializedVersion: 5
@@ -119,18 +89,3 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
---- !u!114 &7300676907582352900
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5726099230285475815}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f88fbcc97f0aedf4fa8511a44a57e161, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  attributeBonuses:
-  - Type: 0
-    Value: 0

@@ -6,5 +6,5 @@ using UnityEngine;
 /// </summary>
 public class ItemUnit : MonoBehaviour
 {
-    public List<ItemBonus> itemBonuses = new List<ItemBonus>();
+    public List<ItemBonus> itemBonuses = new();
 }

@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5054402568362231917}
   - component: {fileID: 6567645563763990593}
+  - component: {fileID: -1297867730380235976}
   - component: {fileID: 5863455508743872378}
   m_Layer: 0
   m_Name: Pickaxe
@@ -49,9 +50,24 @@ MonoBehaviour:
   enterPermission: 0
   executionBlocking: 0
   actions:
-  - {fileID: 11400000, guid: 5b23bb5090637604d9367283b53ec076, type: 2}
+  - {fileID: 11400000, guid: e28052bb47043da49af68ea44577e5d4, type: 2}
   CellPos: {x: 0, y: 0, z: 0}
   triggerTimeoutSeconds: 10
+--- !u!114 &-1297867730380235976
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8083261046862395108}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6da78bde2d097f546b15e465245fac5a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  itemBonuses:
+  - type: 9
+    value: 1
 --- !u!95 &5863455508743872378
 Animator:
   serializedVersion: 5

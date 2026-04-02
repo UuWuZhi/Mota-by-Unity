@@ -337,21 +337,21 @@ public class EventTileManager : MonoBehaviour
         // 如果格子上没有 EventNodeTile 或者获取失败，默认允许进入且不阻塞
         if (!_registry.TryGetEventNodeAtCell(cellPos, out EventNodeTile tileMono, layerId) || tileMono == null)
         {
-            Debug.Log($"EventTileManager.RequestEnterCell_PreMove: 在格子 {cellPos} 上未找到 EventNodeTile，默认允许进入");
+            //Debug.Log($"EventTileManager.RequestEnterCell_PreMove: 在格子 {cellPos} 上未找到 EventNodeTile，默认允许进入");
             CompleteWithAllow(callback, onExecutionComplete);
             return;
         }
 
         if (!tileMono.TryBeginTrigger())
         {
-            Debug.Log($"EventTileManager.RequestEnterCell_PreMove: EventNodeTile 在格子 {cellPos} 上已被触发且未完成，拒绝进入以避免重复触发");
+            //Debug.Log($"EventTileManager.RequestEnterCell_PreMove: EventNodeTile 在格子 {cellPos} 上已被触发且未完成，拒绝进入以避免重复触发");
             CompleteWithDeny(callback, onExecutionComplete);
             return;
         }
 
         if (tileMono.triggerMode != EventNodeTile.TriggerMode.OnPlayerEnter)
         {
-            Debug.Log($"EventTileManager.RequestEnterCell_PreMove: EventNodeTile 在格子 {cellPos} 上触发模式为 {tileMono.triggerMode}，不处理预移动请求");
+            //Debug.Log($"EventTileManager.RequestEnterCell_PreMove: EventNodeTile 在格子 {cellPos} 上触发模式为 {tileMono.triggerMode}，不处理预移动请求");
             CompleteWithAllow(callback, onExecutionComplete);
             return;
         }

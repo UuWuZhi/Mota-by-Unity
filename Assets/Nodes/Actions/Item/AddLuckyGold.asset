@@ -9,9 +9,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e61a1f26a94a6884f990ba9bec151af3, type: 3}
+  m_Script: {fileID: 11500000, guid: bd0f86393f144100bdbbf4e911e885f1, type: 3}
   m_Name: AddLuckyGold
   m_EditorClassIdentifier: 
   nodeName: EventNode
+  operation: 0
+  parameterSource: 0
   itemType: 7
   count: 1
+  itemTypeVarKey: itemType
+  countVarKey: count

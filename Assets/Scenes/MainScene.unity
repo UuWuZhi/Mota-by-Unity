@@ -3844,7 +3844,6 @@ MonoBehaviour:
   root: {fileID: 460971561}
   slotParent: {fileID: 1710713616}
   slotPrefab: {fileID: 5931543047294885442, guid: 2fb171e3af415d040bf0495728d1073a, type: 3}
-  maxSlots: 36
 --- !u!114 &460971564
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -9,9 +9,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1e7dbfc7301cbdb4492e2fcede3c81b7, type: 3}
+  m_Script: {fileID: 11500000, guid: bd0f86393f144100bdbbf4e911e885f1, type: 3}
   m_Name: RemoveYellowKey
   m_EditorClassIdentifier: 
   nodeName: EventNode
+  operation: 1
+  parameterSource: 0
   itemType: 4
   count: 1
+  itemTypeVarKey: itemType
+  countVarKey: count

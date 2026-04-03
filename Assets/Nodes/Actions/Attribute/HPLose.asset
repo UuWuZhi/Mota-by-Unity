@@ -9,9 +9,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 352c9bdb635c75649883691c93f7f13a, type: 3}
-  m_Name: AddHPVars
+  m_Script: {fileID: 11500000, guid: 600ba5962aec445982b9d108965c9431, type: 3}
+  m_Name: HPLose
   m_EditorClassIdentifier: 
   nodeName: EventNode
-  attributeType: 1
-  valueVarName: PlayerHPLoss
+  operation: 0
+  parameterSource: 0
+  attributeType: 0
+  value: 1
+  valueVarKey: 1

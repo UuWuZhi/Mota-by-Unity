@@ -12,10 +12,5 @@ public enum ContextVarKey
     WorldPos,
     SlotIndex,
     UseCount,
-    ItemType,
-    ItemCount,
-    AttributeType,
-    AttributeValue,
-    AttributeValueMap,
     AttributeBonusList
 }

@@ -39,6 +39,21 @@ public class MovementInputManager : MonoBehaviour
             return; // 输入屏蔽时直接返回
         }
 
+        if (Input.GetMouseButtonDown(0))
+        {
+            if (_playerMovement != null)
+            {
+                var cam = Camera.main;
+                if (cam != null)
+                {
+                    var mousePos = Input.mousePosition;
+                    mousePos.z = -cam.transform.position.z;
+                    Vector2 worldPos = cam.ScreenToWorldPoint(mousePos);
+                    _playerMovement.TryMoveToWorldPosStep(worldPos);
+                }
+            }
+        }
+
         // 先检查是否有新按下的抽象按键（GetKeyDown），新按下的按键总是覆盖之前的按键
         AbstractKey newPressed = GetAbstractKeyDown();
         if (newPressed != AbstractKey.None)

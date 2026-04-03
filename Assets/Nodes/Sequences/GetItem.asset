@@ -13,4 +13,6 @@ MonoBehaviour:
   m_Name: GetItem
   m_EditorClassIdentifier: 
   nodeName: EventNode
-  children: []
+  children:
+  - {fileID: 11400000, guid: 1f3a5373636a0a84fa51a15633a7264b, type: 2}
+  - {fileID: 11400000, guid: 64aeffeec458c90498e8f06d8185fd38, type: 2}

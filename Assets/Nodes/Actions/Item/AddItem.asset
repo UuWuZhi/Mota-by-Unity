@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   nodeName: EventNode
   operation: 0
-  parameterSource: 0
+  parameterSource: 1
   itemType: 0
   count: 1
-  itemTypeVarKey: itemType
-  countVarKey: count
+  valueVarKey: 6

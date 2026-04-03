@@ -11,8 +11,7 @@ public class ModifyAttributeAction : ActionNode
     public AttributeType attributeType;
     public int value = 1;
 
-    public ContextVarKey attributeTypeVarKey = ContextVarKey.AttributeType;
-    public ContextVarKey valueVarKey = ContextVarKey.AttributeValue;
+    public ContextVarKey valueVarKey = ContextVarKey.PlayerHPLoss;
 
     public override Type[] GetRequiredServices()
     {
@@ -104,13 +103,6 @@ public class ModifyAttributeAction : ActionNode
             return false;
         }
 
-        var valueUnit = tileCtx.TileObject.GetComponent<AttributeValueUnit>();
-        if (valueUnit != null)
-        {
-            resolvedEntries.Add((valueUnit.attributeType, valueUnit.value));
-            return true;
-        }
-
         var unit = tileCtx.TileObject.GetComponent<AttributeUnit>();
         if (unit == null || unit.attributeBonuses == null || unit.attributeBonuses.Count == 0)
         {
@@ -135,88 +127,13 @@ public class ModifyAttributeAction : ActionNode
             return false;
         }
 
-        if (!ctx.TryGet(attributeTypeVarKey, out object typeObj))
+        if (!ctx.TryGet(valueVarKey, out int resolvedValue))
         {
-            Debug.LogWarning("ModifyAttributeAction: Vars 中未找到 attributeType。");
+            Debug.LogWarning($"ModifyAttributeAction: Vars 中未找到 {valueVarKey}。");
             return false;
         }
 
-        if (!ctx.TryGet(valueVarKey, out object valueObj))
-        {
-            Debug.LogWarning("ModifyAttributeAction: Vars 中未找到 value。");
-            return false;
-        }
-
-        if (!TryParseAttributeType(typeObj, out var resolvedType))
-        {
-            Debug.LogWarning("ModifyAttributeAction: Vars 中的 attributeType 无法解析。");
-            return false;
-        }
-
-        int resolvedValue = 0;
-        if (valueObj is Dictionary<AttributeType, int> valueMap)
-        {
-            if (!valueMap.TryGetValue(resolvedType, out resolvedValue))
-            {
-                Debug.LogWarning("ModifyAttributeAction: Vars 中的 valueMap 不包含指定属性类型。");
-                return false;
-            }
-        }
-        else if (!TryParseInt(valueObj, out resolvedValue))
-        {
-            Debug.LogWarning("ModifyAttributeAction: Vars 中的 value 无法解析。");
-            return false;
-        }
-
-        resolvedEntries.Add((resolvedType, resolvedValue));
+        resolvedEntries.Add((attributeType, resolvedValue));
         return true;
-    }
-
-    private bool TryParseAttributeType(object value, out AttributeType parsed)
-    {
-        parsed = attributeType;
-        if (value is AttributeType attr)
-        {
-            parsed = attr;
-            return true;
-        }
-
-        if (value is int intValue)
-        {
-            parsed = (AttributeType)intValue;
-            return true;
-        }
-
-        if (value is string strValue && Enum.TryParse(strValue, true, out AttributeType enumValue))
-        {
-            parsed = enumValue;
-            return true;
-        }
-
-        return false;
-    }
-
-    private bool TryParseInt(object value, out int parsed)
-    {
-        parsed = 0;
-        if (value is int intValue)
-        {
-            parsed = intValue;
-            return true;
-        }
-
-        if (value is float floatValue)
-        {
-            parsed = Mathf.RoundToInt(floatValue);
-            return true;
-        }
-
-        if (value is string strValue && int.TryParse(strValue, out int result))
-        {
-            parsed = result;
-            return true;
-        }
-
-        return false;
     }
 }

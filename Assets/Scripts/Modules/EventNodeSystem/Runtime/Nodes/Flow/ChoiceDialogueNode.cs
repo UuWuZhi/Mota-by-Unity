@@ -25,7 +25,7 @@ public class ChoiceDialogueNode : EventNode
     public string speaker;
     [TextArea(2, 6)]
     public string text;
-    public List<ChoiceEntry> choices = new List<ChoiceEntry>();
+    public List<ChoiceEntry> choices = new();
 
     public override Type[] GetRequiredServices()
     {

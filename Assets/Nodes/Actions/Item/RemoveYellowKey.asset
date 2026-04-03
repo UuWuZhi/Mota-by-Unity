@@ -17,5 +17,4 @@ MonoBehaviour:
   parameterSource: 0
   itemType: 4
   count: 1
-  itemTypeVarKey: itemType
-  countVarKey: count
+  valueVarKey: 6

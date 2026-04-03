@@ -17,5 +17,4 @@ MonoBehaviour:
   parameterSource: 0
   attributeType: 4
   value: 50
-  attributeTypeVarKey: attributeType
-  valueVarKey: value
+  valueVarKey: 2

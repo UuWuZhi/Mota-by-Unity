@@ -10,8 +10,7 @@ public class ModifyItemAction : ActionNode
     public ItemType itemType;
     public int count = 1;
 
-    public ContextVarKey itemTypeVarKey = ContextVarKey.ItemType;
-    public ContextVarKey countVarKey = ContextVarKey.ItemCount;
+    public ContextVarKey valueVarKey = ContextVarKey.UseCount;
 
     public override Type[] GetRequiredServices()
     {
@@ -141,79 +140,13 @@ public class ModifyItemAction : ActionNode
             return false;
         }
 
-        if (!ctx.TryGet(itemTypeVarKey, out object itemObj))
+        if (!ctx.TryGet(valueVarKey, out int resolvedCount))
         {
-            Debug.LogWarning("ModifyItemAction: Vars 中未找到 itemType。");
+            Debug.LogWarning($"ModifyItemAction: Vars 中未找到 {valueVarKey}。");
             return false;
         }
 
-        if (!ctx.TryGet(countVarKey, out object countObj))
-        {
-            Debug.LogWarning("ModifyItemAction: Vars 中未找到 count。");
-            return false;
-        }
-
-        if (!TryParseItemType(itemObj, out var resolvedItemType))
-        {
-            Debug.LogWarning("ModifyItemAction: Vars 中的 itemType 无法解析。");
-            return false;
-        }
-
-        if (!TryParseInt(countObj, out var resolvedCount))
-        {
-            Debug.LogWarning("ModifyItemAction: Vars 中的 count 无法解析。");
-            return false;
-        }
-
-        resolvedEntries.Add((resolvedItemType, resolvedCount));
+        resolvedEntries.Add((itemType, resolvedCount));
         return true;
-    }
-
-    private bool TryParseItemType(object value, out ItemType parsed)
-    {
-        parsed = itemType;
-        if (value is ItemType item)
-        {
-            parsed = item;
-            return true;
-        }
-
-        if (value is int intValue)
-        {
-            parsed = (ItemType)intValue;
-            return true;
-        }
-
-        if (value is string strValue && Enum.TryParse(strValue, true, out ItemType enumValue))
-        {
-            parsed = enumValue;
-            return true;
-        }
-
-        return false;
-    }
-
-    private bool TryParseInt(object value, out int parsed)
-    {
-        parsed = 0;
-        if (value is int intValue)
-        {
-            parsed = intValue;
-            return true;
-        }
-
-        if (value is float floatValue)
-        {
-            parsed = Mathf.RoundToInt(floatValue);
-            return true;
-        }
-
-        if (value is string strValue && int.TryParse(strValue, out int result))
-        {
-            parsed = result;
-            return true;
-        }
-
-        return false;
     }
 }

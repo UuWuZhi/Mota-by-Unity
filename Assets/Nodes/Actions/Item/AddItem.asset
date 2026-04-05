@@ -15,6 +15,6 @@ MonoBehaviour:
   nodeName: EventNode
   operation: 0
   parameterSource: 1
-  itemType: 0
+  itemType: 4
   count: 1
   valueVarKey: 6

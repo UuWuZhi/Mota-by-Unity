@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: HPLose
   m_EditorClassIdentifier: 
   nodeName: EventNode
-  operation: 0
-  parameterSource: 0
-  attributeType: 0
+  operation: 1
+  parameterSource: 2
+  attributeType: 1
   value: 1
   valueVarKey: 1

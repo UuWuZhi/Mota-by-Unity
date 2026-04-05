@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   nodeName: EventNode
   operation: 0
-  parameterSource: 0
-  attributeType: 0
+  parameterSource: 2
+  attributeType: 4
   value: 1
   valueVarKey: 2

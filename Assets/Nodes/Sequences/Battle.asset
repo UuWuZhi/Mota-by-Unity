@@ -15,8 +15,8 @@ MonoBehaviour:
   nodeName: EventNode
   condition: {fileID: 11400000, guid: 2a5eb39f252f12d48aa19d7d5eb79305, type: 2}
   trueBranch:
-  - {fileID: 11400000, guid: f9f91837d6ad16549abfdb6764ea9987, type: 2}
-  - {fileID: 11400000, guid: b757dd057bc836c43b3c0ec7d426058e, type: 2}
+  - {fileID: 11400000, guid: a1733b3dbd007004dbcd3dd12664e65b, type: 2}
+  - {fileID: 11400000, guid: 6b75ea6888be0cc42a602c1745f87a82, type: 2}
   - {fileID: 11400000, guid: 64aeffeec458c90498e8f06d8185fd38, type: 2}
   falseBranch:
   - {fileID: 11400000, guid: 602d4c24bf84543408abe26677e067c4, type: 2}

@@ -1,8 +1,8 @@
 using System;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "RemoveTileAction", menuName = "EventNodes/Action/RemoveTile")]
-public class RemoveTileAction : TileActionNode
+[CreateAssetMenu(fileName = "RemoveTile", menuName = "EventNodes/Action/RemoveTile")]
+public class RemoveTile : TileActionNode
 {
     public override Type[] GetRequiredServices()
     {
@@ -14,7 +14,7 @@ public class RemoveTileAction : TileActionNode
         var gridManager = ctx?.GetService<GridManager>();
         if (gridManager == null)
         {
-            Debug.LogWarning("RemoveTileAction: GridManager 未初始化");
+            Debug.LogWarning("RemoveTile: GridManager 未初始化");
             onComplete?.Invoke();
             return;
         }

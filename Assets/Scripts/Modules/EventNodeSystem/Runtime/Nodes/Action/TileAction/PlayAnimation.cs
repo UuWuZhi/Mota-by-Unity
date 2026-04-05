@@ -2,8 +2,8 @@ using System;
 using System.Collections;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "PlayAnimationAction", menuName = "EventNodes/Action/PlayAnimation")]
-public class PlayAnimationAction : TileActionNode
+[CreateAssetMenu(fileName = "PlayAnimation", menuName = "EventNodes/Action/PlayAnimation")]
+public class PlayAnimation : TileActionNode
 {
     [Tooltip("Animator 状态名（用于直接 Play 或用于 PollStateEnd 检测）")]
     public string stateName;
@@ -41,7 +41,7 @@ public class PlayAnimationAction : TileActionNode
 
         if (animator == null)
         {
-            Debug.LogWarning($"PlayAnimationAction: 未找到 Animator 于 TileObject（cell={ctx.CellPos}）");
+            Debug.LogWarning($"PlayAnimation: 未找到 Animator 于 TileObject（cell={ctx.CellPos}）");
             onComplete?.Invoke();
             return;
         }
@@ -58,7 +58,7 @@ public class PlayAnimationAction : TileActionNode
         if (ctx.OwnerMono == null)
         {
             // 无法启动协程：退回到非阻塞行为
-            Debug.LogWarning("PlayAnimationAction: OwnerMono 为 null，无法等待动画，改为非阻塞执行");
+            Debug.LogWarning("PlayAnimation: OwnerMono 为 null，无法等待动画，改为非阻塞执行");
             TryTriggerOrPlay(animator);
             onComplete?.Invoke();
             return;
@@ -82,7 +82,7 @@ public class PlayAnimationAction : TileActionNode
             }
             else
             {
-                Debug.LogWarning("PlayAnimationAction: 未指定 triggerParameter 或 stateName");
+                Debug.LogWarning("PlayAnimation: 未指定 triggerParameter 或 stateName");
             }
         }
         catch (Exception ex)
@@ -154,7 +154,7 @@ public class PlayAnimationAction : TileActionNode
                     elapsed += Time.deltaTime;
                     if (elapsed > Mathf.Max(1f, fallbackTimeout * 5f))
                     {
-                        Debug.LogWarning($"PlayAnimationAction: 等待状态 {stateName} 超时，使用回退超时 {fallbackTimeout}s");
+                        Debug.LogWarning($"PlayAnimation: 等待状态 {stateName} 超时，使用回退超时 {fallbackTimeout}s");
                         yield return new WaitForSeconds(fallbackTimeout);
                         onComplete?.Invoke();
                         yield break;

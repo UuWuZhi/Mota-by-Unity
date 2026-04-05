@@ -1,8 +1,8 @@
 using System;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "CanDefeatCondition", menuName = "EventNodes/Condition/CanDefeat")]
-public class CanDefeatCondition : TileConditionNode
+[CreateAssetMenu(fileName = "CanDefeat", menuName = "EventNodes/Condition/CanDefeat")]
+public class CanDefeat : TileConditionNode
 {
     public override Type[] GetRequiredServices()
     {
@@ -24,7 +24,7 @@ public class CanDefeatCondition : TileConditionNode
         var playerAttribute = ctx?.GetService<PlayerAttribute>();
         if (playerAttribute == null)
         {
-            Debug.LogWarning("CanDefeatCondition: PlayerAttribute 未配置，无法计算战斗结果。");
+            Debug.LogWarning("CanDefeat: PlayerAttribute 未配置，无法计算战斗结果。");
             onResult?.Invoke(false);
             return;
         }

@@ -1,8 +1,8 @@
 using System;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "ShowDialogueAction", menuName = "EventNodes/Action/ShowDialogue")]
-public class ShowDialogueAction : ActionNode
+[CreateAssetMenu(fileName = "ShowDialogue", menuName = "EventNodes/Action/ShowDialogue")]
+public class ShowDialogue : ActionNode
 {
     [Tooltip("说话者名称（留空则不显示）")]
     public string speaker;
@@ -29,7 +29,7 @@ public class ShowDialogueAction : ActionNode
         if (dm == null)
         {
             // 回退：尝试通过容器注入的单例（如果容器已注册并注入到调用者）
-            Debug.LogWarning("ShowDialogueAction: DialogueManager 未在 EventNodeContext 中提供，无法显示对话");
+            Debug.LogWarning("ShowDialogue: DialogueManager 未在 EventNodeContext 中提供，无法显示对话");
             onComplete?.Invoke();
             return;
         }

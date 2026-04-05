@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "ModifyAttributeAction", menuName = "EventNodes/Action/ModifyAttribute")]
-public class ModifyAttributeAction : ActionNode
+[CreateAssetMenu(fileName = "ModifyAttribute", menuName = "EventNodes/Action/ModifyAttribute")]
+public class ModifyAttribute : ActionNode
 {
     public ModifyOperation operation = ModifyOperation.Add;
     public ModifyParameterSource parameterSource = ModifyParameterSource.Fixed;
@@ -23,7 +23,7 @@ public class ModifyAttributeAction : ActionNode
         var playerAttribute = ctx.GetService<PlayerAttribute>();
         if (playerAttribute == null)
         {
-            Debug.LogError("ModifyAttributeAction: PlayerAttribute 未配置，无法执行。");
+            Debug.LogError("ModifyAttribute: PlayerAttribute 未配置，无法执行。");
             onComplete?.Invoke();
             return;
         }
@@ -55,7 +55,7 @@ public class ModifyAttributeAction : ActionNode
     {
         if (resolvedValue <= 0)
         {
-            Debug.LogWarning("ModifyAttributeAction: value <= 0，跳过执行。");
+            Debug.LogWarning("ModifyAttribute: value <= 0，跳过执行。");
             return;
         }
 
@@ -71,7 +71,7 @@ public class ModifyAttributeAction : ActionNode
                 playerAttribute.SetAttributeValue(resolvedType, resolvedValue);
                 break;
             default:
-                Debug.LogWarning("ModifyAttributeAction: 未识别的操作类型。");
+                Debug.LogWarning("ModifyAttribute: 未识别的操作类型。");
                 break;
         }
     }
@@ -90,7 +90,7 @@ public class ModifyAttributeAction : ActionNode
             case ModifyParameterSource.Vars:
                 return TryResolveFromVars(ctx, resolvedEntries);
             default:
-                Debug.LogWarning("ModifyAttributeAction: 未识别的参数来源。");
+                Debug.LogWarning("ModifyAttribute: 未识别的参数来源。");
                 return false;
         }
     }
@@ -99,14 +99,14 @@ public class ModifyAttributeAction : ActionNode
     {
         if (ctx is not EventNodeTileContext tileCtx || tileCtx.TileObject == null)
         {
-            Debug.LogWarning("ModifyAttributeAction: TileUnit 来源需要 EventNodeTileContext 与 TileObject。");
+            Debug.LogWarning("ModifyAttribute: TileUnit 来源需要 EventNodeTileContext 与 TileObject。");
             return false;
         }
 
         var unit = tileCtx.TileObject.GetComponent<AttributeUnit>();
         if (unit == null || unit.attributeBonuses == null || unit.attributeBonuses.Count == 0)
         {
-            Debug.LogWarning("ModifyAttributeAction: 未找到 AttributeUnit 或数据为空。");
+            Debug.LogWarning("ModifyAttribute: 未找到 AttributeUnit 或数据为空。");
             return false;
         }
 
@@ -123,13 +123,13 @@ public class ModifyAttributeAction : ActionNode
     {
         if (ctx == null || ctx.Vars == null)
         {
-            Debug.LogWarning("ModifyAttributeAction: Vars 来源需要有效的上下文。");
+            Debug.LogWarning("ModifyAttribute: Vars 来源需要有效的上下文。");
             return false;
         }
 
         if (!ctx.TryGet(valueVarKey, out int resolvedValue))
         {
-            Debug.LogWarning($"ModifyAttributeAction: Vars 中未找到 {valueVarKey}。");
+            Debug.LogWarning($"ModifyAttribute: Vars 中未找到 {valueVarKey}。");
             return false;
         }
 

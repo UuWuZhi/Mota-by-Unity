@@ -1,8 +1,8 @@
 using System;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "PlayerHasAttributeCondition", menuName = "EventNodes/Condition/PlayerHasAttribute")]
-public class PlayerHasAttributeCondition : ConditionNode
+[CreateAssetMenu(fileName = "PlayerHasAttribute", menuName = "EventNodes/Condition/PlayerHasAttribute")]
+public class PlayerHasAttribute : ConditionNode
 {
     public AttributeType attributeType;
     public int requiredValue = 1;
@@ -22,7 +22,7 @@ public class PlayerHasAttributeCondition : ConditionNode
             hasAttribute = playerAttribute != null && playerAttribute.HasAttributeValue(attributeType, requiredValue);
             if (playerAttribute == null)
             {
-                Debug.LogWarning("PlayerHasAttributeCondition: PlayerAttribute 未配置，默认返回 false。");
+                Debug.LogWarning("PlayerHasAttribute: PlayerAttribute 未配置，默认返回 false。");
             }
         }
         catch { hasAttribute = false; }

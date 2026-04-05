@@ -1,8 +1,8 @@
 using System;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "SwitchLayerAction", menuName = "EventNodes/Action/SwitchLayer")]
-public class SwitchLayerAction : ActionNode
+[CreateAssetMenu(fileName = "SwitchLayer", menuName = "EventNodes/Action/SwitchLayer")]
+public class SwitchLayer : ActionNode
 {
     public StairType stairType;
 
@@ -17,7 +17,7 @@ public class SwitchLayerAction : ActionNode
 
         if (mapManager == null)
         {
-            Debug.LogError("SwitchLayerAction: MapManager 未配置，无法切换楼层。");
+            Debug.LogError("SwitchLayer: MapManager 未配置，无法切换楼层。");
             onComplete?.Invoke();
             return;
         }

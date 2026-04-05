@@ -1,8 +1,8 @@
 using System;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "ModifyItemAction", menuName = "EventNodes/Action/ModifyItem")]
-public class ModifyItemAction : ActionNode
+[CreateAssetMenu(fileName = "ModifyItem", menuName = "EventNodes/Action/ModifyItem")]
+public class ModifyItem : ActionNode
 {
     public ModifyOperation operation = ModifyOperation.Add;
     public ModifyParameterSource parameterSource = ModifyParameterSource.Fixed;
@@ -22,7 +22,7 @@ public class ModifyItemAction : ActionNode
         var inventoryService = ctx.GetService<IInventoryService>();
         if (inventoryService == null)
         {
-            Debug.LogError("ModifyItemAction: InventoryService 未配置，无法执行。");
+            Debug.LogError("ModifyItem: InventoryService 未配置，无法执行。");
             onComplete?.Invoke();
             return;
         }
@@ -68,7 +68,7 @@ public class ModifyItemAction : ActionNode
     {
         if (resolvedCount <= 0)
         {
-            Debug.LogWarning("ModifyItemAction: count <= 0，跳过执行。");
+            Debug.LogWarning("ModifyItem: count <= 0，跳过执行。");
             return;
         }
 
@@ -84,7 +84,7 @@ public class ModifyItemAction : ActionNode
                 ApplySetOperation(inventoryService, resolvedItemType, resolvedCount);
                 break;
             default:
-                Debug.LogWarning("ModifyItemAction: 未识别的操作类型。");
+                Debug.LogWarning("ModifyItem: 未识别的操作类型。");
                 break;
         }
     }
@@ -103,7 +103,7 @@ public class ModifyItemAction : ActionNode
             case ModifyParameterSource.Vars:
                 return TryResolveFromVars(ctx, resolvedEntries);
             default:
-                Debug.LogWarning("ModifyItemAction: 未识别的参数来源。");
+                Debug.LogWarning("ModifyItem: 未识别的参数来源。");
                 return false;
         }
     }
@@ -112,14 +112,14 @@ public class ModifyItemAction : ActionNode
     {
         if (ctx is not EventNodeTileContext tileCtx || tileCtx.TileObject == null)
         {
-            Debug.LogWarning("ModifyItemAction: TileUnit 来源需要 EventNodeTileContext 与 TileObject。");
+            Debug.LogWarning("ModifyItem: TileUnit 来源需要 EventNodeTileContext 与 TileObject。");
             return false;
         }
 
         var unit = tileCtx.TileObject.GetComponent<ItemUnit>();
         if (unit == null || unit.itemBonuses == null || unit.itemBonuses.Count == 0)
         {
-            Debug.LogWarning("ModifyItemAction: 未找到 ItemUnit 或数据为空。");
+            Debug.LogWarning("ModifyItem: 未找到 ItemUnit 或数据为空。");
             return false;
         }
 
@@ -136,13 +136,13 @@ public class ModifyItemAction : ActionNode
     {
         if (ctx == null || ctx.Vars == null)
         {
-            Debug.LogWarning("ModifyItemAction: Vars 来源需要有效的上下文。");
+            Debug.LogWarning("ModifyItem: Vars 来源需要有效的上下文。");
             return false;
         }
 
         if (!ctx.TryGet(valueVarKey, out int resolvedCount))
         {
-            Debug.LogWarning($"ModifyItemAction: Vars 中未找到 {valueVarKey}。");
+            Debug.LogWarning($"ModifyItem: Vars 中未找到 {valueVarKey}。");
             return false;
         }
 

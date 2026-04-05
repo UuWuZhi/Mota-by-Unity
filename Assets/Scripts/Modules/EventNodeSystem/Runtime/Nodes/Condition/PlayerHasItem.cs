@@ -1,8 +1,8 @@
 using System;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "PlayerHasItemCondition", menuName = "EventNodes/Condition/PlayerHasItem")]
-public class PlayerHasItemCondition : ConditionNode
+[CreateAssetMenu(fileName = "PlayerHasItem", menuName = "EventNodes/Condition/PlayerHasItem")]
+public class PlayerHasItem : ConditionNode
 {
     public ItemType itemType;
     public int requiredCount = 1;
@@ -24,7 +24,7 @@ public class PlayerHasItemCondition : ConditionNode
             }
             else
             {
-                Debug.LogError("PlayerHasItemCondition: InventoryService 未配置，无法判断玩家物品数量。");
+                Debug.LogError("PlayerHasItem: InventoryService 未配置，无法判断玩家物品数量。");
             }
         }
         catch { hasItem = false; }

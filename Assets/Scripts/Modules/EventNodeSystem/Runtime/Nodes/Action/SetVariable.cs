@@ -1,8 +1,8 @@
 using System;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "SetVariableAction", menuName = "EventNodes/Action/SetVariable")]
-public class SetVariableAction : ActionNode
+[CreateAssetMenu(fileName = "SetVariable", menuName = "EventNodes/Action/SetVariable")]
+public class SetVariable : ActionNode
 {
     public ContextVarKey key = ContextVarKey.AllowEnter;
 

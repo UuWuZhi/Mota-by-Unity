@@ -16,6 +16,15 @@ public class DiBootstrap : LifetimeScope
         // 地图相关
         builder.RegisterComponentInHierarchy<GridManager>().AsSelf();
         builder.RegisterComponentInHierarchy<MapManager>().AsSelf();
+
+        // Yarn 注册
+        var dialogueRunner = FindObjectOfType<Yarn.Unity.DialogueRunner>();
+        if (dialogueRunner != null)
+        {
+            builder.RegisterInstance(dialogueRunner);
+            builder.Register<YarnRouteBridge>(Lifetime.Singleton).AsSelf();
+        }
+
         // Register registry implementation and EventTileManager separately. Keep manager registered as self.
         builder.Register<EventTileRegistry>(Lifetime.Singleton).As<IEventTileRegistry>().AsSelf(); // Register EventTileRegistry
         builder.RegisterComponentInHierarchy<EventTileManager>().AsSelf(); // Register EventTileManager
@@ -31,11 +40,11 @@ public class DiBootstrap : LifetimeScope
         builder.RegisterComponentInHierarchy<InventorySlot>().AsSelf();
 
         // UI相关
-        builder.RegisterComponentInHierarchy<UIDialogue>().AsSelf();
+        // ... (UIDialogue已移除，改用Yarn Spinner对话系统) ...
 
         // 服务类
         builder.Register<GoldRewardCaculate>(Lifetime.Transient).AsSelf();
-        builder.Register<DialogueManager>(Lifetime.Singleton).AsSelf();
+        // ... (DialogueManager已移除，暂不注入，由Yarn接管) ...
         if (BattleManager.Instance != null) builder.RegisterInstance(BattleManager.Instance).As<BattleManager>().AsSelf();
         builder.Register<IMonsterBook, MonsterBookService>(Lifetime.Singleton).AsSelf();
         builder.RegisterEntryPoint<GameInitializationEntryPoint>();

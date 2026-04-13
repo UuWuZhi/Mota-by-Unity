@@ -17,19 +17,19 @@ public class EventRunnerService : IEventRunner
     private readonly PlayerAttribute _playerAttribute;
     private readonly EventCenter _eventCenter;
     private readonly MapManager _mapManager;
-    private readonly DialogueManager _dialogueManager;
+    private readonly IObjectResolver _resolver;
 
     [Inject]
     public EventRunnerService(IObjectResolver resolver)
     {
         if (resolver == null) throw new ArgumentNullException(nameof(resolver));
+        _resolver = resolver;
         _coroutineRunner = resolver.Resolve<CoroutineRunner>();
         _gridManager = resolver.Resolve<GridManager>();
         _inventoryService = resolver.Resolve<IInventoryService>();
         _playerAttribute = resolver.Resolve<PlayerAttribute>();
         _eventCenter = resolver.Resolve<EventCenter>();
         _mapManager = resolver.Resolve<MapManager>();
-        _dialogueManager = resolver.Resolve<DialogueManager>();
     }
 
     public void Run(EventNode rootNode, EventNodeContext ctx, Action onComplete)
@@ -180,7 +180,19 @@ public class EventRunnerService : IEventRunner
         else if (type == typeof(PlayerAttribute)) service = _playerAttribute;
         else if (type == typeof(EventCenter)) service = _eventCenter;
         else if (type == typeof(MapManager)) service = _mapManager;
-        else if (type == typeof(DialogueManager)) service = _dialogueManager;
+        else
+        {
+            // 对于非内置的硬编码类型，尝试通过 VContainer 动态解析
+            try
+            {
+                service = _resolver.Resolve(type);
+            }
+            catch (Exception)
+            {
+                Debug.LogWarning($"EventRunnerService: 无法解析所需的服务类型 {type.Name}");
+                return false;
+            }
+        }
 
         return service != null;
     }

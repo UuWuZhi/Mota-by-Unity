@@ -13,30 +13,13 @@ public class ShowDialogue : ActionNode
 
     public override Type[] GetRequiredServices()
     {
-        return new[] { typeof(DialogueManager) };
+        return Array.Empty<Type>();
     }
 
     public override void Execute(EventNodeContext ctx, Action onComplete)
     {
-        if (string.IsNullOrEmpty(text))
-        {
-            onComplete?.Invoke();
-            return;
-        }
-
-        // 优先通过上下文服务字典获取 DialogueManager
-        var dm = ctx.GetService<DialogueManager>();
-        if (dm == null)
-        {
-            // 回退：尝试通过容器注入的单例（如果容器已注册并注入到调用者）
-            Debug.LogWarning("ShowDialogue: DialogueManager 未在 EventNodeContext 中提供，无法显示对话");
-            onComplete?.Invoke();
-            return;
-        }
-
-        dm.Show(text, speaker, () =>
-        {
-            onComplete?.Invoke();
-        });
+        // 暂不支持 ENS 与 Yarn 的集成，为了让游戏可编译，立刻结束
+        Debug.LogWarning($"[展示对话，未接入Yarn] 说话者：{speaker}，内容：{text}");
+        onComplete?.Invoke();
     }
 }

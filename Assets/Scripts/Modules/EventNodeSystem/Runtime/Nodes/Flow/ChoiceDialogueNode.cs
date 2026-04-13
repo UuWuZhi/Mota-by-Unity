@@ -29,7 +29,7 @@ public class ChoiceDialogueNode : EventNode
 
     public override Type[] GetRequiredServices()
     {
-        var set = new HashSet<Type> { typeof(DialogueManager) };
+        var set = new HashSet<Type>();
 
         if (choices != null)
         {
@@ -52,73 +52,17 @@ public class ChoiceDialogueNode : EventNode
 
     public override void Execute(EventNodeContext ctx, Action onComplete)
     {
-
-        var dm = ctx?.GetService<DialogueManager>();
-
-        if (dm == null)
+        // 暂不支持 ENS 与 Yarn 的集成，为了让游戏可编译，默认走第一个分支或不走
+        Debug.LogWarning($"[选择对话，未接入Yarn] 说话者：{speaker}，内容：{text}");
+        var target = (choices != null && choices.Count > 0) ? choices[0].NextNode : null;
+        if (target != null)
+        {
+            target.Execute(ctx, () => onComplete?.Invoke());
+        }
+        else
         {
             onComplete?.Invoke();
-            return;
         }
-
-        var runtimeData = new DialogueData
-        {
-            Id = $"choice_{Guid.NewGuid()}",
-            Speaker = speaker,
-            Text = text,
-            Options = new List<DialogueOption>()
-        };
-        foreach (var c in choices)
-        {
-            runtimeData.Options.Add(new DialogueOption { Text = c.Text });
-        }
-
-        Action<int> onChoice = null;
-        Action onDialogueEnded = null;
-
-        onChoice = (idx) =>
-        {
-            // unsubscribe both handlers to avoid duplicate handling
-            dm.OnUIChoiceSelected -= onChoice;
-            dm.OnDialogueEnded -= onDialogueEnded;
-
-            // end dialogue then execute selected branch after a frame
-            dm.EndDialogue();
-
-            var target = (idx >= 0 && idx < choices.Count) ? choices[idx].NextNode : null;
-
-            if (ctx != null && ctx.OwnerMono != null)
-            {
-                ctx.OwnerMono.StartCoroutine(DelayedExecuteNextFrame(ctx, target, onComplete));
-            }
-            else
-            {
-                if (target != null) target.Execute(ctx, () => onComplete?.Invoke());
-                else onComplete?.Invoke();
-            }
-        };
-
-        onDialogueEnded = () =>
-        {
-            // unsubscribe both handlers
-            dm.OnUIChoiceSelected -= onChoice;
-            dm.OnDialogueEnded -= onDialogueEnded;
-
-            // dialogue ended without choice (continue)
-            if (ctx != null && ctx.OwnerMono != null)
-            {
-                ctx.OwnerMono.StartCoroutine(DelayedCompleteNextFrame(onComplete));
-            }
-            else
-            {
-                onComplete?.Invoke();
-            }
-        };
-
-        dm.OnUIChoiceSelected += onChoice;
-        dm.OnDialogueEnded += onDialogueEnded;
-
-        dm.StartDialogue(runtimeData);
     }
 
     private IEnumerator DelayedExecuteNextFrame(EventNodeContext ctx, EventNode target, Action onComplete)

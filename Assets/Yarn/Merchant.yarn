@@ -1,0 +1,8 @@
+title: Merchant_Choice_1
+---
+Merchant: Here are five yellow keys if you have 50 golds.
+-> I need it
+    <<ens_route "Buy">>
+-> No, thanks
+    <<ens_route "Cancel">>
+===

@@ -1,13 +1,18 @@
 using System;
 using System.Collections.Generic;
+using Modules.EventSystem.DataDefine.EventArgs;
+using Modules.Item.DataDefine;
 
-public interface IInventoryService
+namespace Modules.Player.DataDefine
 {
-    event EventHandler<InventoryChangedEventArgs> InventoryChanged;
-    void AddItem(ItemType type, int count = 1);
-    bool RemoveItem(ItemType type, int count = 1);
-    bool HasItem(ItemType type, int count = 1);
-    int GetItemCount(ItemType type);
-    void InitItemCounts();
-    IReadOnlyList<InventoryEntry> GetEntries();
+    public interface IInventoryService
+    {
+        event EventHandler<InventoryChangedEventArgs> InventoryChanged;
+        void AddItem(ItemType type, int count = 1);
+        bool RemoveItem(ItemType type, int count = 1);
+        bool HasItem(ItemType type, int count = 1);
+        int GetItemCount(ItemType type);
+        void InitItemCounts();
+        IReadOnlyList<InventoryEntry> GetEntries();
+    }
 }

@@ -1,15 +1,23 @@
 using System;
+using Modules.Item.DataDefine;
+using UnityEngine.Serialization;
 
-[Serializable]
-public class InventoryEntry
+namespace Modules.Player.DataDefine
 {
-    public ItemType Type;
-    public int Count;
-
-    public InventoryEntry() { }
-    public InventoryEntry(ItemType type, int count)
+    [Serializable]
+    public class InventoryEntry
     {
-        Type = type;
-        Count = count;
+        [FormerlySerializedAs("Type")] public ItemType type;
+        [FormerlySerializedAs("Count")] public int count;
+
+        public InventoryEntry()
+        {
+        }
+
+        public InventoryEntry(ItemType type, int count)
+        {
+            this.type = type;
+            this.count = count;
+        }
     }
 }

@@ -1,110 +1,124 @@
 using System;
+using Modules.EventNodeSystem.DataDefine;
+using Modules.EventNodeSystem.DataDefine.Context;
+using Modules.EventNodeSystem.Runtime.Nodes.Action.Data;
+using Modules.Map.Runtime;
+using Modules.Player.DataDefine;
+using Modules.Player.Runtime;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "PickaxeAction", menuName = "EventNodes/Action/Item/Pickaxe")]
-public class PickaxeActionNode : ItemActionNode
+namespace Modules.EventNodeSystem.Runtime.Nodes.Action.ItemAction
 {
-    // 可配置是否需要特定工具或伤害等（留作扩展）
-    public ItemType requiredTool = ItemType.Pickaxe;
-
-    public override Type[] GetRequiredServices()
+    [CreateAssetMenu(fileName = "PickaxeAction", menuName = "EventNodes/Action/Item/Pickaxe")]
+    public class PickaxeActionNode : ItemActionNode
     {
-        // 运行时我们希望注入 GridManager 与 IInventoryService；PlayerState 可能通过 caller 获取
-        return new[] { typeof(GridManager), typeof(IInventoryService) };
-    }
-
-    public override void ExecuteItem(ItemEventContext ctx, Action onComplete)
-    {
-        try
+        public override Type[] GetRequiredServices()
         {
-            Debug.Log("PickaxeActionNode: 执行挖掘逻辑");
-            // 获取 GridManager
-            var grid = ctx.GetService<GridManager>();
+            // 运行时我们希望注入 GridManager 与 IInventoryService；PlayerState 可能通过 caller 获取
+            return new[] { typeof(GridManager), typeof(IInventoryService) };
+        }
 
-            // 获取 Inventory service
-            var inventory = ctx.GetService<IInventoryService>();
-
-            // 尝试获取 PlayerState：优先从 ctx 服务取，其次尝试从 vars 中的 caller 获取组件
-            PlayerState player = null;
-            if (ctx.TryGetService<PlayerState>(out var ps)) player = ps;
-            else if (ctx.TryGet(ContextVarKey.Caller, out GameObject go))
+        public override void ExecuteItem(BaseNodeData data, ItemEventContext ctx, System.Action onComplete)
+        {
+            var pickaxeData = data as PickaxeActionData;
+            if (pickaxeData == null)
             {
-                player = go.GetComponent<PlayerState>();
-            }
-
-            if (grid == null || player == null)
-            {
-                Debug.LogWarning("PickaxeActionNode: 缺少 GridManager 或 PlayerState，跳过执行");
+                Debug.LogWarning("PickaxeActionNode: data 类型不匹配，跳过执行。");
                 onComplete?.Invoke();
                 return;
             }
 
-            // Use the player's current world position to compute the cell to avoid stale PlayerState.CellPos
-            Vector3 playerWorldPos = player.transform.position;
-            Vector3Int playerCell = grid.MapGrid.WorldToCell(playerWorldPos);
-            Vector3Int targetCell = playerCell;
-            switch (player.Facing)
+            try
             {
-                case Facing.Up: targetCell += new Vector3Int(0, 1, 0); break;
-                case Facing.Down: targetCell += new Vector3Int(0, -1, 0); break;
-                case Facing.Left: targetCell += new Vector3Int(-1, 0, 0); break;
-                case Facing.Right: targetCell += new Vector3Int(1, 0, 0); break;
-            }
+                Debug.Log("PickaxeActionNode: 执行挖掘逻辑");
+                // 获取 GridManager
+                var grid = ctx.GetService<GridManager>();
 
-            if (!grid.IsInGridBounds(targetCell))
-            {
-                Debug.LogWarning($"PickaxeActionNode: 目标格子 {targetCell} 超出地图边界");
-                onComplete?.Invoke();
-                return;
-            }
+                // 获取 Inventory service
+                var inventory = ctx.GetService<IInventoryService>();
 
-            var obstacle = grid.GetObstacleTileAtCell(targetCell);
-            if (obstacle == null || !obstacle.IsBreakable)
-            {
-                Debug.LogWarning($"PickaxeActionNode: 目标格子 {targetCell} 没有可挖掘的障碍物");
-                onComplete?.Invoke();
-                return;
-            }
+                // 尝试获取 PlayerState：优先从 ctx 服务取，其次尝试从 vars 中的 caller 获取组件
+                PlayerState player = null;
+                if (ctx.TryGetService<PlayerState>(out var ps)) player = ps;
+                else if (ctx.TryGet(ContextVarKey.Caller, out GameObject go)) player = go.GetComponent<PlayerState>();
 
-            // 检查是否需要特定工具
-            if (obstacle.BreakableBy != null && obstacle.BreakableBy.Count > 0)
-            {
-                bool hasRequired = false;
-                foreach (var it in obstacle.BreakableBy)
+                if (grid == null || player == null)
                 {
-                    if (it == requiredTool && inventory != null && inventory.HasItem(it)) { hasRequired = true; break; }
-                }
-                if (!hasRequired)
-                {
-                    Debug.LogWarning($"PickaxeActionNode: 目标格子 {targetCell} 的障碍物需要特定工具 {requiredTool}，但玩家没有");
+                    Debug.LogWarning("PickaxeActionNode: 缺少 GridManager 或 PlayerState，跳过执行");
                     onComplete?.Invoke();
                     return;
                 }
-            }
 
-            bool removed = grid.RemoveObstacleTileAtCell(targetCell);
-            if (!removed)
+                // Use the player's current world position to compute the cell to avoid stale PlayerState.CellPos
+                var playerWorldPos = player.transform.position;
+                var playerCell = grid.mapGrid.WorldToCell(playerWorldPos);
+                var targetCell = playerCell;
+                switch (player.Facing)
+                {
+                    case Facing.Up: targetCell += new Vector3Int(0, 1, 0); break;
+                    case Facing.Down: targetCell += new Vector3Int(0, -1, 0); break;
+                    case Facing.Left: targetCell += new Vector3Int(-1, 0, 0); break;
+                    case Facing.Right: targetCell += new Vector3Int(1, 0, 0); break;
+                }
+
+                if (!grid.IsInGridBounds(targetCell))
+                {
+                    Debug.LogWarning($"PickaxeActionNode: 目标格子 {targetCell} 超出地图边界");
+                    onComplete?.Invoke();
+                    return;
+                }
+
+                var obstacle = grid.GetObstacleTileAtCell(targetCell);
+                if (obstacle == null || !obstacle.isBreakable)
+                {
+                    Debug.LogWarning($"PickaxeActionNode: 目标格子 {targetCell} 没有可挖掘的障碍物");
+                    onComplete?.Invoke();
+                    return;
+                }
+
+                // 检查是否需要特定工具
+                if (obstacle.breakableBy != null && obstacle.breakableBy.Count > 0)
+                {
+                    var hasRequired = false;
+                    foreach (var it in obstacle.breakableBy)
+                        if (it == pickaxeData.requiredTool && inventory != null && inventory.HasItem(it))
+                        {
+                            hasRequired = true;
+                            break;
+                        }
+
+                    if (!hasRequired)
+                    {
+                        Debug.LogWarning(
+                            $"PickaxeActionNode: 目标格子 {targetCell} 的障碍物需要特定工具 {pickaxeData.requiredTool}，但玩家没有");
+                        onComplete?.Invoke();
+                        return;
+                    }
+                }
+
+                var removed = grid.RemoveObstacleTileAtCell(targetCell);
+                if (!removed)
+                {
+                    Debug.LogWarning($"PickaxeActionNode: 无法移除目标格子 {targetCell} 的障碍物");
+                    onComplete?.Invoke();
+                    return;
+                }
+
+                // 标记成功：使用 ItemEventContext 的约定
+                ctx.MarkUseSucceeded();
+                Debug.Log($"PickaxeActionNode: 成功挖掘格子 {targetCell} 的障碍物");
+
+                // 如果希望节点直接消费物品，可以在此调用 inventory.RemoveItem
+                // 但推荐由调用方（ItemUseHandler）根据 useMode 统一消费，或在节点中通过约定直接消费
+            }
+            catch (Exception ex)
             {
-                Debug.LogWarning($"PickaxeActionNode: 无法移除目标格子 {targetCell} 的障碍物");
-                onComplete?.Invoke();
-                return;
+                Debug.LogException(ex);
             }
-
-            // 标记成功：使用 ItemEventContext 的约定
-            ctx.MarkUseSucceeded();
-            Debug.Log($"PickaxeActionNode: 成功挖掘格子 {targetCell} 的障碍物");
-
-            // 如果希望节点直接消费物品，可以在此调用 inventory.RemoveItem
-            // 但推荐由调用方（ItemUseHandler）根据 useMode 统一消费，或在节点中通过约定直接消费
-
-        }
-        catch (Exception ex)
-        {
-            Debug.LogException(ex);
-        }
-        finally
-        {
-            onComplete?.Invoke();
+            finally
+            {
+                onComplete?.Invoke();
+            }
         }
     }
 }

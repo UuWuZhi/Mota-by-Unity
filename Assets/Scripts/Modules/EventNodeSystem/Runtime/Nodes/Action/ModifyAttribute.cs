@@ -1,139 +1,148 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using Modules.Core.DataDefine;
+using Modules.Core.DataDefine.Units;
+using Modules.EventNodeSystem.DataDefine;
+using Modules.EventNodeSystem.DataDefine.Context;
+using Modules.EventNodeSystem.DataDefine.Data;
+using Modules.EventNodeSystem.Runtime.Nodes.Action.Data;
+using Modules.Player.Runtime.Attribute;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "ModifyAttribute", menuName = "EventNodes/Action/ModifyAttribute")]
-public class ModifyAttribute : ActionNode
+namespace Modules.EventNodeSystem.Runtime.Nodes.Action
 {
-    public ModifyOperation operation = ModifyOperation.Add;
-    public ModifyParameterSource parameterSource = ModifyParameterSource.Fixed;
-
-    public AttributeType attributeType;
-    public int value = 1;
-
-    public ContextVarKey valueVarKey = ContextVarKey.PlayerHPLoss;
-
-    public override Type[] GetRequiredServices()
+    [CreateAssetMenu(fileName = "ModifyAttribute", menuName = "EventNodes/Action/ModifyAttribute")]
+    public class ModifyAttribute : ActionNode
     {
-        return new[] { typeof(PlayerAttribute) };
-    }
-
-    public override void Execute(EventNodeContext ctx, Action onComplete)
-    {
-        var playerAttribute = ctx.GetService<PlayerAttribute>();
-        if (playerAttribute == null)
+        public override Type[] GetRequiredServices()
         {
-            Debug.LogError("ModifyAttribute: PlayerAttribute 未配置，无法执行。");
-            onComplete?.Invoke();
-            return;
+            return new[] { typeof(PlayerAttribute) };
         }
 
-        if (!TryResolveParameters(ctx, out var resolvedEntries))
+        public override void Execute(BaseNodeData data, EventNodeContext ctx, System.Action onComplete)
         {
-            onComplete?.Invoke();
-            return;
-        }
-
-        try
-        {
-            foreach (var entry in resolvedEntries)
+            if (data is not ModifyAttributeData modifyData)
             {
-                ApplyOperation(playerAttribute, entry.type, entry.value);
+                Debug.LogWarning("ModifyAttribute: data 类型不匹配，跳过执行。");
+                onComplete?.Invoke();
+                return;
+            }
+
+            var playerAttribute = ctx.GetService<PlayerAttribute>();
+            if (!playerAttribute)
+            {
+                Debug.LogError("ModifyAttribute: PlayerAttribute 未配置，无法执行。");
+                onComplete?.Invoke();
+                return;
+            }
+
+            if (!TryResolveParameters(modifyData, ctx, out var resolvedEntries))
+            {
+                onComplete?.Invoke();
+                return;
+            }
+
+            try
+            {
+                foreach (var entry in resolvedEntries)
+                    ApplyOperation(modifyData.operation, playerAttribute, entry.type, entry.value);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+            }
+            finally
+            {
+                onComplete?.Invoke();
             }
         }
-        catch (Exception ex)
-        {
-            Debug.LogException(ex);
-        }
-        finally
-        {
-            onComplete?.Invoke();
-        }
-    }
 
-    private void ApplyOperation(PlayerAttribute playerAttribute, AttributeType resolvedType, int resolvedValue)
-    {
-        if (resolvedValue <= 0)
+        private void ApplyOperation(ModifyOperation operation, PlayerAttribute playerAttribute,
+            AttributeType resolvedType,
+            int resolvedValue)
         {
-            Debug.LogWarning("ModifyAttribute: value <= 0，跳过执行。");
-            return;
+            if (resolvedValue <= 0)
+            {
+                Debug.LogWarning("ModifyAttribute: value <= 0，跳过执行。");
+                return;
+            }
+
+            switch (operation)
+            {
+                case ModifyOperation.Add:
+                    playerAttribute.AddAttribute(resolvedType, resolvedValue);
+                    break;
+                case ModifyOperation.Remove:
+                    playerAttribute.ReduceAttribute(resolvedType, resolvedValue);
+                    break;
+                case ModifyOperation.Set:
+                    playerAttribute.SetAttributeValue(resolvedType, resolvedValue);
+                    break;
+                default:
+                    Debug.LogWarning("ModifyAttribute: 未识别的操作类型。");
+                    break;
+            }
         }
 
-        switch (operation)
+        private bool TryResolveParameters(ModifyAttributeData data, EventNodeContext ctx,
+            out List<(AttributeType type, int value)> resolvedEntries)
         {
-            case ModifyOperation.Add:
-                playerAttribute.AddAttribute(resolvedType, resolvedValue);
-                break;
-            case ModifyOperation.Remove:
-                playerAttribute.ReduceAttribute(resolvedType, resolvedValue);
-                break;
-            case ModifyOperation.Set:
-                playerAttribute.SetAttributeValue(resolvedType, resolvedValue);
-                break;
-            default:
-                Debug.LogWarning("ModifyAttribute: 未识别的操作类型。");
-                break;
+            resolvedEntries = new List<(AttributeType type, int value)>();
+
+            switch (data.parameterSource)
+            {
+                case ModifyParameterSource.Fixed:
+                    resolvedEntries.Add((data.attributeType, data.value));
+                    return true;
+                case ModifyParameterSource.TileUnit:
+                    return TryResolveFromTileUnit(ctx, resolvedEntries);
+                case ModifyParameterSource.Vars:
+                    return TryResolveFromVars(data, ctx, resolvedEntries);
+                default:
+                    Debug.LogWarning("ModifyAttribute: 未识别的参数来源。");
+                    return false;
+            }
         }
-    }
 
-    private bool TryResolveParameters(EventNodeContext ctx, out List<(AttributeType type, int value)> resolvedEntries)
-    {
-        resolvedEntries = new List<(AttributeType type, int value)>();
-
-        switch (parameterSource)
+        private bool TryResolveFromTileUnit(EventNodeContext ctx, List<(AttributeType type, int value)> resolvedEntries)
         {
-            case ModifyParameterSource.Fixed:
-                resolvedEntries.Add((attributeType, value));
-                return true;
-            case ModifyParameterSource.TileUnit:
-                return TryResolveFromTileUnit(ctx, resolvedEntries);
-            case ModifyParameterSource.Vars:
-                return TryResolveFromVars(ctx, resolvedEntries);
-            default:
-                Debug.LogWarning("ModifyAttribute: 未识别的参数来源。");
+            if (ctx is not EventNodeTileContext tileCtx || !tileCtx.TileObject)
+            {
+                Debug.LogWarning("ModifyAttribute: TileUnit 来源需要 EventNodeTileContext 与 TileObject。");
                 return false;
-        }
-    }
+            }
 
-    private bool TryResolveFromTileUnit(EventNodeContext ctx, List<(AttributeType type, int value)> resolvedEntries)
-    {
-        if (ctx is not EventNodeTileContext tileCtx || tileCtx.TileObject == null)
+            var unit = tileCtx.TileObject.GetComponent<AttributeUnit>();
+            if (!unit || unit.attributeBonuses == null || unit.attributeBonuses.Count == 0)
+            {
+                Debug.LogWarning("ModifyAttribute: 未找到 AttributeUnit 或数据为空。");
+                return false;
+            }
+
+            resolvedEntries.AddRange(from bonus in unit.attributeBonuses 
+                where bonus != null select (bonus.type, bonus.value));
+
+            return resolvedEntries.Count > 0;
+        }
+
+        private bool TryResolveFromVars(ModifyAttributeData data, EventNodeContext ctx,
+            List<(AttributeType type, int value)> resolvedEntries)
         {
-            Debug.LogWarning("ModifyAttribute: TileUnit 来源需要 EventNodeTileContext 与 TileObject。");
-            return false;
+            if (ctx?.Vars == null)
+            {
+                Debug.LogWarning("ModifyAttribute: Vars 来源需要有效的上下文。");
+                return false;
+            }
+
+            if (!ctx.TryGet(data.valueVarKey, out int resolvedValue))
+            {
+                Debug.LogWarning($"ModifyAttribute: Vars 中未找到 {data.valueVarKey}。");
+                return false;
+            }
+
+            resolvedEntries.Add((data.attributeType, resolvedValue));
+            return true;
         }
-
-        var unit = tileCtx.TileObject.GetComponent<AttributeUnit>();
-        if (unit == null || unit.attributeBonuses == null || unit.attributeBonuses.Count == 0)
-        {
-            Debug.LogWarning("ModifyAttribute: 未找到 AttributeUnit 或数据为空。");
-            return false;
-        }
-
-        foreach (var bonus in unit.attributeBonuses)
-        {
-            if (bonus == null) continue;
-            resolvedEntries.Add((bonus.Type, bonus.Value));
-        }
-
-        return resolvedEntries.Count > 0;
-    }
-
-    private bool TryResolveFromVars(EventNodeContext ctx, List<(AttributeType type, int value)> resolvedEntries)
-    {
-        if (ctx == null || ctx.Vars == null)
-        {
-            Debug.LogWarning("ModifyAttribute: Vars 来源需要有效的上下文。");
-            return false;
-        }
-
-        if (!ctx.TryGet(valueVarKey, out int resolvedValue))
-        {
-            Debug.LogWarning($"ModifyAttribute: Vars 中未找到 {valueVarKey}。");
-            return false;
-        }
-
-        resolvedEntries.Add((attributeType, resolvedValue));
-        return true;
     }
 }

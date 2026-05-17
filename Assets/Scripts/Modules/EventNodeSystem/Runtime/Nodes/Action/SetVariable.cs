@@ -1,91 +1,90 @@
 using System;
+using Modules.EventNodeSystem.DataDefine;
+using Modules.EventNodeSystem.DataDefine.Context;
+using Modules.EventNodeSystem.Runtime.Nodes.Action.Data;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "SetVariable", menuName = "EventNodes/Action/SetVariable")]
-public class SetVariable : ActionNode
+namespace Modules.EventNodeSystem.Runtime.Nodes.Action
 {
-    public ContextVarKey key = ContextVarKey.AllowEnter;
-
-    public enum VarType { Bool, Int, Float, String }
-    public VarType varType = VarType.Bool;
-
-    public enum Operation { Set, Increment, Decrement, Toggle }
-    public Operation operation = Operation.Set;
-
-    // values for different types
-    public bool boolValue;
-    public int intValue;
-    public float floatValue;
-    public string stringValue;
-
-    public override void Execute(EventNodeContext ctx, Action onComplete)
+    [CreateAssetMenu(fileName = "SetVariable", menuName = "EventNodes/Action/SetVariable")]
+    public class SetVariable : ActionNode
     {
-        if (ctx == null)
+        public override void Execute(BaseNodeData data, EventNodeContext ctx, System.Action onComplete)
         {
-            onComplete?.Invoke();
-            return;
-        }
-
-        try
-        {
-            switch (varType)
+            var setData = data as SetVariableData;
+            if (setData == null)
             {
-                case VarType.Bool:
-                    {
-                        bool current = false;
-                        if (ctx.TryGet(key, out bool b)) current = b;
-                        bool result = current;
-                        switch (operation)
-                        {
-                            case Operation.Set: result = boolValue; break;
-                            case Operation.Toggle: result = !current; break;
-                            default: result = boolValue; break;
-                        }
-                        ctx.Set(key, result);
-                    }
-                    break;
-                case VarType.Int:
-                    {
-                        int current = 0;
-                        if (ctx.TryGet(key, out int iv)) current = iv;
-                        int result = current;
-                        switch (operation)
-                        {
-                            case Operation.Set: result = intValue; break;
-                            case Operation.Increment: result = current + intValue; break;
-                            case Operation.Decrement: result = current - intValue; break;
-                            default: result = intValue; break;
-                        }
-                        ctx.Set(key, result);
-                    }
-                    break;
-                case VarType.Float:
-                    {
-                        float current = 0f;
-                        if (ctx.TryGet(key, out float fv)) current = fv;
-                        float result = current;
-                        switch (operation)
-                        {
-                            case Operation.Set: result = floatValue; break;
-                            case Operation.Increment: result = current + floatValue; break;
-                            case Operation.Decrement: result = current - floatValue; break;
-                            default: result = floatValue; break;
-                        }
-                        ctx.Set(key, result);
-                    }
-                    break;
-                case VarType.String:
-                    {
-                        ctx.Set(key, stringValue ?? string.Empty);
-                    }
-                    break;
+                Debug.LogWarning("SetVariable: data 类型不匹配，跳过执行。");
+                onComplete?.Invoke();
+                return;
             }
-        }
-        catch (Exception ex)
-        {
-            Debug.LogException(ex);
-        }
 
-        onComplete?.Invoke();
+            if (ctx == null)
+            {
+                onComplete?.Invoke();
+                return;
+            }
+
+            try
+            {
+                switch (setData.varType)
+                {
+                    case SetVariableData.VarType.Bool:
+                    {
+                        var current = false;
+                        if (ctx.TryGet(setData.key, out bool b)) current = b;
+                        var result = setData.operation switch
+                        {
+                            SetVariableData.Operation.Set => setData.boolValue,
+                            SetVariableData.Operation.Toggle => !current,
+                            _ => setData.boolValue
+                        };
+                        ctx.Set(setData.key, result);
+                    }
+                        break;
+                    case SetVariableData.VarType.Int:
+                    {
+                        var current = 0;
+                        if (ctx.TryGet(setData.key, out int iv)) current = iv;
+                        var result = setData.operation switch
+                        {
+                            SetVariableData.Operation.Set => setData.intValue,
+                            SetVariableData.Operation.Increment => current + setData.intValue,
+                            SetVariableData.Operation.Decrement => current - setData.intValue,
+                            _ => setData.intValue
+                        };
+                        ctx.Set(setData.key, result);
+                    }
+                        break;
+                    case SetVariableData.VarType.Float:
+                    {
+                        var current = 0f;
+                        if (ctx.TryGet(setData.key, out float fv)) current = fv;
+                        var result = setData.operation switch
+                        {
+                            SetVariableData.Operation.Set => setData.floatValue,
+                            SetVariableData.Operation.Increment => current + setData.floatValue,
+                            SetVariableData.Operation.Decrement => current - setData.floatValue,
+                            _ => setData.floatValue
+                        };
+                        ctx.Set(setData.key, result);
+                    }
+                        break;
+                    case SetVariableData.VarType.String:
+                    {
+                        ctx.Set(setData.key, setData.stringValue ?? string.Empty);
+                    }
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+            }
+
+            onComplete?.Invoke();
+        }
     }
 }

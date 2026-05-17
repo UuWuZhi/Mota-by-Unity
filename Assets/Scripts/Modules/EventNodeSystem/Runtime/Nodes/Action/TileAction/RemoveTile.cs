@@ -1,27 +1,42 @@
 using System;
+using Modules.EventNodeSystem.DataDefine;
+using Modules.EventNodeSystem.DataDefine.Context;
+using Modules.EventNodeSystem.Runtime.Nodes.Action.Data;
+using Modules.Map.Runtime;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "RemoveTile", menuName = "EventNodes/Action/RemoveTile")]
-public class RemoveTile : TileActionNode
+namespace Modules.EventNodeSystem.Runtime.Nodes.Action.TileAction
 {
-    public override Type[] GetRequiredServices()
+    [CreateAssetMenu(fileName = "RemoveTile", menuName = "EventNodes/Action/RemoveTile")]
+    public class RemoveTile : TileActionNode
     {
-        return new[] { typeof(GridManager) };
-    }
-
-    public override void ExecuteTile(EventNodeTileContext ctx, Action onComplete)
-    {
-        var gridManager = ctx?.GetService<GridManager>();
-        if (gridManager == null)
+        public override Type[] GetRequiredServices()
         {
-            Debug.LogWarning("RemoveTile: GridManager 未初始化");
-            onComplete?.Invoke();
-            return;
+            return new[] { typeof(GridManager) };
         }
-        Vector3Int cell = ctx.CellPos;
 
-        gridManager.RemoveEventTileAtCell(cell);
+        public override void ExecuteTile(BaseNodeData data, EventNodeTileContext ctx, System.Action onComplete)
+        {
+            if (data is not RemoveTileData)
+            {
+                Debug.LogWarning("RemoveTile: data 类型不匹配，跳过执行。");
+                onComplete?.Invoke();
+                return;
+            }
 
-        onComplete?.Invoke();
+            var gridManager = ctx?.GetService<GridManager>();
+            if (gridManager == null)
+            {
+                Debug.LogWarning("RemoveTile: GridManager 未初始化");
+                onComplete?.Invoke();
+                return;
+            }
+
+            var cell = ctx.CellPos;
+
+            gridManager.RemoveEventTileAtCell(cell);
+
+            onComplete?.Invoke();
+        }
     }
 }

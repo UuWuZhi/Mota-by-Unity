@@ -1,33 +1,51 @@
 using System;
+using Modules.EventNodeSystem.DataDefine;
+using Modules.EventNodeSystem.DataDefine.Context;
 using UnityEngine;
 
-/// <summary>
-/// 瓦片专用 Condition 模板：统一做类型检查并把强类型上下文交给子类 EvaluateTile 处理。
-/// 保持向后兼容：子类实现 EvaluateTile 即可，无需覆写基类 Evaluate 的签名。
-/// </summary>
-public abstract class TileConditionNode : ConditionNode
+namespace Modules.EventNodeSystem.Runtime.Nodes.Condition
 {
-    public sealed override void Evaluate(EventNodeContext ctx, Action<bool> onResult)
+    /// <summary>
+    ///     瓦片专用条件模板：统一校验上下文类型，并将强类型上下文交给子类处理。
+    /// </summary>
+    public abstract class TileConditionNode : ConditionNode
     {
-        if (ctx is EventNodeTileContext tileCtx)
+        /// <summary>
+        ///     使用节点数据与瓦片上下文执行条件评估。
+        /// </summary>
+        /// <param name="data">节点数据。</param>
+        /// <param name="ctx">瓦片上下文。</param>
+        /// <param name="onResult">条件结果回调。</param>
+        public override void Evaluate(BaseNodeData data, EventNodeContext ctx, Action<bool> onResult)
         {
-            try
+            if (ctx is EventNodeTileContext tileCtx)
             {
-                EvaluateTile(tileCtx, onResult);
+                try
+                {
+                    EvaluateTile(data, tileCtx, onResult);
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogException(ex);
+                    Debug.LogError($"[{nameof(TileConditionNode)}]: 执行 {GetType().Name} 时发生异常。");
+                    onResult?.Invoke(false);
+                }
             }
-            catch (Exception ex)
+            else
             {
-                Debug.LogException(ex);
+                Debug.LogWarning(
+                    $"{GetType().Name}: 需要 EventNodeTileContext，但收到 {ctx?.GetType().Name ?? "null"}，默认返回 false。");
                 onResult?.Invoke(false);
             }
         }
-        else
-        {
-            Debug.LogWarning($"{GetType().Name}: 需要 EventNodeTileContext，但收到 {ctx?.GetType().Name ?? "null"}，默认返回 false。");
-            onResult?.Invoke(false);
-        }
-    }
 
-    // 子类实现 Tile 专用判定逻辑
-    public abstract void EvaluateTile(EventNodeTileContext ctx, Action<bool> onResult);
+
+        /// <summary>
+        ///     子类实现瓦片专用条件判定逻辑。
+        /// </summary>
+        /// <param name="data">节点数据。</param>
+        /// <param name="ctx">瓦片上下文。</param>
+        /// <param name="onResult">条件结果回调。</param>
+        public abstract void EvaluateTile(BaseNodeData data, EventNodeTileContext ctx, Action<bool> onResult);
+    }
 }

@@ -1,31 +1,32 @@
-using System.Collections.Generic;
-using UnityEditor;
-using UnityEngine;
+//using System.Collections.Generic;
+//using UnityEditor;
+//using UnityEngine;
 
-[CustomEditor(typeof(SequenceFlowNode))]
-public class SequenceFlowNodeEditor : EventNodeNestedEditor
-{
-    private SerializedProperty nodeNameProp;
-    private SerializedProperty childrenProp;
-    private readonly List<bool> childrenFoldouts = new List<bool>();
+//[CustomEditor(typeof(SequenceFlowNode))]
+//public class SequenceFlowNodeEditor : EventNodeNestedEditor
+//{
+//    private SerializedProperty nodeNameProp;
+//    private SerializedProperty childrenProp;
+//    private readonly List<bool> childrenFoldouts = new List<bool>();
 
-    private void OnEnable()
-    {
-        nodeNameProp = serializedObject.FindProperty("nodeName");
-        childrenProp = serializedObject.FindProperty("children");
-    }
+//    private void OnEnable()
+//    {
+//        nodeNameProp = serializedObject.FindProperty("nodeName");
+//        childrenProp = serializedObject.FindProperty("children");
+//    }
 
-    protected override void DrawInspectorGUI()
-    {
-        serializedObject.Update();
+//    protected override void DrawInspectorGUI()
+//    {
+//        serializedObject.Update();
 
-        if (nodeNameProp != null)
-        {
-            EditorGUILayout.PropertyField(nodeNameProp);
-        }
+//        if (nodeNameProp != null)
+//        {
+//            EditorGUILayout.PropertyField(nodeNameProp);
+//        }
 
-        DrawEventNodeList(childrenProp, "子节点", childrenFoldouts);
+//        DrawEventNodeList(childrenProp, "子节点", childrenFoldouts);
 
-        serializedObject.ApplyModifiedProperties();
-    }
-}
+//        serializedObject.ApplyModifiedProperties();
+//    }
+//}
+

@@ -1,51 +1,73 @@
 using System;
+using Modules.Enemy.DataDefine;
+using Modules.Enemy.Runtime;
+using Modules.EventNodeSystem.DataDefine;
+using Modules.EventNodeSystem.DataDefine.Context;
+using Modules.Player.Runtime.Attribute;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "CanDefeat", menuName = "EventNodes/Condition/CanDefeat")]
-public class CanDefeat : TileConditionNode
+namespace Modules.EventNodeSystem.Runtime.Nodes.Condition
 {
-    public override Type[] GetRequiredServices()
+    /// <summary>
+    ///     判断玩家是否能够击败当前敌人的瓦片条件节点。
+    /// </summary>
+    [CreateAssetMenu(fileName = "CanDefeat", menuName = "EventNodes/Condition/CanDefeat")]
+    public class CanDefeat : TileConditionNode
     {
-        return new[] { typeof(PlayerAttribute) };
-    }
+        /// <summary>
+        ///     声明执行所需服务。
+        /// </summary>
+        /// <returns>所需服务类型数组。</returns>
+        public override Type[] GetRequiredServices()
+        {
+            return new[] { typeof(PlayerAttribute) };
+        }
 
-    public override void EvaluateTile(EventNodeTileContext ctx, Action<bool> onResult)
-    {
-        //Debug.Log("Node:对战检测开始");
-        bool canDefeat;
-        var enemyUnit = ctx.TileObject.GetComponent<EnemyUnit>();
-        if (enemyUnit == null)
+        /// <summary>
+        ///     执行瓦片条件判断。
+        /// </summary>
+        /// <param name="data">节点数据。</param>
+        /// <param name="ctx">瓦片上下文。</param>
+        /// <param name="onResult">条件结果回调。</param>
+        public override void EvaluateTile(BaseNodeData data, EventNodeTileContext ctx, Action<bool> onResult)
         {
-            Debug.LogError("BattleNode: 目标没有 EnemyUnit 组件");
-            onResult?.Invoke(false);
-            return;
-        }
-        // 构建玩家数据（与之前 EventManager 的做法一致）
-        var playerAttribute = ctx?.GetService<PlayerAttribute>();
-        if (playerAttribute == null)
-        {
-            Debug.LogWarning("CanDefeat: PlayerAttribute 未配置，无法计算战斗结果。");
-            onResult?.Invoke(false);
-            return;
-        }
-        BattleUnitData playerData = playerAttribute.GetPlayerUnitData();
-        BattleUnitData enemyData = enemyUnit.GetBattleUnitData();
-        try
-        {
-            var result = BattleManager.Instance.ResolveBattle(playerData, enemyData, out int playerHPLoss);
-            if (result == BattleResult.PlayerWin)
+            var canDefeat = false;
+            try
             {
-                canDefeat = true;
-                ctx.Set(ContextVarKey.PlayerHPLoss, playerHPLoss);
-                ctx.Set(ContextVarKey.GoldReward, enemyUnit.enemyData.goldReward);
+                var enemyUnit = ctx?.TileObject?.GetComponent<EnemyUnit>();
+                if (enemyUnit == null)
+                {
+                    Debug.LogError("[CanDefeat]: 目标没有 EnemyUnit 组件。");
+                    onResult?.Invoke(false);
+                    return;
+                }
+
+                var playerAttribute = ctx.GetService<PlayerAttribute>();
+                if (playerAttribute == null)
+                {
+                    Debug.LogWarning("[CanDefeat]: PlayerAttribute 未配置，无法计算战斗结果。");
+                    onResult?.Invoke(false);
+                    return;
+                }
+
+                var playerData = playerAttribute.GetPlayerUnitData();
+                var enemyData = enemyUnit.GetBattleUnitData();
+                var result = BattleManager.Instance.ResolveBattle(playerData, enemyData, out var playerHpLoss);
+                if (result == BattleResult.PlayerWin)
+                {
+                    canDefeat = true;
+                    ctx.Set(ContextVarKey.PlayerHpLoss, playerHpLoss);
+                    ctx.Set(ContextVarKey.GoldReward, enemyUnit.enemyData.goldReward);
+                }
             }
-            else
+            catch (Exception ex)
             {
+                Debug.LogException(ex);
+                Debug.LogError("[CanDefeat]: 执行条件判断时发生异常，默认返回 false。");
                 canDefeat = false;
             }
+
+            onResult?.Invoke(canDefeat);
         }
-        catch { canDefeat = false; }
-        //Debug.Log($"对战检测结果：{canDefeat}");
-        onResult?.Invoke(canDefeat);
     }
 }

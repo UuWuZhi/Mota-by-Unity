@@ -1,33 +1,48 @@
 using System;
+using Modules.EventNodeSystem.DataDefine;
+using Modules.EventNodeSystem.DataDefine.Context;
+using Modules.EventNodeSystem.Runtime.Nodes.Action.Data;
+using Modules.EventSystem.DataDefine.EventArgs;
+using Modules.Map.Runtime;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "SwitchLayer", menuName = "EventNodes/Action/SwitchLayer")]
-public class SwitchLayer : ActionNode
+namespace Modules.EventNodeSystem.Runtime.Nodes.Action
 {
-    public StairType stairType;
-
-    public override Type[] GetRequiredServices()
+    [CreateAssetMenu(fileName = "SwitchLayer", menuName = "EventNodes/Action/SwitchLayer")]
+    public class SwitchLayer : ActionNode
     {
-        return new[] { typeof(MapManager) };
-    }
-
-    public override void Execute(EventNodeContext ctx, Action onComplete)
-    {
-        var mapManager = ctx?.GetService<MapManager>();
-
-        if (mapManager == null)
+        public override Type[] GetRequiredServices()
         {
-            Debug.LogError("SwitchLayer: MapManager 未配置，无法切换楼层。");
-            onComplete?.Invoke();
-            return;
+            return new[] { typeof(MapManager) };
         }
 
-        mapManager.GetLayerAndSpawnPosIDbyStairType(stairType, out int targetLayerId, out int spawnPointId);
-        mapManager.RequestLayerSwitch(new LayerSwitchRequestEventArgs
+        public override void Execute(BaseNodeData data, EventNodeContext ctx, System.Action onComplete)
         {
-            TargetLayerId = targetLayerId,
-            SpawnPointId = spawnPointId
-        });
-        onComplete?.Invoke();
+            var switchData = data as SwitchLayerData;
+            if (switchData == null)
+            {
+                Debug.LogWarning("SwitchLayer: data 类型不匹配，跳过执行。");
+                onComplete?.Invoke();
+                return;
+            }
+
+            var mapManager = ctx?.GetService<MapManager>();
+
+            if (mapManager == null)
+            {
+                Debug.LogError("SwitchLayer: MapManager 未配置，无法切换楼层。");
+                onComplete?.Invoke();
+                return;
+            }
+
+            mapManager.GetLayerAndSpawnPosIDbyStairType(switchData.stairType, out var targetLayerId,
+                out var spawnPointId);
+            mapManager.RequestLayerSwitch(new LayerSwitchRequestEventArgs
+            {
+                TargetLayerId = targetLayerId,
+                SpawnPointId = spawnPointId
+            });
+            onComplete?.Invoke();
+        }
     }
 }

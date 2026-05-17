@@ -1,71 +1,77 @@
+using Modules.Enemy.DataDefine;
+using Modules.Enemy.Runtime;
+using Modules.Player.Runtime.Attribute;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Serialization;
 using VContainer;
 
-/// <summary>
-/// 单个怪物展示条预制体的控制脚本（轻量）
-/// 绑定在 MonsterBar 预制体上，用于填充显示数据
-/// </summary>
-public class MonsterBar : MonoBehaviour
+namespace Modules.UI.Runtime
 {
-    [SerializeField] private TextMeshProUGUI textName;
-    [SerializeField] private TextMeshProUGUI textHP;
-    [SerializeField] private TextMeshProUGUI textAttack;
-    [SerializeField] private TextMeshProUGUI textDefense;
-    [SerializeField] private TextMeshProUGUI textGold;
-    [SerializeField] private TextMeshProUGUI textDamage;
-
-    // injected (optional)
-    private BattleManager _battleManager;
-    private PlayerAttribute _playerAttribute;
-
-    [Inject]
-    public void Inject(BattleManager battleManager, PlayerAttribute playerAttribute)
+    /// <summary>
+    ///     单个怪物展示条预制体的控制脚本（轻量）
+    ///     绑定在 MonsterBar 预制体上，用于填充显示数据
+    /// </summary>
+    public class MonsterBar : MonoBehaviour
     {
-        _battleManager = battleManager ?? _battleManager;
-        _playerAttribute = playerAttribute ?? _playerAttribute;
-    }
+        [SerializeField] private TextMeshProUGUI textName;
 
-    // 新增重载：如果外部已计算了 predictedLoss，则传入以避免重复计算
-    public void SetData(EnemyData data, int? predictedLoss = null)
-    {
-        if (data == null)
+        [FormerlySerializedAs("textHP")] [SerializeField]
+        private TextMeshProUGUI textHp;
+
+        [SerializeField] private TextMeshProUGUI textAttack;
+        [SerializeField] private TextMeshProUGUI textDefense;
+        [SerializeField] private TextMeshProUGUI textGold;
+        [SerializeField] private TextMeshProUGUI textDamage;
+
+        // injected (optional)
+        private BattleManager _battleManager;
+        private PlayerAttribute _playerAttribute;
+
+        [Inject]
+        public void Inject(BattleManager battleManager, PlayerAttribute playerAttribute)
         {
-            if (textName != null) textName.text = "Unknown";
-            if (textHP != null) textHP.text = "-";
-            if (textAttack != null) textAttack.text = "-";
-            if (textDefense != null) textDefense.text = "-";
-            if (textGold != null) textGold.text = "-";
-            if (textDamage != null) textDamage.text = "-";
-            return;
+            _battleManager = battleManager;
+            _playerAttribute = playerAttribute;
         }
 
-        if (textName != null) textName.text = data.enemyName;
-        if (textHP != null) textHP.text = data.maxHP.ToString();
-        if (textAttack != null) textAttack.text = data.attack.ToString();
-        if (textDefense != null) textDefense.text = data.defense.ToString();
-        if (textGold != null) textGold.text = data.goldReward.ToString();
-
-        // 显示预测的总HP损失（如果外部提供则使用外部值）
-        if (textDamage != null)
+        // 新增重载：如果外部已计算了 predictedLoss，则传入以避免重复计算
+        public void SetData(EnemyData data, int? predictedLoss = null)
         {
-            if (predictedLoss.HasValue)
+            if (!data)
             {
-                textDamage.text = (predictedLoss.Value == int.MaxValue) ? "∞" : predictedLoss.Value.ToString();
+                if (textName) textName.text = "Unknown";
+                if (textHp) textHp.text = "-";
+                if (textAttack) textAttack.text = "-";
+                if (textDefense) textDefense.text = "-";
+                if (textGold) textGold.text = "-";
+                if (textDamage) textDamage.text = "-";
                 return;
             }
 
-            // 使用注入的 manager/attribute 或回退到单例
-            var bm = _battleManager ?? BattleManager.Instance;
+            if (textName) textName.text = data.enemyName;
+            if (textHp) textHp.text = data.maxHp.ToString();
+            if (textAttack) textAttack.text = data.attack.ToString();
+            if (textDefense) textDefense.text = data.defense.ToString();
+            if (textGold) textGold.text = data.goldReward.ToString();
+
+            // 显示预测的总HP损失（如果外部提供则使用外部值）
+            if (!textDamage) return;
+            if (predictedLoss.HasValue)
+            {
+                textDamage.text = predictedLoss.Value == int.MaxValue ? "∞" : predictedLoss.Value.ToString();
+                return;
+            }
+
+            var bm = _battleManager;
             var pa = _playerAttribute;
 
-            if (bm != null && pa != null)
+            if (bm && pa)
             {
                 var playerUnit = pa.GetPlayerUnitData();
                 var enemyUnit = data.ToBattleUnitData();
-                int predicted;
-                bm.ResolveBattle(playerUnit, enemyUnit, out predicted);
-                textDamage.text = (predicted == int.MaxValue) ? "∞" : predicted.ToString();
+                bm.ResolveBattle(playerUnit, enemyUnit, out var predicted);
+                textDamage.text = predicted == int.MaxValue ? "∞" : predicted.ToString();
             }
             else
             {

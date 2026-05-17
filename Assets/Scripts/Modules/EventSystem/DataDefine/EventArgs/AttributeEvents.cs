@@ -1,9 +1,12 @@
-using System;
+using Modules.Core.DataDefine;
 
-/// <summary>
-/// 属性变化事件参数
-/// </summary>
-public class AttributeChangedEventArgs : EventArgs
+namespace Modules.EventSystem.DataDefine.EventArgs
 {
-    public AttributeType ChangedType { get; set; } // 变化的属性类型
+    /// <summary>
+    ///     属性变化事件参数
+    /// </summary>
+    public class AttributeChangedEventArgs : System.EventArgs
+    {
+        public AttributeType ChangedType { get; set; } // 变化的属性类型
+    }
 }

@@ -2,79 +2,81 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// 通用节点上下文基类（轻量），用于作为所有具体上下文类型的基类。
-/// EventNode.Execute 接口应接受此基类以便复用不同语义的上下文（Tile/Item 等）。
-/// </summary>
-public class EventNodeContext
+namespace Modules.EventNodeSystem.DataDefine.Context
 {
-    public MonoBehaviour OwnerMono; // 用于 StartCoroutine 等，通常由 Runner 注入
-    public Dictionary<ContextVarKey, object> Vars 
-        = new();                    // 临时/扩展数据
-    private readonly Dictionary<Type, object> _services 
-        = new();                    //按类型存储运行时服务实例
-
     /// <summary>
-    /// 注册服务实例到类型化服务包，并尝试注入到现有的显式属性/字段以兼容旧代码。
+    ///     通用节点上下文基类（轻量），用于作为所有具体上下文类型的基类。
+    ///     EventNode.Execute 接口应接受此基类以便复用不同语义的上下文（Tile/Item 等）。
     /// </summary>
-    public void RegisterService<T>(T instance) where T : class
+    public class EventNodeContext
     {
-        if (instance == null) return;
-        var key = typeof(T);
-        _services[key] = instance;
-    }
+        private readonly Dictionary<Type, object> _services
+            = new(); //按类型存储运行时服务实例
 
-    public void RegisterService(Type type, object instance)
-    {
-        if (type == null || instance == null) return;
-        _services[type] = instance;
-    }
+        public MonoBehaviour OwnerMono; // 用于 StartCoroutine 等，通常由 Runner 注入
 
-    public T GetService<T>() where T : class
-    {
-        if (TryGetService<T>(out var svc)) return svc;
-        return null;
-    }
+        public Dictionary<ContextVarKey, object> Vars
+            = new(); // 临时/扩展数据
 
-    public bool TryGetService<T>(out T service) where T : class
-    {
-        var key = typeof(T);
-        if (_services.TryGetValue(key, out var o))
+        /// <summary>
+        ///     注册服务实例到类型化服务包，并尝试注入到现有的显式属性/字段以兼容旧代码。
+        /// </summary>
+        public void RegisterService<T>(T instance) where T : class
         {
-            service = o as T;
-            return service != null;
+            if (instance == null) return;
+            var key = typeof(T);
+            _services[key] = instance;
         }
 
-        service = null;
-        return false;
-    }
-
-    public bool HasService<T>() where T : class
-    {
-        return _services.ContainsKey(typeof(T));
-    }
-
-    public void Set<T>(ContextVarKey key, T value)
-    {
-        Vars[key] = value;
-    }
-
-    public T Get<T>(ContextVarKey key)
-    {
-        if (TryGet(key, out T value)) return value;
-        return default;
-    }
-
-    public bool TryGet<T>(ContextVarKey key, out T value)
-    {
-        if (Vars.TryGetValue(key, out var o) && o is T castValue)
+        public void RegisterService(Type type, object instance)
         {
-            value = castValue;
-            return true;
+            if (type == null || instance == null) return;
+            _services[type] = instance;
         }
 
-        value = default;
-        return false;
-    }
+        public T GetService<T>() where T : class
+        {
+            return TryGetService<T>(out var svc) ? svc : null;
+        }
 
+        public bool TryGetService<T>(out T service) where T : class
+        {
+            var key = typeof(T);
+            if (_services.TryGetValue(key, out var o))
+            {
+                service = o as T;
+                return service != null;
+            }
+
+            service = null;
+            return false;
+        }
+
+        public bool HasService<T>() where T : class
+        {
+            return _services.ContainsKey(typeof(T));
+        }
+
+        public void Set<T>(ContextVarKey key, T value)
+        {
+            Vars[key] = value;
+        }
+
+        public T Get<T>(ContextVarKey key)
+        {
+            return TryGet(key, out T value) ? value : default;
+        }
+
+        public bool TryGet<T>(ContextVarKey key, out T value)
+        {
+            if (Vars.TryGetValue(key, out var o) && o is T castValue)
+            {
+                value = castValue;
+                return true;
+            }
+
+            value = default;
+            return false;
+        }
+    }
 }

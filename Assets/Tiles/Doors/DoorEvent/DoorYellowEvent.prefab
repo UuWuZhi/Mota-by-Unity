@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3550221762624890513}
-  - component: {fileID: 2371813756868738674}
+  - component: {fileID: 8659024930321885557}
   - component: {fileID: 3856851608017492117}
   - component: {fileID: -6499684089732919964}
   - component: {fileID: 4618304109934423432}
@@ -35,7 +35,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2371813756868738674
+--- !u!114 &8659024930321885557
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -44,17 +44,82 @@ MonoBehaviour:
   m_GameObject: {fileID: 9212274610784225484}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5cd63aa8b4ee2d343afdb6fccee5b4cb, type: 3}
+  m_Script: {fileID: 11500000, guid: 794533f89c32b0046b64b00c69c92149, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  rootNode: {fileID: 11400000, guid: ea5d303ec21dfc04aa19c226cbf1bb16, type: 2}
-  actions:
-  - {fileID: 11400000, guid: ea5d303ec21dfc04aa19c226cbf1bb16, type: 2}
   triggerMode: 1
   enterPermission: 1
   executionBlocking: 0
-  CellPos: {x: 0, y: 0, z: 0}
+  sequence:
+    commands:
+    - rid: 3081733569617592320
+    - rid: 3081733569617592321
+    - rid: 3081733569617592326
+    - rid: 3081733569617592327
+    - rid: 3081733569617592329
+    - rid: 3081733569617592323
+    - rid: 3081733569617592324
+    - rid: 3081733569617592325
+    - rid: 3081733569617592328
+  cellPos: {x: 0, y: 0, z: 0}
   triggerTimeoutSeconds: 10
+  references:
+    version: 2
+    RefIds:
+    - rid: 3081733569617592320
+      type: {class: JumpData, ns: Modules.EventNodeSystem.Runtime.Nodes.Flow.Data, asm: Assembly-CSharp}
+      data:
+        targetLabelName: false
+        alwaysJump: 0
+    - rid: 3081733569617592321
+      type: {class: PlayerHasItemData, ns: Modules.EventNodeSystem.Runtime.Nodes.Condition.Data, asm: Assembly-CSharp}
+      data:
+        itemType: 4
+        requiredCount: 1
+        comparisonMode: 1
+    - rid: 3081733569617592323
+      type: {class: ModifyItemData, ns: Modules.EventNodeSystem.Runtime.Nodes.Action.Data, asm: Assembly-CSharp}
+      data:
+        operation: 1
+        parameterSource: 0
+        itemType: 4
+        count: 1
+        valueVarKey: 6
+    - rid: 3081733569617592324
+      type: {class: PlayAnimationData, ns: Modules.EventNodeSystem.Runtime.Nodes.Action.Data, asm: Assembly-CSharp}
+      data:
+        stateName: Open
+        triggerParameter: 
+        playMode: 0
+        waitForCompletion: 1
+        tryUseClipLength: 1
+        fallbackTimeout: 1
+    - rid: 3081733569617592325
+      type: {class: RemoveTileData, ns: Modules.EventNodeSystem.Runtime.Nodes.Action.Data, asm: Assembly-CSharp}
+      data: 
+    - rid: 3081733569617592326
+      type: {class: SetVariableData, ns: Modules.EventNodeSystem.Runtime.Nodes.Action.Data, asm: Assembly-CSharp}
+      data:
+        key: 0
+        varType: 0
+        operation: 0
+        boolValue: 0
+        intValue: 0
+        floatValue: 0
+        stringValue: 
+    - rid: 3081733569617592327
+      type: {class: JumpData, ns: Modules.EventNodeSystem.Runtime.Nodes.Flow.Data, asm: Assembly-CSharp}
+      data:
+        targetLabelName: end
+        alwaysJump: 1
+    - rid: 3081733569617592328
+      type: {class: LabelData, ns: Modules.EventNodeSystem.Runtime.Nodes.Flow.Data, asm: Assembly-CSharp}
+      data:
+        labelName: end
+    - rid: 3081733569617592329
+      type: {class: LabelData, ns: Modules.EventNodeSystem.Runtime.Nodes.Flow.Data, asm: Assembly-CSharp}
+      data:
+        labelName: false
 --- !u!61 &3856851608017492117
 BoxCollider2D:
   m_ObjectHideFlags: 0

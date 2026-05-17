@@ -1,0 +1,47 @@
+namespace Modules.Map.DataDefine
+{
+    /// <summary>
+    ///     瓦片类型枚举（用于区分地图格子的功能）
+    /// </summary>
+    public enum GridType
+    {
+        None, // 空类型（排错用）
+        Ground, // 地面（可走）
+        Wall, // 墙（不可走）
+        Item, // 道具（可走，触发拾取）
+        Enemy, // 敌人（可走，触发战斗）
+        Door, // 门（需要钥匙开启）
+        Stair, // 楼梯（传送楼层）
+        Event // 事件（可走，触发剧情等）
+    }
+
+    /// <summary>
+    ///     图层类型枚举（区分地图的不同功能层）
+    /// </summary>
+    public enum TileMapType
+    {
+        None, // 空类型（排错用）
+        Ground, // 地面层（可走）
+        Obstacle, // 障碍层（阻挡/墙）
+        Event // 事件层（道具/敌人/楼梯等）
+    }
+
+    /// <summary>
+    ///     楼梯类型枚举（区分楼梯的传送方向）
+    /// </summary>
+    public enum StairType
+    {
+        UpStair, // 上楼（当前楼层+1）
+        DownStair, // 下楼（当前楼层-1）
+        Custom // 自定义目标（任意楼层/位置）
+    }
+
+    /// <summary>
+    ///     出生来源枚举（区分玩家从哪个方向进入楼层）
+    /// </summary>
+    public enum SpawnSource
+    {
+        FromLowerLayer, // 从下层上来（使用upSpawn）
+        FromUpperLayer // 从上层下来（使用downSpawn）
+    }
+}

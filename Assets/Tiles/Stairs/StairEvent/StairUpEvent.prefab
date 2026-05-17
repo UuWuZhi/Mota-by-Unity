@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5054402568362231917}
-  - component: {fileID: 6567645563763990593}
+  - component: {fileID: 1994527196860670953}
   - component: {fileID: 492118040737084567}
   - component: {fileID: 5863455508743872378}
   m_Layer: 0
@@ -34,7 +34,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &6567645563763990593
+--- !u!114 &1994527196860670953
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -43,16 +43,19 @@ MonoBehaviour:
   m_GameObject: {fileID: 8083261046862395108}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5cd63aa8b4ee2d343afdb6fccee5b4cb, type: 3}
+  m_Script: {fileID: 11500000, guid: 794533f89c32b0046b64b00c69c92149, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  actions:
-  - {fileID: 11400000, guid: e2ac8f3ca2018c842a264a0ad25e6151, type: 2}
-  triggerMode: 2
+  triggerMode: 1
   enterPermission: 0
   executionBlocking: 0
-  CellPos: {x: 0, y: 0, z: 0}
+  sequence:
+    commands: []
+  cellPos: {x: 0, y: 0, z: 0}
   triggerTimeoutSeconds: 10
+  references:
+    version: 2
+    RefIds: []
 --- !u!61 &492118040737084567
 BoxCollider2D:
   m_ObjectHideFlags: 0

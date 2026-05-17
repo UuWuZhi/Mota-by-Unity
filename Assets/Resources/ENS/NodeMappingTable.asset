@@ -1,0 +1,57 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 39b9acdfaabb21846a6e63e0afa791e1, type: 3}
+  m_Name: NodeMappingTable
+  m_EditorClassIdentifier: 
+  entries:
+  - dataTypeName: Modules.EventNodeSystem.Runtime.Nodes.Flow.Data.ForData, Assembly-CSharp,
+      Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    node: {fileID: 11400000, guid: 0cdccf4814c532244b4a98e40dd33cd5, type: 2}
+  - dataTypeName: Modules.EventNodeSystem.Runtime.Nodes.Flow.Data.IfData, Assembly-CSharp,
+      Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    node: {fileID: 11400000, guid: 64c71c5d699f09541937c435918a07b5, type: 2}
+  - dataTypeName: Modules.EventNodeSystem.Runtime.Nodes.Flow.Data.JumpData, Assembly-CSharp,
+      Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    node: {fileID: 11400000, guid: 7e7f68d0d1c0baf498bd19aa5af1ef06, type: 2}
+  - dataTypeName: Modules.EventNodeSystem.Runtime.Nodes.Flow.Data.LabelData, Assembly-CSharp,
+      Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    node: {fileID: 11400000, guid: 3d9e2b05cf983b14687ecaac2aaa6a34, type: 2}
+  - dataTypeName: Modules.EventNodeSystem.Runtime.Nodes.Action.Data.ModifyAttributeData,
+      Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    node: {fileID: 11400000, guid: df3b52fb30b2e294290d2d8c9e381dc1, type: 2}
+  - dataTypeName: Modules.EventNodeSystem.Runtime.Nodes.Action.Data.ModifyItemData,
+      Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    node: {fileID: 11400000, guid: 785d7ca5e0e39854c8fef6f4990fdbed, type: 2}
+  - dataTypeName: Modules.EventNodeSystem.Runtime.Nodes.Action.Data.PickaxeActionData,
+      Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    node: {fileID: 11400000, guid: 4698b6fe51b04f54ca9739e7d228b452, type: 2}
+  - dataTypeName: Modules.EventNodeSystem.Runtime.Nodes.Action.Data.PlayAnimationData,
+      Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    node: {fileID: 11400000, guid: 164086ebe586e5e4db013d744c8dbd44, type: 2}
+  - dataTypeName: Modules.EventNodeSystem.Runtime.Nodes.Condition.Data.PlayerHasAttributeData,
+      Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    node: {fileID: 11400000, guid: 60a2681e443d0c748b21df14b02ba113, type: 2}
+  - dataTypeName: Modules.EventNodeSystem.Runtime.Nodes.Condition.Data.PlayerHasItemData,
+      Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    node: {fileID: 11400000, guid: a20c95101a9e86a4a8f3a9e668c99bb9, type: 2}
+  - dataTypeName: Modules.EventNodeSystem.Runtime.Nodes.Action.Data.RemoveTileData,
+      Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    node: {fileID: 11400000, guid: c3ca96886e5fc9a40a1415e3085d7097, type: 2}
+  - dataTypeName: Modules.EventNodeSystem.Runtime.Nodes.Action.Data.SetVariableData,
+      Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    node: {fileID: 11400000, guid: 11a9afff9292bad43a34c3e7f1954869, type: 2}
+  - dataTypeName: Modules.EventNodeSystem.Runtime.Nodes.Action.Data.SwitchLayerData,
+      Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    node: {fileID: 11400000, guid: e2ac8f3ca2018c842a264a0ad25e6151, type: 2}
+  - dataTypeName: Modules.EventNodeSystem.Runtime.Nodes.Action.Data.YarnDialogueData,
+      Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    node: {fileID: 11400000, guid: f04b06dcde338184eba66ff058111e48, type: 2}

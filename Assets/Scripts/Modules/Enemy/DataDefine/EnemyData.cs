@@ -1,25 +1,30 @@
+using Modules.Enemy.Runtime;
 using UnityEngine;
+using UnityEngine.Serialization;
 
-[CreateAssetMenu(fileName = "EnemyData", menuName = "Data/Enemy/EnemyData", order = 1)]
-public class EnemyData : ScriptableObject
+namespace Modules.Enemy.DataDefine
 {
-    [Header("基础战斗属性")]
-    public int id; // 唯一id，用于在数据库中查找
-    public int maxHP = 10;
-    public int attack = 5;
-    public int defense = 0;
-
-    [Header("额外属性")]
-    public string enemyName = "Enemy";
-    public int goldReward = 25;
-
-    public BattleUnitData ToBattleUnitData()
+    [CreateAssetMenu(fileName = "EnemyData", menuName = "Data/Enemy/EnemyData", order = 1)]
+    public class EnemyData : ScriptableObject
     {
-        return new BattleUnitData
+        [Header("基础战斗属性")] public int id; // 唯一id，用于在数据库中查找
+
+        [FormerlySerializedAs("maxHP")] public int maxHp = 10;
+        public int attack = 5;
+        public int defense;
+
+        [Header("额外属性")] public string enemyName = "Enemy";
+
+        public int goldReward = 25;
+
+        public BattleUnitData ToBattleUnitData()
         {
-            currentHP = maxHP,
-            attack = attack,
-            defense = defense
-        };
+            return new BattleUnitData
+            {
+                currentHp = maxHp,
+                attack = attack,
+                defense = defense
+            };
+        }
     }
 }

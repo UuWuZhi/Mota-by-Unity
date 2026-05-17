@@ -1,10 +1,13 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// 物品序列组件
-/// </summary>
-public class AttributeUnit : MonoBehaviour
+namespace Modules.Core.DataDefine.Units
 {
-    public List<AttributeBonus> attributeBonuses = new List<AttributeBonus>();
+    /// <summary>
+    ///     鐗╁搧搴忓垪缁勪欢
+    /// </summary>
+    public class AttributeUnit : MonoBehaviour
+    {
+        public List<AttributeBonus> attributeBonuses = new();
+    }
 }

@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3677438678776459372}
-  - component: {fileID: 2934606892324908354}
+  - component: {fileID: 5226131285662042899}
   - component: {fileID: 1772810372175048072}
   - component: {fileID: 8581684243444647004}
   - component: {fileID: 4967901013042342079}
@@ -35,7 +35,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2934606892324908354
+--- !u!114 &5226131285662042899
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -44,17 +44,19 @@ MonoBehaviour:
   m_GameObject: {fileID: 8739306883478586474}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5cd63aa8b4ee2d343afdb6fccee5b4cb, type: 3}
+  m_Script: {fileID: 11500000, guid: 794533f89c32b0046b64b00c69c92149, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  rootNode: {fileID: 11400000, guid: 77f019ff112d5d94197f0c23588d309a, type: 2}
-  actions:
-  - {fileID: 11400000, guid: 77f019ff112d5d94197f0c23588d309a, type: 2}
   triggerMode: 1
   enterPermission: 0
   executionBlocking: 0
-  CellPos: {x: 0, y: 0, z: 0}
+  sequence:
+    commands: []
+  cellPos: {x: 0, y: 0, z: 0}
   triggerTimeoutSeconds: 10
+  references:
+    version: 2
+    RefIds: []
 --- !u!95 &1772810372175048072
 Animator:
   serializedVersion: 5

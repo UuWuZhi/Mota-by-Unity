@@ -1,33 +1,33 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "EnemyDatabase", menuName = "Data/Enemy/EnemyDatabase", order = 2)]
-public class EnemyDatabase : ScriptableObject
+namespace Modules.Enemy.DataDefine
 {
-    public List<EnemyData> enemies = new List<EnemyData>();
-
-    private Dictionary<int, EnemyData> _index;
-
-    private void OnEnable()
+    [CreateAssetMenu(fileName = "EnemyDatabase", menuName = "Data/Enemy/EnemyDatabase", order = 2)]
+    public class EnemyDatabase : ScriptableObject
     {
-        BuildIndex();
-    }
+        public List<EnemyData> enemies = new();
 
-    private void BuildIndex()
-    {
-        _index = new Dictionary<int, EnemyData>(enemies.Count);
-        foreach (var e in enemies)
+        private Dictionary<int, EnemyData> _index;
+
+        private void OnEnable()
         {
-            if (e == null) continue;
-            if (!_index.ContainsKey(e.id))
-                _index.Add(e.id, e);
+            BuildIndex();
         }
-    }
 
-    public EnemyData GetById(int id)
-    {
-        if (_index == null) BuildIndex();
-        _index.TryGetValue(id, out var d);
-        return d;
+        private void BuildIndex()
+        {
+            _index = new Dictionary<int, EnemyData>(enemies.Count);
+            foreach (var e in enemies.Where(e => e)) _index.TryAdd(e.id, e);
+        }
+
+        public EnemyData GetById(int id)
+        {
+            if (_index == null) BuildIndex();
+            EnemyData d = null;
+            _index?.TryGetValue(id, out d);
+            return d;
+        }
     }
 }

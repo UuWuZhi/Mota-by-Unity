@@ -1,16 +1,23 @@
-using System;
+using Modules.Item.DataDefine;
 
-public class InventoryChangedEventArgs : EventArgs
+namespace Modules.EventSystem.DataDefine.EventArgs
 {
-    // 哪种道具发生变化；使用 ItemType.All 表示全量更新
-    public ItemType ChangedType { get; set; }
-    // 可选：数量变化（正为增加，负为减少），调用方可选提供
-    public int Delta { get; set; }
-
-    public InventoryChangedEventArgs() { }
-    public InventoryChangedEventArgs(ItemType type, int delta = 0)
+    public class InventoryChangedEventArgs : System.EventArgs
     {
-        ChangedType = type;
-        Delta = delta;
+        public InventoryChangedEventArgs()
+        {
+        }
+
+        public InventoryChangedEventArgs(ItemType type, int delta = 0)
+        {
+            ChangedType = type;
+            Delta = delta;
+        }
+
+        // 锟斤拷锟街碉拷锟竭凤拷锟斤拷锟戒化锟斤拷使锟斤拷 ItemType.All 锟斤拷示全锟斤拷锟斤拷锟斤拷
+        public ItemType ChangedType { get; set; }
+
+        // 锟斤拷选锟斤拷锟斤拷锟斤拷锟戒化锟斤拷锟斤拷为锟斤拷锟接ｏ拷锟斤拷为锟斤拷锟劫ｏ拷锟斤拷锟斤拷锟矫凤拷锟斤拷选锟结供
+        public int Delta { get; set; }
     }
 }

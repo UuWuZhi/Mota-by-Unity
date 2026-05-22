@@ -50,15 +50,19 @@ MonoBehaviour:
   enterPermission: 0
   executionBlocking: 0
   sequence:
-    commands:
-    - rid: 3081733510748700673
-    - rid: 3081733510748700674
+    rid: 1000
   cellPos: {x: 0, y: 0, z: 0}
   triggerTimeoutSeconds: 10
   references:
     version: 2
     RefIds:
-    - rid: 3081733510748700673
+    - rid: 1000
+      type: {class: EventSequence, ns: Modules.EventNodeSystem.DataDefine, asm: Assembly-CSharp}
+      data:
+        commands:
+        - rid: 3081733684501151745
+        - rid: 3081733684501151749
+    - rid: 3081733684501151745
       type: {class: ModifyItemData, ns: Modules.EventNodeSystem.Runtime.Nodes.Action.Data, asm: Assembly-CSharp}
       data:
         operation: 0
@@ -66,7 +70,7 @@ MonoBehaviour:
         itemType: 0
         count: 1
         valueVarKey: 6
-    - rid: 3081733510748700674
+    - rid: 3081733684501151749
       type: {class: RemoveTileData, ns: Modules.EventNodeSystem.Runtime.Nodes.Action.Data, asm: Assembly-CSharp}
       data: 
 --- !u!114 &-2826898972751835986

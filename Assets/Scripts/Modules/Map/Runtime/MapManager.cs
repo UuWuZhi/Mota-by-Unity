@@ -16,11 +16,8 @@ namespace Modules.Map.Runtime
     public class MapManager : MonoBehaviour
     {
         [Header("地图配置")] public Grid mapRoot; // 所有层的根Grid
-
-        [FormerlySerializedAs("_currentLayerId")]
-        public int currentLayerId; // 当前层数（默认0层）
-
-        public List<MapLayerInfo> allLayers = new(); // 所有层的配置
+        [FormerlySerializedAs("_currentLayerId")] public int currentLayerId; // 当前层数（默认0层）
+        [FormerlySerializedAs("allLayers")] public List<MapLayerInfo> allLayerInfos = new(); // 所有层的配置
 
         // 缓存各层的Tilemap和边界（键：楼层ID，值：(ground, obstacle, eventTilemap, 边界)）
         private readonly Dictionary<int, (Tilemap ground, Tilemap obstacle, Tilemap eventTilemap, BoundsInt bounds)>
@@ -29,7 +26,6 @@ namespace Modules.Map.Runtime
 
         private EventCenter _eventCenter;
         private IGlobalEventVariables _globalEventVariables;
-
         private GridManager _gridManager;
 
         #region 生命周期
@@ -127,7 +123,7 @@ namespace Modules.Map.Runtime
         private void CheckLayerIdDuplicate()
         {
             var idSet = new HashSet<int>();
-            foreach (var layer in allLayers)
+            foreach (var layer in allLayerInfos)
             {
                 if (idSet.Contains(layer.layerId)) Debug.LogError($"楼层ID {layer.layerId} 重复！请检查配置");
                 idSet.Add(layer.layerId);
@@ -139,7 +135,7 @@ namespace Modules.Map.Runtime
         /// </summary>
         private void SyncAllSpawnPoints()
         {
-            foreach (var layer in from layer in allLayers
+            foreach (var layer in from layer in allLayerInfos
                      where layer.layerRoot
                      let layerInfo = layer.layerRoot.GetComponent<MapLayerInfo>()
                      where layerInfo && layerInfo.SpawnPoints.Count == 0
@@ -152,7 +148,7 @@ namespace Modules.Map.Runtime
         /// </summary>
         private void InitLayerDataCache()
         {
-            foreach (var layerData in allLayers)
+            foreach (var layerData in allLayerInfos)
             {
                 if (_layerDataCache.ContainsKey(layerData.layerId))
                 {
@@ -186,7 +182,7 @@ namespace Modules.Map.Runtime
                 }
 
                 // 处理边界（优先使用预存边界，否则临时计算）
-                var bounds = _gridManager.IsBoundsValid(layerInfo.layerBounds)
+                var bounds = GridManager.IsBoundsValid(layerInfo.layerBounds)
                     ? layerInfo.layerBounds
                     : GetTilemapBounds(ground);
 
@@ -239,7 +235,7 @@ namespace Modules.Map.Runtime
         /// </summary>
         private Vector2 GetSpawnPosByLayerAndId(int layerId, int spawnId)
         {
-            var layerInfo = allLayers.Find(l => l.layerId == layerId).layerRoot.GetComponent<MapLayerInfo>();
+            var layerInfo = allLayerInfos.Find(l => l.layerId == layerId).layerRoot.GetComponent<MapLayerInfo>();
             return layerInfo?.GetSpawnPointById(spawnId) ?? Vector2.zero;
         }
 

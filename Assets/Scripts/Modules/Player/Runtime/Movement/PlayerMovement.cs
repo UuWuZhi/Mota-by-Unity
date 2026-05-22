@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Modules.Core.DataDefine;
 using Modules.EventSystem.DataDefine.EventArgs;
 using Modules.Map.Runtime;
@@ -13,21 +14,20 @@ namespace Modules.Player.Runtime.Movement
     public class PlayerMovement : MonoBehaviour
     {
         [Header("移动设置")] public float moveSpeed = 5f;
-
         [Header("组件引用")] [SerializeField] private Rigidbody2D rb;
+        [Header("路径线设置")] [SerializeField] private LineRenderer pathLineRenderer;
 
         private EventCenter _eventCenter;
         private EventTileManager _eventNodeManager;
-
-        private bool _eventSubscribed;
-
         private IGlobalEventVariables _globalEventVariables;
         private GridManager _gridManager;
-        private bool _isMoving;
-        private bool _isPathMoving;
+
+        private Material _pathLineMaterial;
         private Coroutine _moveCoroutine;
 
-
+        private bool _eventSubscribed;
+        private bool _isMoving;
+        private bool _isPathMoving;
         private Vector2 _moveDir;
         private int _moveToken;
         private int _pathMoveToken;
@@ -38,7 +38,6 @@ namespace Modules.Player.Runtime.Movement
 
         public event EventHandler<PlayerInputEventArgs> OnMoveInput;
         public event EventHandler<PlayerMoveDirectionChangedEventArgs> OnMoveDirectionChanged;
-
         public event EventHandler<PlayerMoveStateChangedEventArgs> OnMoveStateChanged;
 
         #region 生命周期
@@ -69,13 +68,26 @@ namespace Modules.Player.Runtime.Movement
 
         #region 事件系统
 
+        /// <summary>
+        /// 响应楼层切换事件，将玩家传送到事件指定的出生点并记录移动日志。
+        /// </summary>
+        /// <remarks>调用 TeleportToPosition 并传入第二个参数 false（表示不触发过渡效果），随后记录玩家已移动到新楼层出生点的日志。</remarks>
+        /// <param name="sender">触发事件的对象。</param>
+        /// <param name="args">包含楼层切换信息的事件参数，例如 SpawnPos（新的出生位置）。</param>
         private void OnLayerSwitched(object sender, LayerSwitchedEventArgs args)
         {
             TeleportToPosition(args.SpawnPos, false);
             Debug.Log($"玩家已移动到新楼层出生点：{args.SpawnPos}");
         }
 
-        // 接收输入事件
+        /// <summary>
+        /// 处理玩家移动输入：验证状态与输入有效性，触发方向更新，并根据格子通行性与事件管理器决定并启动移动流程。
+        /// </summary>
+        /// <remarks>调用时会先触发 OnMoveInput 事件并在路径移动时取消路径移动。若处于等待事件执行或对话激活，则忽略输入；若已在移动、输入无效或方向为零则直接返回。方法会通过
+        /// OnMoveDirectionChanged
+        /// 同步动画混合树参数，计算目标格子并进行基础通行性检查；若不可通行则通知被阻挡。是否允许进入目标格子的最终决定交由事件管理器（RequestEnterCell_PreMove），在允许进入时调用
+        /// StartMoveProcess，并可根据事件执行策略在事件完成前阻塞玩家输入；事件完成后通过回调解除阻塞。</remarks>
+        /// <param name="args">包含玩家输入的移动方向、输入有效性等信息，用于计算目标格子并驱动移动逻辑。</param>
         public void HandleMoveInput(PlayerInputEventArgs args)
         {
             OnMoveInput?.Invoke(this, args);
@@ -102,33 +114,14 @@ namespace Modules.Player.Runtime.Movement
             // 3. 计算目标位置（引用GridManager的tileSize）
             var targetCell = ComputeTargetCellAndWorldPos(dir);
 
-            // 新逻辑：
-            // 1) 先判断是否在边界内（在边界内才可通行）
-            if (!_gridManager.IsInGridBounds(targetCell))
-            {
-                // 超出边界 -> 阻止移动并触发到达事件（不触发事件逻辑）
-                NotifyBlockedMovement(_targetWorldPos);
-                return;
-            }
-
-            // 2) 再判断基础层能否通行：先检查 Ground 层是否有地面（若无地面则不可通行）
-            var groundTile = _gridManager.GetGroundTileAtWorldPos(_targetWorldPos);
-            if (!groundTile)
-            {
-                // Ground 层无地面 -> 阻止移动
-                NotifyBlockedMovement(_targetWorldPos);
-                return;
-            }
-
-            // 再检查 Obstacle 层是否存在阻挡（若有则不可通行）
-            var obstacleTile = _gridManager.GetObstacleTileAtWorldPos(_targetWorldPos);
-            if (obstacleTile)
+            // 基础通行检查（不含事件处理）
+            if (!IsCellBasicPassable(targetCell))
             {
                 NotifyBlockedMovement(_targetWorldPos);
                 return;
             }
 
-            // 3) 最后委托给 EventTileManager 决定是否允许进入以及是否在事件执行期间阻塞玩家
+            // 委托给 EventTileManager 决定是否允许进入以及是否在事件执行期间阻塞玩家
             _eventNodeManager.RequestEnterCell_PreMove(targetCell, _globalEventVariables.GetInt(GlobalEventKey.LayerId),
                 (allowEnter, blockUntilComplete) =>
                 {
@@ -164,7 +157,12 @@ namespace Modules.Player.Runtime.Movement
             _eventSubscribed = false;
         }
 
-        // 统一处理无法移动时的事件发布
+        /// <summary>
+        /// 在移动被阻止时，将玩家移动状态设置为已停止并触发一个不触发额外处理的到达事件。
+        /// </summary>
+        /// <remarks>该方法通过 OnMoveStateChanged 将 IsMoving 设为 false 并将 MoveTime 重置为 0，随后通过 _eventCenter 触发
+        /// PlayerArrivedEventArgs（TriggerEvent 为 false）。</remarks>
+        /// <param name="blockedTargetWorldPos">表示尝试移动但被阻止的目标位置（世界坐标）。</param>
         private void NotifyBlockedMovement(Vector2 blockedTargetWorldPos)
         {
             OnMoveStateChanged?.Invoke(this, new PlayerMoveStateChangedEventArgs { IsMoving = false, MoveTime = 0 });
@@ -176,6 +174,14 @@ namespace Modules.Player.Runtime.Movement
 
         #region 玩家移动
 
+        /// <summary>
+        /// 开始玩家移动流程：停止当前移动协程（如有），启动移动到指定世界位置的协程，发布移动状态事件并在到达时触发到达事件；根据 blockUntilComplete 决定是否在事件执行完成前阻塞玩家并在适当时机调用回调。
+        /// </summary>
+        /// <remarks>方法会递增内部移动令牌并计算移动时间，通过 OnMoveStateChanged 通知移动开始；到达目标后通过 _eventCenter 触发
+        /// PlayerArrivedEventArgs。若已有移动协程存在会先停止该协程。</remarks>
+        /// <param name="targetPos">目标世界位置（Vector2），玩家将移动到该位置。</param>
+        /// <param name="blockUntilComplete">指示在触发到达事件后是否阻塞玩家，若为 true 则等待事件执行完成并由外部解除阻塞。</param>
+        /// <param name="onExecutionComplete">可选回调；当移动完成且未阻塞时立即调用，或在阻塞情况下由外部在事件执行完成时调用。</param>
         private void StartMoveProcess(Vector2 targetPos, bool blockUntilComplete, Action onExecutionComplete)
         {
             var token = ++_moveToken;
@@ -205,8 +211,18 @@ namespace Modules.Player.Runtime.Movement
             }));
         }
 
+        /// <summary>
+        /// 在物理帧中平滑移动对象到指定目标，直到到达或移动令牌失效，并在完成后触发可选回调。
+        /// </summary>
+        /// <remarks>使用 Rigidbody.MovePosition 在 FixedUpdate 周期内移动以保持与物理和动画同步；到达目标后会将 transform 和
+        /// Rigidbody 的位置对齐，并重置移动状态与相应事件通知。</remarks>
+        /// <param name="targetPos">目标位置（世界坐标）。</param>
+        /// <param name="token">用于判断当前移动是否仍有效的令牌；令牌不匹配时中止移动。</param>
+        /// <param name="onComplete">可选回调，移动完成且未被取消时调用。</param>
+        /// <returns>一个用于在 FixedUpdate 驱动下执行移动的 IEnumerator 协程。</returns>
         private IEnumerator MoveToTarget(Vector2 targetPos, int token, Action onComplete = null)
         {
+            Debug.Log($"移动至 : {targetPos}");
             _isMoving = true;
             // 物理帧驱动 → 移动更稳定，和动画同步
             while (token == _moveToken && Vector2.SqrMagnitude((Vector2)transform.position - targetPos) > 0.000001f)
@@ -230,7 +246,13 @@ namespace Modules.Player.Runtime.Movement
             onComplete?.Invoke();
         }
 
-        // 直接传送玩家到指定位置（暂未使用）
+        /// <summary>
+        /// 将玩家立即传送到指定的世界坐标，同时停止当前移动、清除路径并更新移动状态，且可选择触发到达事件。
+        /// </summary>
+        /// <remarks>会停止并清理现有的移动协程和路径线，设置 _isMoving 为 false 并通过 OnMoveStateChanged 通知状态变更；直接设置
+        /// transform.position 与 rb.position 以避免物理问题；最后调用事件中心触发到达事件（若 triggerEvent 为 true）。</remarks>
+        /// <param name="targetPos">要传送到的目标世界坐标。</param>
+        /// <param name="triggerEvent">是否触发玩家到达事件；默认为 true。</param>
         public void TeleportToPosition(Vector2 targetPos, bool triggerEvent = true)
         {
             if (_moveCoroutine != null)
@@ -238,6 +260,8 @@ namespace Modules.Player.Runtime.Movement
                 StopCoroutine(_moveCoroutine);
                 _moveCoroutine = null;
             }
+
+            ClearPathLine();
 
             _isMoving = false;
             _waitingForEventExecution = false;
@@ -273,7 +297,7 @@ namespace Modules.Player.Runtime.Movement
         public bool TryMoveToWorldPosStep(Vector2 worldPos)
         {
             if (!_gridManager || _globalEventVariables == null) return false;
-            if (_gridManager.TryConvertWorldToCellPos(worldPos, out var targetCell))
+            if (_gridManager.TryWorldToCellPos(worldPos, out var targetCell))
                 return TryMoveToCellStep(targetCell);
             return false;
         }
@@ -290,7 +314,8 @@ namespace Modules.Player.Runtime.Movement
             if (_globalEventVariables.GetBool(GlobalEventKey.DialogueIsActive)) return false;
             if (!_gridManager || !_gridManager.IsInGridBounds(targetCell)) return false;
 
-            var startCell = _gridManager.mapGrid.WorldToCell(transform.position);
+            if (!_gridManager.TryWorldToCellPos(transform.position, out var startCell))
+                return false;
             if (startCell == targetCell) return false;
             var path = BuildPath(startCell, targetCell);
             if (path == null || path.Count == 0) return false;
@@ -310,6 +335,7 @@ namespace Modules.Player.Runtime.Movement
             _pathQueue = new Queue<Vector3Int>(path);
             _pathTargetCell = targetCell;
             _pathMoveToken++;
+            //RenderPathLine();
             MoveNextPathStep(_pathMoveToken);
         }
 
@@ -324,20 +350,25 @@ namespace Modules.Player.Runtime.Movement
                 FinishPathMove();
                 return;
             }
-
+            RenderPathLine();
             var nextCell = _pathQueue.Dequeue();
             var isFinalStep = _pathTargetCell.HasValue && nextCell == _pathTargetCell.Value;
-            if (!isFinalStep && !IsCellWalkable(nextCell))
+            if (!isFinalStep && !IsCellBasicPassable(nextCell))
             {
                 FinishPathMove();
                 return;
             }
 
-            var currentCell = _gridManager.mapGrid.WorldToCell(transform.position);
+            if (!_gridManager.TryWorldToCellPos(transform.position, out var currentCell))
+            {
+                FinishPathMove();
+                return;
+            }
             Vector2 dir = new(nextCell.x - currentCell.x, nextCell.y - currentCell.y);
             UpdateMoveDirection(dir);
+            //RenderPathLine();
 
-            var targetPos = GetWorldPosForCell(nextCell);
+            var targetPos = _gridManager.GetCellOriginWorld(nextCell);
             TryStartPathStep(nextCell, targetPos, isFinalStep, token);
         }
 
@@ -349,6 +380,7 @@ namespace Modules.Player.Runtime.Movement
             _isPathMoving = false;
             _pathQueue = null;
             _pathTargetCell = null;
+            ClearPathLine();
         }
 
         /// <summary>
@@ -372,6 +404,7 @@ namespace Modules.Player.Runtime.Movement
                 rb.angularVelocity = 0f;
             }
 
+            ClearPathLine();
             FinishPathMove();
             OnMoveStateChanged?.Invoke(this, new PlayerMoveStateChangedEventArgs { IsMoving = false, MoveTime = 0 });
         }
@@ -432,6 +465,63 @@ namespace Modules.Player.Runtime.Movement
         }
 
         /// <summary>
+        ///     绘制当前路径线（起点-中间点-终点）。
+        /// </summary>
+        private void RenderPathLine()
+        {
+            if (!pathLineRenderer || !_isPathMoving || _pathTargetCell == null)
+            {
+                return;
+            }
+
+            if (!_gridManager.TryWorldToCellPos(transform.position, out var currentCell))
+            {
+                pathLineRenderer.positionCount = 0;
+                return;
+            }
+            var currentPos = _gridManager.GetCellCenterWorld(currentCell);
+            var points = new List<Vector3> { (Vector3)currentPos };
+
+            if (_pathQueue != null)
+            {
+                points.AddRange(_pathQueue
+                    .Select(cell => _gridManager.GetCellCenterWorld(cell))
+                    .Select(dummy => (Vector3)dummy));
+            }
+
+            // var targetCell = _pathTargetCell.Value;
+            // if (points.Count == 1 || _gridManager.mapGrid.WorldToCell(points[^1]) != targetCell)
+            // {
+            //     points.Add(_gridManager.GetCellCenterWorld(targetCell));
+            // }
+
+            if (points.Count < 2)
+            {
+                pathLineRenderer.positionCount = 0;
+                return;
+            }
+
+            pathLineRenderer.useWorldSpace = true;
+            pathLineRenderer.positionCount = points.Count;
+            pathLineRenderer.SetPositions(points.ToArray());
+            pathLineRenderer.enabled = true;
+        }
+
+        /// <summary>
+        ///     清除路径线。
+        /// </summary>
+        private void ClearPathLine()
+        {
+            if (!pathLineRenderer)
+            {
+                return;
+            }
+
+            pathLineRenderer.positionCount = 0;
+            pathLineRenderer.enabled = false;
+        }
+
+        /// <summary>
         ///     使用 BFS 构建从起点到终点的路径。
         /// </summary>
         /// <param name="startCell">起点格子。</param>
@@ -461,10 +551,10 @@ namespace Modules.Player.Runtime.Movement
                 {
                     var next = current + dir;
                     if (visited.Contains(next)) continue;
-                    if (!IsCellWalkable(next))
-                        if (next != targetCell || !IsTargetReachable(next))
-                            continue;
-                    visited.Add(next);
+                        if (!IsCellDirectlyPassable(next))
+                            if (next != targetCell || !IsCellBasicPassable(next))
+                                continue;
+                        visited.Add(next);
                     cameFrom[next] = current;
                     queue.Enqueue(next);
                 }
@@ -496,51 +586,46 @@ namespace Modules.Player.Runtime.Movement
         }
 
         /// <summary>
-        ///     判断格子是否可通行（空地且非障碍/事件）。
+        ///     判断格子是否可直接通行（空地且非障碍/事件）。
         /// </summary>
         /// <param name="cellPos">格子坐标。</param>
-        /// <returns>是否可通行。</returns>
-        private bool IsCellWalkable(Vector3Int cellPos)
+        /// <returns>是否可直接通行。</returns>
+        private bool IsCellDirectlyPassable(Vector3Int cellPos)
+        {
+            if (!_gridManager) return false;
+            return IsCellBasicPassable(cellPos) && !_gridManager.GetEventTileAtCell(cellPos);
+        }
+
+        /// <summary>
+        ///     基础通行检查（不含事件处理）：判断指定格子是否可通行（边界、Ground 是否存在、Obstacle 是否为空）。
+        /// </summary>
+        /// <param name="cellPos">目标格子坐标。</param>
+        /// <returns>是否可通行（满足基础条件返回 true，否则 false）。</returns>
+        private bool IsCellBasicPassable(Vector3Int cellPos)
         {
             if (!_gridManager) return false;
             if (!_gridManager.IsInGridBounds(cellPos)) return false;
             if (!_gridManager.GetGroundTileAtCell(cellPos)) return false;
-            if (_gridManager.GetObstacleTileAtCell(cellPos)) return false;
-            if (_gridManager.GetEventTileAtCell(cellPos)) return false;
-            return true;
+            return !_gridManager.GetObstacleTileAtCell(cellPos);
         }
 
         /// <summary>
-        ///     判断目标格子是否具备“尝试进入”的基础条件。
+        /// 计算基于给定方向的目标格子坐标，并更新对应的世界位置。
         /// </summary>
-        /// <param name="cellPos">目标格子坐标。</param>
-        /// <returns>是否允许尝试进入。</returns>
-        private bool IsTargetReachable(Vector3Int cellPos)
-        {
-            if (!_gridManager) return false;
-            if (!_gridManager.IsInGridBounds(cellPos)) return false;
-            return _gridManager.GetGroundTileAtCell(cellPos);
-        }
-
-        /// <summary>
-        ///     将格子坐标转换为玩家对齐用的世界坐标。
-        /// </summary>
-        /// <param name="cellPos">格子坐标。</param>
-        /// <returns>玩家对齐的世界坐标。</returns>
-        private Vector2 GetWorldPosForCell(Vector3Int cellPos)
-        {
-            var center = _gridManager.GetCellCenterWorld(cellPos);
-            var halfSize = _gridManager.tileSize * 0.5f;
-            return center - new Vector2(halfSize, halfSize);
-        }
-
-        // 计算目标格子与世界坐标的辅助函数
+        /// <remarks>_targetWorldPos 在成功计算目标格子后被设置为该格子的世界原点；方法还会输出调试日志以记录当前格子与目标格子信息。</remarks>
+        /// <param name="dir">表示相对格子偏移的二维方向向量，分量将使用四舍五入转换为整数格偏移。</param>
+        /// <returns>返回计算得到的目标格子坐标（Vector3Int）；若无法将当前位置转换为格子坐标则返回 Vector3Int.zero。</returns>
         private Vector3Int ComputeTargetCellAndWorldPos(Vector2 dir)
         {
-            var currentCenter = (Vector2)transform.position + new Vector2(0.5f, 0.5f);
-            var targetCenter = currentCenter + dir * _gridManager.tileSize;
-            _targetWorldPos = targetCenter - new Vector2(0.5f, 0.5f);
-            return _gridManager.mapGrid.WorldToCell(_targetWorldPos);
+            if (!_gridManager.TryWorldToCellPos(transform.position, out var currentCell))
+            {
+                return Vector3Int.zero;
+            }
+            var offset = new Vector3Int(Mathf.RoundToInt(dir.x), Mathf.RoundToInt(dir.y), 0);
+            var targetCell = currentCell + offset;
+            _targetWorldPos = _gridManager.GetCellOriginWorld(targetCell);
+            Debug.Log($"ComputeTargetCellAndWorldPos: currentCell={currentCell}, targetCell={targetCell}, targetWorldPos={_targetWorldPos}");
+            return targetCell;
         }
 
         #endregion

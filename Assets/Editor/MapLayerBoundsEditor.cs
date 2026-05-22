@@ -53,7 +53,7 @@
 //         layerOptions.Add("请选择楼层");
 //         layerIds.Add(-1);
 
-//         foreach (var layerData in _targetMapManager.allLayers)
+//         foreach (var layerData in _targetMapManager.allLayerInfos)
 //         {
 //             layerOptions.Add($"楼层 {layerData.layerId} ({layerData.layerRoot?.name ?? "未配置根节点"})");
 //             layerIds.Add(layerData.layerId);
@@ -80,7 +80,7 @@
 //     /// </summary>
 //     private void CalculateAllLayersBounds()
 //     {
-//         if (_targetMapManager.allLayers.Count == 0)
+//         if (_targetMapManager.allLayerInfos.Count == 0)
 //         {
 //             EditorUtility.DisplayDialog("提示", "未配置任何楼层数据！", "确定");
 //             return;
@@ -91,7 +91,7 @@
 //         List<string> failLogs = new List<string>();
 
 //         // 遍历所有楼层
-//         foreach (var layerData in _targetMapManager.allLayers)
+//         foreach (var layerData in _targetMapManager.allLayerInfos)
 //         {
 //             if (CalculateLayerBounds(layerData, out string errorMsg))
 //             {
@@ -123,7 +123,7 @@
 //     private void CalculateSingleLayerBounds(int targetLayerId)
 //     {
 //         // 查找目标楼层数据
-//         MapLayerInfo targetLayerData = _targetMapManager.allLayers.Find(l => l.layerId == targetLayerId);
+//         MapLayerInfo targetLayerData = _targetMapManager.allLayerInfos.Find(l => l.layerId == targetLayerId);
 //         if (targetLayerData == null)
 //         {
 //             EditorUtility.DisplayDialog("错误", $"未找到楼层ID为 {targetLayerId} 的配置！", "确定");

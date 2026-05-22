@@ -83,7 +83,7 @@ namespace Modules.Map.Runtime.EventTile
             try
             {
                 if (!args.TriggerEvent) return;
-                if (_gridManager.TryConvertWorldToCellPos(args.TargetWorldPos, out var cellPos))
+                if (_gridManager.TryWorldToCellPos(args.TargetWorldPos, out var cellPos))
                     TryTriggerEventTile(cellPos);
             }
             catch (Exception ex)

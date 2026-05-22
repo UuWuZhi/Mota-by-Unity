@@ -51,7 +51,11 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Action.ItemAction
 
                 // Use the player's current world position to compute the cell to avoid stale PlayerState.CellPos
                 var playerWorldPos = player.transform.position;
-                var playerCell = grid.mapGrid.WorldToCell(playerWorldPos);
+                if (!grid.TryWorldToCellPos(playerWorldPos, out var playerCell))
+                {
+                    Debug.LogWarning("[PickaxeActionNode]:玩家世界坐标转换为格子坐标失败");
+                    return;
+                }
                 var targetCell = playerCell;
                 switch (player.Facing)
                 {

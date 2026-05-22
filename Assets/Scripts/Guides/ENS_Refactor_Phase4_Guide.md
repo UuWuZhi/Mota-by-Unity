@@ -13,6 +13,23 @@
 
 ---
 
+## Phase3 状态摘要（供 Phase4 使用）
+为保障 UI Toolkit 窗口开发的对齐与兼容，下面汇总 Phase3 已落地的运行时与数据约定（仅保留现行方案，历史方案不再迁移）。UI 实现应基于这些约定做最小假设并提供友好回退：
+
+- Tri-Inspector 已集成并在项目中可用；Inspector 下的 `EventSequence.commands` 列表可通过 Tri 多态下拉创建与展开顶层 `BaseNodeData` 子类。
+- 左侧摘要列表（ListView）应使用 `BaseNodeData.GetSummary()` 输出作为一行摘要文本，GetSummary 已在常用 Data 中补齐以便快速识别指令语义。
+- 运行时控制流原语不变：Jump/Label 为唯一底层跳转实现，EventRunnerService 在运行时解析并执行 Jump/Label。UI 不应假设 If/For 为运行时容器节点。
+- Jump 与条件的现行约定（Phase3 定案）：
+  - Jump 通过 lookahead 只捕捉紧邻的下一个节点（`Commands[index + 1]`）作为条件；若后继为 `Condition` 类型则被视作该 Jump 的条件数据并由 Jump 评估；否则视为无条件跳转。
+  - 被 Jump 捕捉的条件节点在运行时不作为独立指令执行（ConditionNode.Execute 已改为直接完成）；条件评估入口由 Jump 调用 ConditionNode.Evaluate(...)。
+  - JumpData 已新增 `alwaysJump` 布尔标志，用于在任何情况下强制跳转；UI 需要在详情面板暴露该字段并在摘要中提示（summary 已包含标记）。
+- 条件数据的表达能力：常用条件 Data（示例：PlayerHasAttributeData / PlayerHasItemData）已扩展 `ComparisonMode`（>、>=、<、<=、==、!=），UI 需要将该枚举以可读标签展示并在详情面板支持编辑。
+- If/For 的定位：If/For 不再作为运行时节点，而是编辑器层面的语法糖或模板，最终应在保存/预处理阶段展开为 Label + 条件 Jump 的平铺结构。Phase4 的事件页窗口对 If/For 的渲染应按“语法糖/区块”展示（缩进/颜色/图标），但不依赖其为运行时容器。
+- 编辑器校验与兼容性考虑：
+  - 需要在 UI 中提供静态验证入口（或快捷按钮），检查 Jump 指向的 Label 是否存在、Label 重名、Jump 后继非 Condition 的情况等，并把定位信息反馈给用户。
+  - Tri 可能在不同环境下表现不一致，建议在窗口中加入降级/回退路径（若 Tri 不可用，使用 SerializedProperty + PropertyField 的默认回退绘制）。
+
+以上内容为 Phase4 实现 UI 时应依赖的最小运行时/数据契约，UI 设计应以此为准并避免对旧的历史方案作进一步假设。
 ## 2. 核心增改特性与解决的问题
 - 事件页以 **UI Toolkit** 为核心实现技术。
 - 继续复用 Phase 3 已建立的 **Tri-Inspector 字段绘制能力**。

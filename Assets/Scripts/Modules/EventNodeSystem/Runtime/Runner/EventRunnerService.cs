@@ -427,11 +427,6 @@ namespace Modules.EventNodeSystem.Runtime.Runner
                 case JumpData jumpData:
                     ExecuteJumpInstruction(run, jumpData, run.CurrentIndex);
                     return;
-                case IfData:
-                case ForData:
-                    Debug.LogWarning($"EventRunnerService: {data.GetType().Name} 已弃用，跳过执行。");
-                    AdvanceAndContinue();
-                    return;
             }
 
             var node = _registry?.GetNode(data.GetType());
@@ -631,15 +626,14 @@ namespace Modules.EventNodeSystem.Runtime.Runner
                 switch (run.Sequence.commands[i])
                 {
                     case LabelData labelData when !string.IsNullOrEmpty(labelData.labelName):
+                        // 检测重名：保留当前的覆盖行为，但记录警告以便定位问题。
+                        if (run.LabelMap.TryGetValue(labelData.labelName, out var existingIndex))
+                        {
+                            Debug.LogWarning($"EventRunnerService: 标签名重复 '{labelData.labelName}'，原索引={existingIndex}，覆盖为索引={i}。请检查序列以避免歧义。");
+                        }
                         run.LabelMap[labelData.labelName] = i;
                         break;
-                    case IfData:
-                    case ForData:
-                        Debug.LogWarning(
-                            $"EventRunnerService: {run.Sequence.commands[i].GetType().Name} 已弃用，标签预扫描将忽略该节点。");
-                        break;
                 }
-            // If/For 节点形式已弃用，不再做预编译缓存
         }
 
         /// <summary>

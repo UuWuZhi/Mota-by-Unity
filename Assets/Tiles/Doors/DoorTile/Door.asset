@@ -35,4 +35,4 @@ MonoBehaviour:
   m_Flags: 1
   m_ColliderType: 1
   tileType: 0
-  useStaticSprite: 1
+  useStaticSprite: 0

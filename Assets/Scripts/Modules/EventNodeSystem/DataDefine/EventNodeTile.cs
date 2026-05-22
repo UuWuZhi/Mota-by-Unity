@@ -1,9 +1,12 @@
 using System;
 using System.Collections;
+using System.Linq;
+using System.Reflection;
+using TriInspector;
 using UnityEngine;
 using UnityEngine.Serialization;
 
-namespace Modules.EventNodeSystem.DataDefine.Data
+namespace Modules.EventNodeSystem.DataDefine
 {
     /// <summary>
     ///     事件挂载点
@@ -37,8 +40,44 @@ namespace Modules.EventNodeSystem.DataDefine.Data
         /// <summary>
         ///     事件序列数据容器。
         /// </summary>
+        [SerializeReference, ListDrawerSettings(AlwaysExpanded = true)]
         public EventSequence sequence = new();
+        /// <summary>
+        ///     在 Inspector 中显示的按钮回调（通过 TriInspector 的 [Button] 特性）。
+        ///     编辑器环境下使用反射调用 Editor 窗口的静态打开方法以避免在运行时代码中直接引用 Editor 程序集。
+        /// </summary>
+        [Button]
+        public void OpenEventPage()
+        {
+#if UNITY_EDITOR
+            try
+            {
+                // 通过反射查找编辑器窗口类型并调用 OpenFor(this)
+                var editorType = AppDomain.CurrentDomain.GetAssemblies()
+                    .SelectMany(a => { try { return a.GetTypes(); } catch { return new Type[0]; } })
+                    .FirstOrDefault(t => t.FullName == "Editor.EventPageEditorWindow");
 
+                if (editorType == null)
+                {
+                    Debug.LogWarning($"[EventNodeTile(EventNodeTile)]: 未找到 EventPageEditorWindow 类型，无法打开事件页窗口。");
+                    return;
+                }
+
+                var openMethod = editorType.GetMethod("OpenFor", BindingFlags.Public | BindingFlags.Static);
+                if (openMethod == null)
+                {
+                    Debug.LogWarning($"[EventNodeTile(EventNodeTile)]: 在 {editorType.FullName} 中未找到 OpenFor 方法。");
+                    return;
+                }
+
+                openMethod.Invoke(null, new object[] { this });
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[EventNodeTile(EventNodeTile)]: 调用事件页窗口失败：{ex}");
+            }
+#endif
+        }
         [FormerlySerializedAs("CellPos")] [HideInInspector]
         public Vector3Int cellPos;
 

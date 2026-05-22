@@ -8,7 +8,7 @@
         "com.unity.nuget.newtonsoft-json": "3.0.2",
         "com.unity.timeline": "1.7.7"
       },
-      "hash": "e1917fb449dc3f320bb9b9a7808b155eb5a2335c"
+      "hash": "dc9958869ea9c03d860342e93e88a8cde7b136ad"
     },
     "com.codewriter.triinspector": {
       "version": "https://github.com/codewriter-packages/Tri-Inspector.git",

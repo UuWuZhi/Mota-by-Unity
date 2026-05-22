@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Modules.Core.DataDefine;
+using Modules.EventNodeSystem.DataDefine;
 using Modules.EventNodeSystem.DataDefine.Context;
 using Modules.EventNodeSystem.DataDefine.Data;
 using Modules.EventNodeSystem.DataDefine.Runner;

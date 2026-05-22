@@ -51,75 +51,36 @@ MonoBehaviour:
   enterPermission: 1
   executionBlocking: 0
   sequence:
-    commands:
-    - rid: 3081733569617592320
-    - rid: 3081733569617592321
-    - rid: 3081733569617592326
-    - rid: 3081733569617592327
-    - rid: 3081733569617592329
-    - rid: 3081733569617592323
-    - rid: 3081733569617592324
-    - rid: 3081733569617592325
-    - rid: 3081733569617592328
+    rid: 1000
   cellPos: {x: 0, y: 0, z: 0}
   triggerTimeoutSeconds: 10
   references:
     version: 2
     RefIds:
-    - rid: 3081733569617592320
-      type: {class: JumpData, ns: Modules.EventNodeSystem.Runtime.Nodes.Flow.Data, asm: Assembly-CSharp}
+    - rid: 1000
+      type: {class: EventSequence, ns: Modules.EventNodeSystem.DataDefine, asm: Assembly-CSharp}
       data:
-        targetLabelName: false
-        alwaysJump: 0
-    - rid: 3081733569617592321
-      type: {class: PlayerHasItemData, ns: Modules.EventNodeSystem.Runtime.Nodes.Condition.Data, asm: Assembly-CSharp}
-      data:
-        itemType: 4
-        requiredCount: 1
-        comparisonMode: 1
-    - rid: 3081733569617592323
-      type: {class: ModifyItemData, ns: Modules.EventNodeSystem.Runtime.Nodes.Action.Data, asm: Assembly-CSharp}
-      data:
-        operation: 1
-        parameterSource: 0
-        itemType: 4
-        count: 1
-        valueVarKey: 6
-    - rid: 3081733569617592324
-      type: {class: PlayAnimationData, ns: Modules.EventNodeSystem.Runtime.Nodes.Action.Data, asm: Assembly-CSharp}
-      data:
-        stateName: Open
-        triggerParameter: 
-        playMode: 0
-        waitForCompletion: 1
-        tryUseClipLength: 1
-        fallbackTimeout: 1
-    - rid: 3081733569617592325
-      type: {class: RemoveTileData, ns: Modules.EventNodeSystem.Runtime.Nodes.Action.Data, asm: Assembly-CSharp}
-      data: 
-    - rid: 3081733569617592326
-      type: {class: SetVariableData, ns: Modules.EventNodeSystem.Runtime.Nodes.Action.Data, asm: Assembly-CSharp}
-      data:
-        key: 0
-        varType: 0
-        operation: 0
-        boolValue: 0
-        intValue: 0
-        floatValue: 0
-        stringValue: 
-    - rid: 3081733569617592327
+        commands:
+        - rid: 3081733572733173792
+        - rid: 3081733572733173812
+        - rid: 3081733572733173814
+    - rid: 3081733572733173792
       type: {class: JumpData, ns: Modules.EventNodeSystem.Runtime.Nodes.Flow.Data, asm: Assembly-CSharp}
       data:
         targetLabelName: end
-        alwaysJump: 1
-    - rid: 3081733569617592328
+        alwaysJump: 0
+    - rid: 3081733572733173812
       type: {class: LabelData, ns: Modules.EventNodeSystem.Runtime.Nodes.Flow.Data, asm: Assembly-CSharp}
       data:
-        labelName: end
-    - rid: 3081733569617592329
-      type: {class: LabelData, ns: Modules.EventNodeSystem.Runtime.Nodes.Flow.Data, asm: Assembly-CSharp}
+        labelName: 
+    - rid: 3081733572733173814
+      type: {class: ModifyAttributeData, ns: Modules.EventNodeSystem.Runtime.Nodes.Action.Data, asm: Assembly-CSharp}
       data:
-        labelName: false
+        operation: 0
+        parameterSource: 0
+        attributeType: 0
+        value: 1
+        valueVarKey: 1
 --- !u!61 &3856851608017492117
 BoxCollider2D:
   m_ObjectHideFlags: 0

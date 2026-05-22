@@ -100,7 +100,8 @@ namespace Editor.EventNodeSystem
         private static Type FindNodeType(IReadOnlyList<Type> nodeTypes, string dataKey, HashSet<Type> matchedNodes)
         {
             var exact = nodeTypes.FirstOrDefault(type => !matchedNodes.Contains(type) && type.Name == dataKey);
-            return exact ?? nodeTypes.FirstOrDefault(type => !matchedNodes.Contains(type) && type.Name == dataKey + "Node");
+            return exact ??
+                   nodeTypes.FirstOrDefault(type => !matchedNodes.Contains(type) && type.Name == dataKey + "Node");
         }
 
         /// <summary>

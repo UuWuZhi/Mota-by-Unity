@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using Modules.Core.DataDefine;
-using UnityEngine;
 
 namespace Modules.Core.Runtime.GlobalVariables
 {
@@ -134,7 +133,7 @@ namespace Modules.Core.Runtime.GlobalVariables
                     }
                     catch (Exception ex)
                     {
-                        Debug.LogError($"[GlobalEventVariablesService]:{ex}");
+                        DebugEditor.LogError($"[GlobalEventVariablesService]:{ex}");
                     }
 
                     break;

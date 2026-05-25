@@ -1,4 +1,5 @@
 using System;
+using Modules.Core.Runtime;
 using Modules.Enemy.DataDefine;
 using Modules.Enemy.Runtime;
 using Modules.EventNodeSystem.DataDefine;
@@ -37,7 +38,7 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Condition
                 var enemyUnit = ctx?.TileObject?.GetComponent<EnemyUnit>();
                 if (enemyUnit == null)
                 {
-                    Debug.LogError("[CanDefeat]: 目标没有 EnemyUnit 组件。");
+                    DebugEditor.LogError("[CanDefeat]: 目标没有 EnemyUnit 组件。");
                     onResult?.Invoke(false);
                     return;
                 }
@@ -45,7 +46,7 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Condition
                 var playerAttribute = ctx.GetService<PlayerAttribute>();
                 if (playerAttribute == null)
                 {
-                    Debug.LogWarning("[CanDefeat]: PlayerAttribute 未配置，无法计算战斗结果。");
+                    DebugEditor.LogWarning("[CanDefeat]: PlayerAttribute 未配置，无法计算战斗结果。");
                     onResult?.Invoke(false);
                     return;
                 }
@@ -62,8 +63,8 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Condition
             }
             catch (Exception ex)
             {
-                Debug.LogException(ex);
-                Debug.LogError("[CanDefeat]: 执行条件判断时发生异常，默认返回 false。");
+                DebugEditor.LogException(ex);
+                DebugEditor.LogError("[CanDefeat]: 执行条件判断时发生异常，默认返回 false。");
                 canDefeat = false;
             }
 

@@ -1,7 +1,6 @@
 using System;
 using Modules.Item.DataDefine;
 using Modules.Player.DataDefine;
-using UnityEngine;
 
 namespace Modules.Core.Runtime.Calculate
 {
@@ -42,7 +41,7 @@ namespace Modules.Core.Runtime.Calculate
             catch (Exception ex)
             {
                 goldReward = baseGold;
-                Debug.LogWarning($"[GoldRewardCalculate]:{ex}");
+                DebugEditor.LogWarning($"[GoldRewardCalculate]:{ex}");
             }
 
             return goldReward;

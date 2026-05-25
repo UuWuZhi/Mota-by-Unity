@@ -1,4 +1,5 @@
 using System;
+using Modules.Core.Runtime;
 using Modules.EventNodeSystem.DataDefine;
 using Modules.EventNodeSystem.DataDefine.Context;
 using Modules.EventNodeSystem.Runtime.Nodes.Action.Data;
@@ -21,7 +22,7 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Action
             var switchData = data as SwitchLayerData;
             if (switchData == null)
             {
-                Debug.LogWarning("SwitchLayer: data 类型不匹配，跳过执行。");
+                DebugEditor.LogWarning("SwitchLayer: data 类型不匹配，跳过执行。");
                 onComplete?.Invoke();
                 return;
             }
@@ -30,7 +31,7 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Action
 
             if (mapManager == null)
             {
-                Debug.LogError("SwitchLayer: MapManager 未配置，无法切换楼层。");
+                DebugEditor.LogError("SwitchLayer: MapManager 未配置，无法切换楼层。");
                 onComplete?.Invoke();
                 return;
             }

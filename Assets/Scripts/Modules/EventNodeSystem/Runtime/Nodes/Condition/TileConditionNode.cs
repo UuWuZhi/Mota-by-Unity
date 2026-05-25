@@ -1,7 +1,7 @@
 using System;
+using Modules.Core.Runtime;
 using Modules.EventNodeSystem.DataDefine;
 using Modules.EventNodeSystem.DataDefine.Context;
-using UnityEngine;
 
 namespace Modules.EventNodeSystem.Runtime.Nodes.Condition
 {
@@ -26,14 +26,14 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Condition
                 }
                 catch (Exception ex)
                 {
-                    Debug.LogException(ex);
-                    Debug.LogError($"[{nameof(TileConditionNode)}]: 执行 {GetType().Name} 时发生异常。");
+                    DebugEditor.LogException(ex);
+                    DebugEditor.LogError($"[{nameof(TileConditionNode)}]: 执行 {GetType().Name} 时发生异常。");
                     onResult?.Invoke(false);
                 }
             }
             else
             {
-                Debug.LogWarning(
+                DebugEditor.LogWarning(
                     $"{GetType().Name}: 需要 EventNodeTileContext，但收到 {ctx?.GetType().Name ?? "null"}，默认返回 false。");
                 onResult?.Invoke(false);
             }

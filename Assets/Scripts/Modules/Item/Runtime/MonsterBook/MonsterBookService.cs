@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
+using Modules.Core.Runtime;
 using Modules.Enemy.DataDefine;
 using Modules.Enemy.Runtime;
 using Modules.Item.DataDefine;
-using UnityEngine;
 using VContainer;
 
 // 纯 C# 实现的 MonsterBook 服务（用于 DI）
@@ -42,12 +42,12 @@ namespace Modules.Item.Runtime.MonsterBook
             if (_enemyDatabase)
             {
                 var d = _enemyDatabase.GetById(enemyId);
-                if (!d) Debug.LogWarning($"MonsterBookService: EnemyDatabase does not contain id {enemyId}");
+                if (!d) DebugEditor.LogWarning($"MonsterBookService: EnemyDatabase does not contain id {enemyId}");
                 return d;
             }
 
             // No fallback to MonoBehaviour bridge available here; require _enemyDatabase registered in DI
-            Debug.LogWarning($"MonsterBookService: No EnemyDatabase available to resolve id {enemyId}");
+            DebugEditor.LogWarning($"MonsterBookService: No EnemyDatabase available to resolve id {enemyId}");
             return null;
         }
 

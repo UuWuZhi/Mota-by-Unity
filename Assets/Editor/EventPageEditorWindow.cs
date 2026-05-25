@@ -66,7 +66,7 @@
 //             }
 //             catch (Exception ex)
 //             {
-//                 Debug.LogError($"[EventPageEditorWindow(Update)]: {ex}");
+//                 DebugEditor.LogError($"[EventPageEditorWindow(Update)]: {ex}");
 //             }
 //         }
 //
@@ -144,7 +144,7 @@
 //             }
 //             catch (Exception ex)
 //             {
-//                 Debug.LogError($"[EventPageEditorWindow(OnEnable)]: {ex}");
+//                 DebugEditor.LogError($"[EventPageEditorWindow(OnEnable)]: {ex}");
 //             }
 //         }
 //
@@ -180,7 +180,7 @@
 //                 }
 //                 catch (Exception copyEx)
 //                 {
-//                     Debug.LogWarning($"[EventPageEditorWindow(OpenFor)]: failed to copy sequence to wrapper: {copyEx}");
+//                     DebugEditor.LogWarning($"[EventPageEditorWindow(OpenFor)]: failed to copy sequence to wrapper: {copyEx}");
 //                 }
 //
 //                 // 创建针对 wrapper 的 Editor，以便在窗口中复用 Inspector 绘制逻辑（包括 Tri-Inspector）
@@ -196,7 +196,7 @@
 //             }
 //             catch (Exception ex)
 //             {
-//                 Debug.LogError($"[EventPageEditorWindow(OpenFor)]: {ex}");
+//                 DebugEditor.LogError($"[EventPageEditorWindow(OpenFor)]: {ex}");
 //             }
 //         }
 //
@@ -228,7 +228,7 @@
 //             }
 //             catch (Exception ex)
 //             {
-//                 Debug.LogWarning($"[EventPageEditorWindow(CopySerializedSequence)]: {ex}");
+//                 DebugEditor.LogWarning($"[EventPageEditorWindow(CopySerializedSequence)]: {ex}");
 //             }
 //         }
 //
@@ -354,7 +354,7 @@
 //                         }
 //                         catch (Exception ex)
 //                         {
-//                             Debug.LogError($"[EventPageEditorWindow(SelectionCallback)]: {ex}");
+//                             DebugEditor.LogError($"[EventPageEditorWindow(SelectionCallback)]: {ex}");
 //                             _rightArea.Add(new Label("(详情绘制出错)"));
 //                         }
 //                     }
@@ -379,7 +379,7 @@
 //                         }
 //                         catch (Exception ex)
 //                         {
-//                             Debug.LogError($"[EventPageEditorWindow(WrapperInspector)]: {ex}");
+//                             DebugEditor.LogError($"[EventPageEditorWindow(WrapperInspector)]: {ex}");
 //                         }
 //                     });
 //
@@ -414,7 +414,7 @@
 //             }
 //             catch (Exception ex)
 //             {
-//                 Debug.LogError($"[EventPageEditorWindow(BindSequenceToList)]: {ex}");
+//                 DebugEditor.LogError($"[EventPageEditorWindow(BindSequenceToList)]: {ex}");
 //             }
 //         }
 //
@@ -436,7 +436,7 @@
 //             }
 //             catch (Exception ex)
 //             {
-//                 Debug.LogError($"[EventPageEditorWindow(EnsureSerialized)]: {ex}");
+//                 DebugEditor.LogError($"[EventPageEditorWindow(EnsureSerialized)]: {ex}");
 //             }
 //         }
 //
@@ -484,7 +484,7 @@
 //             }
 //             catch (Exception ex)
 //             {
-//                 Debug.LogError($"[EventPageEditorWindow(AddCommand)]: {ex}");
+//                 DebugEditor.LogError($"[EventPageEditorWindow(AddCommand)]: {ex}");
 //             }
 //         }
 //
@@ -519,7 +519,7 @@
 //             }
 //             catch (Exception ex)
 //             {
-//                 Debug.LogError($"[EventPageEditorWindow(RemoveSelectedCommand)]: {ex}");
+//                 DebugEditor.LogError($"[EventPageEditorWindow(RemoveSelectedCommand)]: {ex}");
 //             }
 //         }
 //
@@ -550,7 +550,7 @@
 //             }
 //             catch (Exception ex)
 //             {
-//                 Debug.LogError($"[EventPageEditorWindow(MoveSelectedUp)]: {ex}");
+//                 DebugEditor.LogError($"[EventPageEditorWindow(MoveSelectedUp)]: {ex}");
 //             }
 //         }
 //
@@ -584,7 +584,7 @@
 //             }
 //             catch (Exception ex)
 //             {
-//                 Debug.LogError($"[EventPageEditorWindow(MoveSelectedDown)]: {ex}");
+//                 DebugEditor.LogError($"[EventPageEditorWindow(MoveSelectedDown)]: {ex}");
 //             }
 //         }
 //
@@ -637,7 +637,7 @@
 //             }
 //             catch (Exception ex)
 //             {
-//                 Debug.LogError($"[EventPageEditorWindow(TryRefreshListIfNeeded)]: {ex}");
+//                 DebugEditor.LogError($"[EventPageEditorWindow(TryRefreshListIfNeeded)]: {ex}");
 //             }
 //         }
 //     }

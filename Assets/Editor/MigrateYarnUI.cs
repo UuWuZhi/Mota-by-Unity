@@ -18,7 +18,7 @@
 //         var yarnCanvas = yarnSys.transform.Find("Canvas");
 //         if (yarnCanvas == null) return;
 //
-//         Debug.Log("Found old Dialogue and Yarn Canvas! Running UI layout sync.");
+//         DebugEditor.Log("Found old Dialogue and Yarn Canvas! Running UI layout sync.");
 //         var oldRect = oldDia.GetComponent<RectTransform>();
 //         var linePresenter = yarnCanvas.transform.Find("Line Presenter");
 //         if (linePresenter != null) {

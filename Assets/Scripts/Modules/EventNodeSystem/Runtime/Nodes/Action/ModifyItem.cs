@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Modules.Core.DataDefine.Units;
+using Modules.Core.Runtime;
 using Modules.EventNodeSystem.DataDefine;
 using Modules.EventNodeSystem.DataDefine.Context;
 using Modules.EventNodeSystem.DataDefine.Data;
@@ -24,7 +25,7 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Action
             var modifyData = data as ModifyItemData;
             if (modifyData == null)
             {
-                Debug.LogWarning("ModifyItem: data 类型不匹配，跳过执行。");
+                DebugEditor.LogWarning("ModifyItem: data 类型不匹配，跳过执行。");
                 onComplete?.Invoke();
                 return;
             }
@@ -32,7 +33,7 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Action
             var inventoryService = ctx.GetService<IInventoryService>();
             if (inventoryService == null)
             {
-                Debug.LogError("ModifyItem: InventoryService 未配置，无法执行。");
+                DebugEditor.LogError("ModifyItem: InventoryService 未配置，无法执行。");
                 onComplete?.Invoke();
                 return;
             }
@@ -50,7 +51,7 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Action
             }
             catch (Exception ex)
             {
-                Debug.LogException(ex);
+                DebugEditor.LogException(ex);
             }
             finally
             {
@@ -72,7 +73,7 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Action
         {
             if (resolvedCount <= 0)
             {
-                Debug.LogWarning("ModifyItem: count <= 0，跳过执行。");
+                DebugEditor.LogWarning("ModifyItem: count <= 0，跳过执行。");
                 return;
             }
 
@@ -88,7 +89,7 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Action
                     ApplySetOperation(inventoryService, resolvedItemType, resolvedCount);
                     break;
                 default:
-                    Debug.LogWarning("ModifyItem: 未识别的操作类型。");
+                    DebugEditor.LogWarning("ModifyItem: 未识别的操作类型。");
                     break;
             }
         }
@@ -108,7 +109,7 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Action
                 case ModifyParameterSource.Vars:
                     return TryResolveFromVars(data, ctx, resolvedEntries);
                 default:
-                    Debug.LogWarning("ModifyItem: 未识别的参数来源。");
+                    DebugEditor.LogWarning("ModifyItem: 未识别的参数来源。");
                     return false;
             }
         }
@@ -117,14 +118,14 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Action
         {
             if (ctx is not EventNodeTileContext tileCtx || tileCtx.TileObject == null)
             {
-                Debug.LogWarning("ModifyItem: TileUnit 来源需要 EventNodeTileContext 与 TileObject。");
+                DebugEditor.LogWarning("ModifyItem: TileUnit 来源需要 EventNodeTileContext 与 TileObject。");
                 return false;
             }
 
             var unit = tileCtx.TileObject.GetComponent<ItemUnit>();
             if (unit == null || unit.itemBonuses == null || unit.itemBonuses.Count == 0)
             {
-                Debug.LogWarning("ModifyItem: 未找到 ItemUnit 或数据为空。");
+                DebugEditor.LogWarning("ModifyItem: 未找到 ItemUnit 或数据为空。");
                 return false;
             }
 
@@ -142,13 +143,13 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Action
         {
             if (ctx == null || ctx.Vars == null)
             {
-                Debug.LogWarning("ModifyItem: Vars 来源需要有效的上下文。");
+                DebugEditor.LogWarning("ModifyItem: Vars 来源需要有效的上下文。");
                 return false;
             }
 
             if (!ctx.TryGet(data.valueVarKey, out int resolvedCount))
             {
-                Debug.LogWarning($"ModifyItem: Vars 中未找到 {data.valueVarKey}。");
+                DebugEditor.LogWarning($"ModifyItem: Vars 中未找到 {data.valueVarKey}。");
                 return false;
             }
 

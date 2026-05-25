@@ -1,5 +1,6 @@
 using System;
 using Modules.Core.DataDefine;
+using Modules.Core.Runtime;
 using Modules.EventSystem.DataDefine.EventArgs;
 using Modules.Map.DataDefine;
 using Modules.Map.DataDefine.Tile;
@@ -11,21 +12,24 @@ using VContainer;
 namespace Modules.Map.Runtime
 {
     /// <summary>
-    /// 管理地图网格和当前层的 Tilemap，提供瓦片查询、移除、地图加载与世界/格子坐标转换，并通过事件公开局部瓦片变更。
+    ///     管理地图网格和当前层的 Tilemap，提供瓦片查询、移除、地图加载与世界/格子坐标转换，并通过事件公开局部瓦片变更。
     /// </summary>
     public class GridManager : MonoBehaviour
     {
         public float tileSize = 1f; // 和Tilemap的cell size一致
-        [FormerlySerializedAs("MapGrid")] [SerializeField] private Grid mapGrid;
-        private Tilemap _currentGroundTilemap;
-        private Tilemap _currentObstacleTilemap; 
-        public Tilemap CurrentEventTilemap { get; private set; }
-        private BoundsInt _currentLayerBounds;
 
-        private bool _eventSubscribed;
+        [FormerlySerializedAs("MapGrid")] [SerializeField]
+        private Grid mapGrid;
+
+        private Tilemap _currentGroundTilemap;
+        private BoundsInt _currentLayerBounds;
+        private Tilemap _currentObstacleTilemap;
 
         private EventCenter _eventCenter;
+
+        private bool _eventSubscribed;
         private IGlobalEventVariables _globalEventVariables;
+        public Tilemap CurrentEventTilemap { get; private set; }
 
         // 事件瓦片变化（局部事件，供 EventTileManager 订阅）
         public event EventHandler<TileMovedEventArgs> OnEventTileMoved;
@@ -60,7 +64,7 @@ namespace Modules.Map.Runtime
             if (args is not LayerSwitchedEventArgs layerArgs || !layerArgs.GroundTilemap ||
                 !layerArgs.ObstacleTilemap || !layerArgs.EventTilemap)
             {
-                Debug.LogError("GridManager：楼层切换事件数据无效！");
+                DebugEditor.LogError("GridManager：楼层切换事件数据无效！");
                 return;
             }
 
@@ -88,7 +92,7 @@ namespace Modules.Map.Runtime
         #region 地图加载
 
         /// <summary>
-        /// 更新当前层的瓦片图引用并重新加载该层的网格数据。
+        ///     更新当前层的瓦片图引用并重新加载该层的网格数据。
         /// </summary>
         /// <remarks>方法会设置内部字段并调用 LoadMap 来重新加载当前层的网格数据；不对参数进行空值检查，调用方应确保传入参数有效。</remarks>
         /// <param name="groundTilemap">当前层的地面 Tilemap 引用。</param>
@@ -106,24 +110,24 @@ namespace Modules.Map.Runtime
         }
 
         /// <summary>
-        /// 加载并初始化当前层地图，验证 MapGrid、Ground/Obstacle/Event Tilemap 是否已设置以及层边界的有效性。
+        ///     加载并初始化当前层地图，验证 MapGrid、Ground/Obstacle/Event Tilemap 是否已设置以及层边界的有效性。
         /// </summary>
         /// <remarks>若 MapGrid 或任一当前层 Tilemap 未初始化，则记录错误并返回。基础层格子类型不再在内存中缓存，按需直接从对应 Tilemap 查询。</remarks>
         public void LoadMap()
         {
             if (!mapGrid)
             {
-                Debug.LogError("LoadMap失败：MapGrid未初始化（请先调用SetMapGrid）");
+                DebugEditor.LogError("LoadMap失败：MapGrid未初始化（请先调用SetMapGrid）");
                 return;
             }
 
             if (!_currentGroundTilemap || !_currentObstacleTilemap || !CurrentEventTilemap)
             {
-                Debug.LogError("LoadMap失败：当前层Tilemap为null");
+                DebugEditor.LogError("LoadMap失败：当前层Tilemap为null");
                 return;
             }
 
-            if (!IsBoundsValid(_currentLayerBounds)) Debug.LogError("LoadMap失败：层边界无效:{_currentLayerBounds}");
+            if (!IsBoundsValid(_currentLayerBounds)) DebugEditor.LogError("LoadMap失败：层边界无效:{_currentLayerBounds}");
         }
 
         #endregion
@@ -133,7 +137,7 @@ namespace Modules.Map.Runtime
         #region 查询
 
         /// <summary>
-        /// 返回指定格子位置和瓦片图层类型对应的 TileBase。
+        ///     返回指定格子位置和瓦片图层类型对应的 TileBase。
         /// </summary>
         /// <remarks>当 mapGrid 未设置或 cellPos 不在网格范围内时返回 null；根据 tileMapType 从相应 Tilemap 获取瓦片。</remarks>
         /// <param name="cellPos">要查询的格子位置（Vector3Int，格子坐标）。</param>
@@ -153,7 +157,7 @@ namespace Modules.Map.Runtime
         }
 
         /// <summary>
-        /// 获取指定单元格处的瓦片并将其转换为类型 T。
+        ///     获取指定单元格处的瓦片并将其转换为类型 T。
         /// </summary>
         /// <remarks>使用安全转换（as），在类型不匹配时不会抛出异常。</remarks>
         /// <typeparam name="T">要返回的瓦片类型，必须继承自 TileBase。</typeparam>
@@ -167,7 +171,7 @@ namespace Modules.Map.Runtime
         }
 
         /// <summary>
-        /// 获取指定单元格位置上的事件图块（来自 TileMapType.Event 图层）。
+        ///     获取指定单元格位置上的事件图块（来自 TileMapType.Event 图层）。
         /// </summary>
         /// <remarks>调用通用方法 GetTileAtCell T 并将图层类型指定为 TileMapType.Event。</remarks>
         /// <param name="cellPos">要查询的瓦片单元格位置，使用 Vector3Int 表示的瓦片坐标。</param>
@@ -176,8 +180,9 @@ namespace Modules.Map.Runtime
         {
             return GetTileAtCell<DataDefine.Tile.EventTile>(cellPos, TileMapType.Event);
         }
+
         /// <summary>
-        /// 获取指定单元格位置上的障碍图块（来自 TileMapType.Obstacle 图层）。
+        ///     获取指定单元格位置上的障碍图块（来自 TileMapType.Obstacle 图层）。
         /// </summary>
         /// <remarks>调用通用方法 GetTileAtCell T 并将图层类型指定为 TileMapType.Obstacle。</remarks>
         /// <param name="cellPos">要查询的瓦片单元格位置，使用 Vector3Int 表示的瓦片坐标。</param>
@@ -186,8 +191,9 @@ namespace Modules.Map.Runtime
         {
             return GetTileAtCell<ObstacleTile>(cellPos, TileMapType.Obstacle);
         }
+
         /// <summary>
-        /// 获取指定单元格位置上的地面图块（来自 TileMapType.Ground 图层）。
+        ///     获取指定单元格位置上的地面图块（来自 TileMapType.Ground 图层）。
         /// </summary>
         /// <remarks>调用通用方法 GetTileAtCell T 并将图层类型指定为 TileMapType.Ground。</remarks>
         /// <param name="cellPos">要查询的瓦片单元格位置，使用 Vector3Int 表示的瓦片坐标。</param>
@@ -202,10 +208,12 @@ namespace Modules.Map.Runtime
         #region 移除
 
         /// <summary>
-        /// 从指定单元格和图层移除瓦片并在成功时触发 OnEventTileRemoved 事件。
+        ///     从指定单元格和图层移除瓦片并在成功时触发 OnEventTileRemoved 事件。
         /// </summary>
-        /// <remarks>同时会从事件图层和目标图层清除对应瓦片；触发的 TileRemovedEventArgs 包含被移除的瓦片资源、单元格坐标及当前层
-        /// ID（从全局事件变量获取）。</remarks>
+        /// <remarks>
+        ///     同时会从事件图层和目标图层清除对应瓦片；触发的 TileRemovedEventArgs 包含被移除的瓦片资源、单元格坐标及当前层
+        ///     ID（从全局事件变量获取）。
+        /// </remarks>
         /// <param name="cellPos">要移除瓦片的网格单元格坐标。</param>
         /// <param name="tileMapType">要操作的瓦片图层类型（Ground、Obstacle、Event 等）。</param>
         /// <returns>成功移除瓦片返回 true；当地图未初始化、位置超出边界或目标图层不存在时返回 false。</returns>
@@ -241,7 +249,7 @@ namespace Modules.Map.Runtime
         }
 
         /// <summary>
-        /// 从事件图层移除指定格位置的事件瓦片。
+        ///     从事件图层移除指定格位置的事件瓦片。
         /// </summary>
         /// <param name="cellPos">瓦片地图中的格子坐标，用于定位要移除的事件瓦片。</param>
         /// <returns>如果成功移除事件瓦片则返回 true；否则返回 false。</returns>
@@ -251,7 +259,7 @@ namespace Modules.Map.Runtime
         }
 
         /// <summary>
-        /// 从事件图层移除指定格位置的障碍瓦片。
+        ///     从事件图层移除指定格位置的障碍瓦片。
         /// </summary>
         /// <param name="cellPos">瓦片地图中的格子坐标，用于定位要移除的障碍瓦片。</param>
         /// <returns>如果成功移除事件瓦片则返回 true；否则返回 false。</returns>
@@ -261,7 +269,7 @@ namespace Modules.Map.Runtime
         }
 
         /// <summary>
-        /// 从事件图层移除指定格位置的地面瓦片。
+        ///     从事件图层移除指定格位置的地面瓦片。
         /// </summary>
         /// <param name="cellPos">瓦片地图中的格子坐标，用于定位要移除的地面瓦片。</param>
         /// <returns>如果成功移除事件瓦片则返回 true；否则返回 false。</returns>
@@ -269,7 +277,6 @@ namespace Modules.Map.Runtime
         {
             return RemoveTileAtCell(cellPos, TileMapType.Ground);
         }
-
 
         #endregion
 
@@ -294,7 +301,7 @@ namespace Modules.Map.Runtime
         }
 
         /// <summary>
-        /// 判断给定的单元格坐标是否位于当前层的网格边界内。
+        ///     判断给定的单元格坐标是否位于当前层的网格边界内。
         /// </summary>
         /// <remarks>若当前层边界无效，会记录警告并返回 false。</remarks>
         /// <param name="cellPos">要校验的单元格坐标（Vector3Int 格式）。</param>
@@ -305,12 +312,12 @@ namespace Modules.Map.Runtime
                 return cellPos.x >= _currentLayerBounds.xMin && cellPos.x < _currentLayerBounds.xMax
                                                              && cellPos.y >= _currentLayerBounds.yMin &&
                                                              cellPos.y < _currentLayerBounds.yMax;
-            Debug.LogWarning("IsInGridBounds:当前层边界非法");
+            DebugEditor.LogWarning("IsInGridBounds:当前层边界非法");
             return false;
         }
 
         /// <summary>
-        /// 判断给定的 BoundsInt 是否具有正的宽度和高度。
+        ///     判断给定的 BoundsInt 是否具有正的宽度和高度。
         /// </summary>
         /// <remarks>仅检查 size 的 x 和 y 分量；不验证 z 分量或其他属性。</remarks>
         /// <param name="bounds">要验证的 BoundsInt 实例。</param>
@@ -321,7 +328,7 @@ namespace Modules.Map.Runtime
         }
 
         /// <summary>
-        /// 返回指定格子位置在世界坐标系中的中心点坐标。
+        ///     返回指定格子位置在世界坐标系中的中心点坐标。
         /// </summary>
         /// <remarks>如果 mapGrid 为 null，会记录错误日志并返回 Vector2.zero。</remarks>
         /// <param name="cellPos">要获取中心点的格子坐标（Vector3Int）。</param>
@@ -329,7 +336,7 @@ namespace Modules.Map.Runtime
         public Vector2 GetCellCenterWorld(Vector3Int cellPos)
         {
             if (mapGrid) return mapGrid.GetCellCenterWorld(cellPos);
-            Debug.LogError("GetCellCenterWorld失败：MapGrid为null");
+            DebugEditor.LogError("GetCellCenterWorld失败：MapGrid为null");
             return Vector2.zero;
         }
 
@@ -341,7 +348,7 @@ namespace Modules.Map.Runtime
         public Vector2 GetCellOriginWorld(Vector3Int cellPos)
         {
             if (mapGrid) return mapGrid.CellToWorld(cellPos);
-            Debug.LogError("GetCellOriginWorld失败：MapGrid为null");
+            DebugEditor.LogError("GetCellOriginWorld失败：MapGrid为null");
             return Vector2.zero;
         }
 

@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using System.Linq;
+using Modules.Core.Runtime;
 using Modules.Item.DataDefine;
 using UnityEngine;
+using Debug = System.Diagnostics.Debug;
 
 [CreateAssetMenu(fileName = "ItemDatabase", menuName = "Data/Item/ItemDatabase", order = 4)]
 public class ItemDatabase : ScriptableObject
@@ -21,11 +23,11 @@ public class ItemDatabase : ScriptableObject
         {
             if (!_map.TryAdd(it.type, it))
             {
-                Debug.LogWarning($"ItemDatabase:物品ID重复！：{it.type}");
+                DebugEditor.LogWarning($"ItemDatabase:物品ID重复！：{it.type}");
                 continue;
             }
 
-            Debug.Log($"ItemDatabase:加载物品数据：{it.type}");
+            DebugEditor.Log($"ItemDatabase:加载物品数据：{it.type}");
         }
     }
 
@@ -33,7 +35,7 @@ public class ItemDatabase : ScriptableObject
     public ItemData Get(ItemType type)
     {
         if (_map == null) BuildMap();
-        System.Diagnostics.Debug.Assert(_map != null, nameof(_map) + " != null");
+        Debug.Assert(_map != null, nameof(_map) + " != null");
         _map.TryGetValue(type, out var data);
         return data;
     }

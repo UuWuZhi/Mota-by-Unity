@@ -1,3 +1,4 @@
+using Modules.Core.Runtime;
 using Modules.EventSystem.DataDefine.EventArgs;
 using Modules.Map.Runtime;
 using Modules.Player.Runtime.Movement;
@@ -71,9 +72,10 @@ namespace Modules.Player.Runtime
             var worldPos = args.TargetWorldPos;
             if (!_gridManager.TryWorldToCellPos(worldPos, out var cell))
             {
-                Debug.LogWarning("[PlayerState]:世界坐标转换为格子坐标失败");
+                DebugEditor.LogWarning("[PlayerState]:世界坐标转换为格子坐标失败");
                 return;
             }
+
             SetPosition(cell, worldPos, false);
         }
 

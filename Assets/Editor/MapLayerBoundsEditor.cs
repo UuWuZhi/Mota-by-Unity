@@ -166,7 +166,7 @@
 //         if (layerInfo == null)
 //         {
 //             layerInfo = layerData.layerRoot.gameObject.AddComponent<MapLayerInfo>();
-//             Debug.LogWarning($"楼层 {layerData.layerId} 缺少MapLayerInfo组件，已自动创建");
+//             DebugEditor.LogWarning($"楼层 {layerData.layerId} 缺少MapLayerInfo组件，已自动创建");
 //         }
 
 //         // 校验3：查找GroundWall Tilemap
@@ -188,7 +188,7 @@
 //         BoundsInt tilemapBounds = groundWallTilemap.cellBounds;
 //         if (tilemapBounds.size.x <= 0 || tilemapBounds.size.y <= 0)
 //         {
-//             Debug.LogWarning($"楼层 {layerData.layerId} 的GroundWall层无瓦片，使用默认边界(0,0,0,1,1,1)");
+//             DebugEditor.LogWarning($"楼层 {layerData.layerId} 的GroundWall层无瓦片，使用默认边界(0,0,0,1,1,1)");
 //             tilemapBounds = new BoundsInt(0, 0, 0, 1, 1, 1);
 //         }
 

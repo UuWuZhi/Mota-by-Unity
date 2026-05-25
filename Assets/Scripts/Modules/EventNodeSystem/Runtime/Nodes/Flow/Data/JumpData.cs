@@ -14,7 +14,7 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Flow.Data
         /// <summary>
         ///     始终跳转标志：若为 true 则忽略后续条件节点，直接跳转。
         /// </summary>
-        public bool alwaysJump = false;
+        public bool alwaysJump;
 
         public override string GetSummary()
         {

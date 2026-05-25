@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Modules.Core.DataDefine;
 using Modules.Core.DataDefine.Units;
+using Modules.Core.Runtime;
 using Modules.EventNodeSystem.DataDefine;
 using Modules.EventNodeSystem.DataDefine.Context;
 using Modules.EventNodeSystem.DataDefine.Data;
@@ -24,7 +25,7 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Action
         {
             if (data is not ModifyAttributeData modifyData)
             {
-                Debug.LogWarning("ModifyAttribute: data 类型不匹配，跳过执行。");
+                DebugEditor.LogWarning("ModifyAttribute: data 类型不匹配，跳过执行。");
                 onComplete?.Invoke();
                 return;
             }
@@ -32,7 +33,7 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Action
             var playerAttribute = ctx.GetService<PlayerAttribute>();
             if (!playerAttribute)
             {
-                Debug.LogError("ModifyAttribute: PlayerAttribute 未配置，无法执行。");
+                DebugEditor.LogError("ModifyAttribute: PlayerAttribute 未配置，无法执行。");
                 onComplete?.Invoke();
                 return;
             }
@@ -50,7 +51,7 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Action
             }
             catch (Exception ex)
             {
-                Debug.LogException(ex);
+                DebugEditor.LogException(ex);
             }
             finally
             {
@@ -64,7 +65,7 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Action
         {
             if (resolvedValue <= 0)
             {
-                Debug.LogWarning("ModifyAttribute: value <= 0，跳过执行。");
+                DebugEditor.LogWarning("ModifyAttribute: value <= 0，跳过执行。");
                 return;
             }
 
@@ -80,7 +81,7 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Action
                     playerAttribute.SetAttributeValue(resolvedType, resolvedValue);
                     break;
                 default:
-                    Debug.LogWarning("ModifyAttribute: 未识别的操作类型。");
+                    DebugEditor.LogWarning("ModifyAttribute: 未识别的操作类型。");
                     break;
             }
         }
@@ -100,7 +101,7 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Action
                 case ModifyParameterSource.Vars:
                     return TryResolveFromVars(data, ctx, resolvedEntries);
                 default:
-                    Debug.LogWarning("ModifyAttribute: 未识别的参数来源。");
+                    DebugEditor.LogWarning("ModifyAttribute: 未识别的参数来源。");
                     return false;
             }
         }
@@ -109,19 +110,20 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Action
         {
             if (ctx is not EventNodeTileContext tileCtx || !tileCtx.TileObject)
             {
-                Debug.LogWarning("ModifyAttribute: TileUnit 来源需要 EventNodeTileContext 与 TileObject。");
+                DebugEditor.LogWarning("ModifyAttribute: TileUnit 来源需要 EventNodeTileContext 与 TileObject。");
                 return false;
             }
 
             var unit = tileCtx.TileObject.GetComponent<AttributeUnit>();
             if (!unit || unit.attributeBonuses == null || unit.attributeBonuses.Count == 0)
             {
-                Debug.LogWarning("ModifyAttribute: 未找到 AttributeUnit 或数据为空。");
+                DebugEditor.LogWarning("ModifyAttribute: 未找到 AttributeUnit 或数据为空。");
                 return false;
             }
 
-            resolvedEntries.AddRange(from bonus in unit.attributeBonuses 
-                where bonus != null select (bonus.type, bonus.value));
+            resolvedEntries.AddRange(from bonus in unit.attributeBonuses
+                where bonus != null
+                select (bonus.type, bonus.value));
 
             return resolvedEntries.Count > 0;
         }
@@ -131,13 +133,13 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Action
         {
             if (ctx?.Vars == null)
             {
-                Debug.LogWarning("ModifyAttribute: Vars 来源需要有效的上下文。");
+                DebugEditor.LogWarning("ModifyAttribute: Vars 来源需要有效的上下文。");
                 return false;
             }
 
             if (!ctx.TryGet(data.valueVarKey, out int resolvedValue))
             {
-                Debug.LogWarning($"ModifyAttribute: Vars 中未找到 {data.valueVarKey}。");
+                DebugEditor.LogWarning($"ModifyAttribute: Vars 中未找到 {data.valueVarKey}。");
                 return false;
             }
 

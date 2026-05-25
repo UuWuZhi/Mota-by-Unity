@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Modules.Core.DataDefine;
+using Modules.Core.Runtime;
 using Modules.Enemy.Runtime;
 using Modules.EventSystem.DataDefine.EventArgs;
 using UnityEngine;
@@ -31,7 +32,7 @@ namespace Modules.Player.Runtime.Attribute
             {
                 if (_attributes.ContainsKey(attr.type))
                 {
-                    Debug.LogError($"初始化属性时发现重复的属性类型：{attr.type}，请检查配置！");
+                    DebugEditor.LogError($"初始化属性时发现重复的属性类型：{attr.type}，请检查配置！");
                     continue;
                 }
 
@@ -51,7 +52,7 @@ namespace Modules.Player.Runtime.Attribute
         public int GetAttributeValue(AttributeType type)
         {
             if (_attributes.TryGetValue(type, out var value)) return value;
-            Debug.LogError($"未找到属性类型：{type}");
+            DebugEditor.LogError($"未找到属性类型：{type}");
             return 0;
         }
 
@@ -64,12 +65,12 @@ namespace Modules.Player.Runtime.Attribute
         {
             if (type == AttributeType.All)
             {
-                Debug.LogError("不能对All类型执行设置操作");
+                DebugEditor.LogError("不能对All类型执行设置操作");
                 return;
             }
 
             _attributes[type] = value;
-            Debug.Log($"{type}设置为{value}！");
+            DebugEditor.Log($"{type}设置为{value}！");
             // 通过事件中心触发属性变化事件
             AttributeChanged?.Invoke(this, new AttributeChangedEventArgs
             {
@@ -94,14 +95,14 @@ namespace Modules.Player.Runtime.Attribute
         {
             if (type == AttributeType.All)
             {
-                Debug.LogError("不能对All类型执行增加操作");
+                DebugEditor.LogError("不能对All类型执行增加操作");
                 return;
             }
 
             if (value <= 0) return;
 
             _attributes[type] += value;
-            Debug.Log($"{type}+{value}！当前{type}：{_attributes[type]}");
+            DebugEditor.Log($"{type}+{value}！当前{type}：{_attributes[type]}");
             // 通过事件中心触发属性变化事件
             AttributeChanged?.Invoke(this, new AttributeChangedEventArgs
             {
@@ -114,14 +115,14 @@ namespace Modules.Player.Runtime.Attribute
         {
             if (type == AttributeType.All)
             {
-                Debug.LogError("不能对All类型执行减少操作");
+                DebugEditor.LogError("不能对All类型执行减少操作");
                 return;
             }
 
             if (value <= 0) return;
 
             _attributes[type] = Mathf.Max(0, _attributes[type] - value);
-            Debug.Log($"{type}-{value}！当前{type}：{_attributes[type]}");
+            DebugEditor.Log($"{type}-{value}！当前{type}：{_attributes[type]}");
 
             // 通过事件中心触发属性变化事件
             AttributeChanged?.Invoke(this, new AttributeChangedEventArgs

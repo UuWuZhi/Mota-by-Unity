@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using Modules.EventNodeSystem.DataDefine;
-using Modules.EventNodeSystem.DataDefine.Data;
 using UnityEngine;
 
 namespace Modules.Map.DataDefine

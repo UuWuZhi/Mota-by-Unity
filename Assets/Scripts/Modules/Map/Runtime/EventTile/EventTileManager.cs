@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Modules.Core.DataDefine;
+using Modules.Core.Runtime;
 using Modules.EventNodeSystem.DataDefine;
 using Modules.EventNodeSystem.DataDefine.Context;
 using Modules.EventNodeSystem.DataDefine.Data;
@@ -88,7 +89,7 @@ namespace Modules.Map.Runtime.EventTile
             }
             catch (Exception ex)
             {
-                Debug.LogException(ex);
+                DebugEditor.LogException(ex);
             }
         }
 
@@ -102,13 +103,13 @@ namespace Modules.Map.Runtime.EventTile
                 if (args.EventTilemap)
                     LoadLayerEventTiles(args.EventTilemap.gameObject);
                 else
-                    Debug.LogWarning("EventTileManager: OnLayerSwitched 收到的 args.EventTilemap 为 null，无法加载事件瓦片");
+                    DebugEditor.LogWarning("EventTileManager: OnLayerSwitched 收到的 args.EventTilemap 为 null，无法加载事件瓦片");
                 // 触发 GridLoaded 以便处理 OnLoad 类型节点
                 OnGridLoaded(this, new GridLoadedEventArgs());
             }
             catch (Exception ex)
             {
-                Debug.LogException(ex);
+                DebugEditor.LogException(ex);
             }
         }
 
@@ -136,7 +137,7 @@ namespace Modules.Map.Runtime.EventTile
             }
             catch (Exception ex)
             {
-                Debug.LogException(ex);
+                DebugEditor.LogException(ex);
             }
         }
 
@@ -169,12 +170,12 @@ namespace Modules.Map.Runtime.EventTile
                 }
                 catch (Exception ex)
                 {
-                    Debug.LogException(ex);
+                    DebugEditor.LogException(ex);
                 }
             }
             catch (Exception ex)
             {
-                Debug.LogException(ex);
+                DebugEditor.LogException(ex);
             }
         }
 
@@ -196,7 +197,7 @@ namespace Modules.Map.Runtime.EventTile
             }
             catch (Exception ex)
             {
-                Debug.LogException(ex);
+                DebugEditor.LogException(ex);
             }
         }
 
@@ -259,13 +260,13 @@ namespace Modules.Map.Runtime.EventTile
         {
             if (layerRoot == null)
             {
-                Debug.LogWarning("EventTileManager.LoadLayerEventTiles: layerRoot 为 null");
+                DebugEditor.LogWarning("EventTileManager.LoadLayerEventTiles: layerRoot 为 null");
                 return;
             }
 
             if (_gridManager == null)
             {
-                Debug.LogWarning("EventTileManager.LoadLayerEventTiles: GridManager 未注入，无法计算格子坐标");
+                DebugEditor.LogWarning("EventTileManager.LoadLayerEventTiles: GridManager 未注入，无法计算格子坐标");
                 return;
             }
 
@@ -275,7 +276,7 @@ namespace Modules.Map.Runtime.EventTile
             foreach (var tile in tiles)
                 _registry.RegisterEventTileAtWorldPos(tile.transform.position, tile, effectiveLayerId);
 
-            Debug.Log(
+            DebugEditor.Log(
                 $"EventTileManager: 已为层 {effectiveLayerId} 加载并注册 {_registry.GetLayerRegistry(effectiveLayerId).Count} 个 EventNodeTile");
         }
 
@@ -294,7 +295,7 @@ namespace Modules.Map.Runtime.EventTile
         {
             if (_registry == null)
             {
-                Debug.LogWarning("EventTileManager.TryTriggerEventTile: IEventTileRegistry not injected");
+                DebugEditor.LogWarning("EventTileManager.TryTriggerEventTile: IEventTileRegistry not injected");
                 return false;
             }
 
@@ -313,7 +314,7 @@ namespace Modules.Map.Runtime.EventTile
             }
             catch (Exception ex)
             {
-                Debug.LogException(ex);
+                DebugEditor.LogException(ex);
                 return false;
             }
         }
@@ -337,7 +338,7 @@ namespace Modules.Map.Runtime.EventTile
             // 使用指定层的注册表查找 EventNodeTile
             if (_registry == null)
             {
-                Debug.LogWarning("EventTileManager.RequestEnterCell_PreMove: IEventTileRegistry未注入!");
+                DebugEditor.LogWarning("EventTileManager.RequestEnterCell_PreMove: IEventTileRegistry未注入!");
                 CompleteWithAllow(callback, onExecutionComplete);
                 return;
             }
@@ -345,21 +346,21 @@ namespace Modules.Map.Runtime.EventTile
             // 如果格子上没有 EventNodeTile 或者获取失败，默认允许进入且不阻塞
             if (!_registry.TryGetEventNodeAtCell(cellPos, out var tileMono, layerId) || tileMono == null)
             {
-                //Debug.Log($"EventTileManager.RequestEnterCell_PreMove: 在格子 {cellPos} 上未找到 EventNodeTile，默认允许进入");
+                //DebugEditor.Log($"EventTileManager.RequestEnterCell_PreMove: 在格子 {cellPos} 上未找到 EventNodeTile，默认允许进入");
                 CompleteWithAllow(callback, onExecutionComplete);
                 return;
             }
 
             if (!tileMono.TryBeginTrigger())
             {
-                //Debug.Log($"EventTileManager.RequestEnterCell_PreMove: EventNodeTile 在格子 {cellPos} 上已被触发且未完成，拒绝进入以避免重复触发");
+                //DebugEditor.Log($"EventTileManager.RequestEnterCell_PreMove: EventNodeTile 在格子 {cellPos} 上已被触发且未完成，拒绝进入以避免重复触发");
                 CompleteWithDeny(callback, onExecutionComplete);
                 return;
             }
 
             if (tileMono.triggerMode != EventNodeTile.TriggerMode.OnPlayerEnter)
             {
-                //Debug.Log($"EventTileManager.RequestEnterCell_PreMove: EventNodeTile 在格子 {cellPos} 上触发模式为 {tileMono.triggerMode}，不处理预移动请求");
+                //DebugEditor.Log($"EventTileManager.RequestEnterCell_PreMove: EventNodeTile 在格子 {cellPos} 上触发模式为 {tileMono.triggerMode}，不处理预移动请求");
                 CompleteWithAllow(callback, onExecutionComplete);
                 return;
             }
@@ -392,7 +393,7 @@ namespace Modules.Map.Runtime.EventTile
                         executionBlocking = true;
                         break;
                     default:
-                        Debug.LogWarning("EventTileManager.RequestEnterCell_PreMove: 未识别的 EnterPermission");
+                        DebugEditor.LogWarning("EventTileManager.RequestEnterCell_PreMove: 未识别的 EnterPermission");
                         tileMono.EndTrigger();
                         allow = true;
                         needDecision = false;
@@ -406,7 +407,7 @@ namespace Modules.Map.Runtime.EventTile
                     callback(allow, true);
                     if (_eventRunner == null)
                     {
-                        Debug.LogError("EventTileManager.RequestEnterCell_PreMove: IEventRunner 未注入，无法阻塞执行");
+                        DebugEditor.LogError("EventTileManager.RequestEnterCell_PreMove: IEventRunner 未注入，无法阻塞执行");
                         tileMono.EndTrigger();
                         callback(allow, false);
                         onExecutionComplete?.Invoke();
@@ -425,7 +426,7 @@ namespace Modules.Map.Runtime.EventTile
                                 }
                                 catch (Exception ex)
                                 {
-                                    Debug.LogException(ex);
+                                    DebugEditor.LogException(ex);
                                     finalAllow = false;
                                 }
 
@@ -452,7 +453,7 @@ namespace Modules.Map.Runtime.EventTile
                     }
                     catch (Exception ex)
                     {
-                        Debug.LogException(ex);
+                        DebugEditor.LogException(ex);
                         onExecutionComplete?.Invoke();
                     }
 
@@ -461,7 +462,7 @@ namespace Modules.Map.Runtime.EventTile
             }
             catch (Exception ex)
             {
-                Debug.LogException(ex);
+                DebugEditor.LogException(ex);
                 CompleteWithAllow(callback, onExecutionComplete);
             }
         }

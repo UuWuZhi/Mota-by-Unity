@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using Modules.Core.Runtime;
 using Modules.EventNodeSystem.DataDefine;
 using Modules.EventNodeSystem.DataDefine.Context;
 using Modules.EventNodeSystem.DataDefine.Runner;
@@ -20,7 +21,7 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Action.TileAction
         {
             if (data is not PlayAnimationData playData)
             {
-                Debug.LogWarning("PlayAnimation: data 类型不匹配，跳过执行。");
+                DebugEditor.LogWarning("PlayAnimation: data 类型不匹配，跳过执行。");
                 onComplete?.Invoke();
                 return;
             }
@@ -37,7 +38,7 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Action.TileAction
 
             if (!animator)
             {
-                Debug.LogWarning($"PlayAnimation: 未找到 Animator 于 TileObject（cell={ctx.CellPos}）");
+                DebugEditor.LogWarning($"PlayAnimation: 未找到 Animator 于 TileObject（cell={ctx.CellPos}）");
                 onComplete?.Invoke();
                 return;
             }
@@ -54,7 +55,7 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Action.TileAction
             if (!ctx.OwnerMono)
             {
                 // 无法启动协程：退回到非阻塞行为
-                Debug.LogWarning("PlayAnimation: OwnerMono 为 null，无法等待动画，改为非阻塞执行");
+                DebugEditor.LogWarning("PlayAnimation: OwnerMono 为 null，无法等待动画，改为非阻塞执行");
                 TryTriggerOrPlay(animator, playData);
                 onComplete?.Invoke();
                 return;
@@ -73,11 +74,11 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Action.TileAction
                 else if (!string.IsNullOrEmpty(data.stateName))
                     animator.Play(data.stateName);
                 else
-                    Debug.LogWarning("PlayAnimation: 未指定 triggerParameter 或 stateName");
+                    DebugEditor.LogWarning("PlayAnimation: 未指定 triggerParameter 或 stateName");
             }
             catch (Exception ex)
             {
-                Debug.LogException(ex);
+                DebugEditor.LogException(ex);
             }
         }
 
@@ -143,7 +144,8 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Action.TileAction
                         elapsed += Time.deltaTime;
                         if (elapsed > Mathf.Max(1f, data.fallbackTimeout * 5f))
                         {
-                            Debug.LogWarning($"PlayAnimation: 等待状态 {data.stateName} 超时，使用回退超时 {data.fallbackTimeout}s");
+                            DebugEditor.LogWarning(
+                                $"PlayAnimation: 等待状态 {data.stateName} 超时，使用回退超时 {data.fallbackTimeout}s");
                             yield return new WaitForSeconds(data.fallbackTimeout);
                             onComplete?.Invoke();
                             yield break;

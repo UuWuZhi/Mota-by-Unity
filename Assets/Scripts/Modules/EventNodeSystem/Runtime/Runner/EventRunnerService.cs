@@ -2,12 +2,12 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Modules.Core.Runtime;
 using Modules.EventNodeSystem.DataDefine;
 using Modules.EventNodeSystem.DataDefine.Context;
 using Modules.EventNodeSystem.DataDefine.Runner;
 using Modules.EventNodeSystem.Runtime.Nodes;
 using Modules.EventNodeSystem.Runtime.Nodes.Condition;
-using Modules.EventNodeSystem.Runtime.Nodes.Flow;
 using Modules.EventNodeSystem.Runtime.Nodes.Flow.Data;
 using Modules.Map.Runtime;
 using Modules.Player.DataDefine;
@@ -252,7 +252,7 @@ namespace Modules.EventNodeSystem.Runtime.Runner
         {
             if (_registry == null) return;
             if (!_registry.TryLoadFromResources())
-                Debug.LogWarning("EventRunnerService: 未找到 NodeMappingTable 资源，无法加载映射表。请先生成资产。");
+                DebugEditor.LogWarning("EventRunnerService: 未找到 NodeMappingTable 资源，无法加载映射表。请先生成资产。");
         }
 
         #endregion
@@ -270,7 +270,7 @@ namespace Modules.EventNodeSystem.Runtime.Runner
         {
             if (sequence?.commands == null || sequence.commands.Count == 0)
             {
-                Debug.LogWarning("[EventRunnerService]:事件队列为空，直接完成");
+                DebugEditor.LogWarning("[EventRunnerService]:事件队列为空，直接完成");
                 onComplete?.Invoke();
                 return;
             }
@@ -316,7 +316,7 @@ namespace Modules.EventNodeSystem.Runtime.Runner
         {
             if (sequence?.commands == null || sequence.commands.Count == 0)
             {
-                Debug.LogWarning("[EventRunnerService]:事件队列为空，直接完成");
+                DebugEditor.LogWarning("[EventRunnerService]:事件队列为空，直接完成");
                 onComplete?.Invoke();
                 yield break;
             }
@@ -343,7 +343,8 @@ namespace Modules.EventNodeSystem.Runtime.Runner
         {
             if (_readyQueue.Count >= MaxReadyQueueLength)
             {
-                Debug.LogWarning($"[EventRunnerService]: 就绪队列已满({MaxReadyQueueLength})，丢弃新请求 runId={request.RunId}");
+                DebugEditor.LogWarning(
+                    $"[EventRunnerService]: 就绪队列已满({MaxReadyQueueLength})，丢弃新请求 runId={request.RunId}");
                 request.OnComplete?.Invoke();
                 return;
             }
@@ -433,7 +434,7 @@ namespace Modules.EventNodeSystem.Runtime.Runner
             if (!node)
             {
                 // 无映射节点：记录告警并跳过，避免整条任务中断。
-                Debug.LogWarning($"EventRunnerService: 未找到节点模板，Data = {data.GetType().Name}");
+                DebugEditor.LogWarning($"EventRunnerService: 未找到节点模板，Data = {data.GetType().Name}");
                 AdvanceAndContinue();
                 return;
             }
@@ -468,7 +469,7 @@ namespace Modules.EventNodeSystem.Runtime.Runner
                 }
                 catch (Exception ex)
                 {
-                    Debug.LogException(ex);
+                    DebugEditor.LogException(ex);
                     RecoverBlockedRunOnException(runId);
                 }
 
@@ -484,7 +485,7 @@ namespace Modules.EventNodeSystem.Runtime.Runner
             }
             catch (Exception ex)
             {
-                Debug.LogException(ex);
+                DebugEditor.LogException(ex);
                 ClearSyncImmediateGuard(run);
                 AdvanceAndContinue();
             }
@@ -519,7 +520,7 @@ namespace Modules.EventNodeSystem.Runtime.Runner
             if (_activeRun == null || _activeRun.RunId != runId)
             {
                 // 3) 回调既不在阻塞容器，也不属于当前活动任务：视为过期回调。
-                Debug.LogWarning($"EventRunnerService: 丢弃过期回调 runId={runId}");
+                DebugEditor.LogWarning($"EventRunnerService: 丢弃过期回调 runId={runId}");
                 return;
             }
 
@@ -534,7 +535,7 @@ namespace Modules.EventNodeSystem.Runtime.Runner
         {
             if (_activeRun == null)
             {
-                Debug.LogWarning("[EventRunnerService]:无活动任务，无法推进指令。");
+                DebugEditor.LogWarning("[EventRunnerService]:无活动任务，无法推进指令。");
                 return;
             }
 
@@ -551,7 +552,7 @@ namespace Modules.EventNodeSystem.Runtime.Runner
             var run = _activeRun;
             if (run == null)
             {
-                Debug.LogWarning("[EventRunnerService]:无活动任务，无法完成。");
+                DebugEditor.LogWarning("[EventRunnerService]:无活动任务，无法完成。");
                 TryDequeueAndRunNext();
                 return;
             }
@@ -566,7 +567,7 @@ namespace Modules.EventNodeSystem.Runtime.Runner
             }
             catch (Exception ex)
             {
-                Debug.LogException(ex);
+                DebugEditor.LogException(ex);
             }
 
             UpdateRunnerState();
@@ -581,7 +582,7 @@ namespace Modules.EventNodeSystem.Runtime.Runner
         {
             if (!_blockedRuns.Remove(runId, out var run))
             {
-                Debug.LogWarning($"EventRunnerService: 无法恢复异常任务，未找到 runId={runId}");
+                DebugEditor.LogWarning($"EventRunnerService: 无法恢复异常任务，未找到 runId={runId}");
                 return;
             }
 
@@ -593,7 +594,7 @@ namespace Modules.EventNodeSystem.Runtime.Runner
             }
             catch (Exception ex)
             {
-                Debug.LogException(ex);
+                DebugEditor.LogException(ex);
             }
 
             UpdateRunnerState();
@@ -628,9 +629,8 @@ namespace Modules.EventNodeSystem.Runtime.Runner
                     case LabelData labelData when !string.IsNullOrEmpty(labelData.labelName):
                         // 检测重名：保留当前的覆盖行为，但记录警告以便定位问题。
                         if (run.LabelMap.TryGetValue(labelData.labelName, out var existingIndex))
-                        {
-                            Debug.LogWarning($"EventRunnerService: 标签名重复 '{labelData.labelName}'，原索引={existingIndex}，覆盖为索引={i}。请检查序列以避免歧义。");
-                        }
+                            DebugEditor.LogWarning(
+                                $"EventRunnerService: 标签名重复 '{labelData.labelName}'，原索引={existingIndex}，覆盖为索引={i}。请检查序列以避免歧义。");
                         run.LabelMap[labelData.labelName] = i;
                         break;
                 }
@@ -661,7 +661,7 @@ namespace Modules.EventNodeSystem.Runtime.Runner
             if (run.LabelMap.TryGetValue(labelName, out var index))
                 JumpToIndex(index);
             else
-                Debug.LogWarning($"EventRunnerService: 未找到标签 {labelName}");
+                DebugEditor.LogWarning($"EventRunnerService: 未找到标签 {labelName}");
         }
 
         /// <summary>
@@ -711,7 +711,7 @@ namespace Modules.EventNodeSystem.Runtime.Runner
                     {
                         if (_activeRun == null || _activeRun.RunId != run.RunId)
                         {
-                            Debug.LogWarning($"EventRunnerService: 条件回调已过期 runId={run.RunId}");
+                            DebugEditor.LogWarning($"EventRunnerService: 条件回调已过期 runId={run.RunId}");
                             return;
                         }
 
@@ -725,8 +725,8 @@ namespace Modules.EventNodeSystem.Runtime.Runner
                 }
                 catch (Exception ex)
                 {
-                    Debug.LogException(ex);
-                    Debug.LogWarning(
+                    DebugEditor.LogException(ex);
+                    DebugEditor.LogWarning(
                         $"EventRunnerService: 条件节点执行异常，已按无条件 Jump 处理。runId={run.RunId}; index={jumpIndex}; label={jumpData.targetLabelName}");
                     JumpToLabel(jumpData.targetLabelName);
                     AdvanceAndContinue();
@@ -769,7 +769,7 @@ namespace Modules.EventNodeSystem.Runtime.Runner
                 return true;
             }
 
-            Debug.LogWarning(
+            DebugEditor.LogWarning(
                 $"EventRunnerService: Jump 后继节点 {conditionData.GetType().Name} 不是条件节点，按无条件 Jump 处理。");
             return false;
         }
@@ -814,7 +814,7 @@ namespace Modules.EventNodeSystem.Runtime.Runner
         {
             var labelName = ResolveLabelNameByIndex(run, run.CurrentIndex);
             var sequenceHash = run.Sequence?.GetHashCode() ?? 0;
-            Debug.LogError(
+            DebugEditor.LogError(
                 $"[EventRunnerService]:检测到可能存在死循环，任务已中断 | reason={reason}; sequenceHash={sequenceHash}; runId={run.RunId}; index={run.CurrentIndex}; step={run.StepCounter}; frame={Time.frameCount}; label={labelName}");
             CompleteActiveRun(true);
         }
@@ -850,7 +850,7 @@ namespace Modules.EventNodeSystem.Runtime.Runner
             foreach (var type in required)
                 if (TryGetKnownService(type, out var service))
                 {
-                    if (logRegistration) Debug.Log($"注册服务 {type.Name} 到上下文");
+                    if (logRegistration) DebugEditor.Log($"注册服务 {type.Name} 到上下文");
                     ctx.RegisterService(type, service);
                 }
         }
@@ -879,7 +879,7 @@ namespace Modules.EventNodeSystem.Runtime.Runner
                 }
                 catch (Exception)
                 {
-                    Debug.LogWarning($"EventRunnerService: 无法解析所需的服务类型 {type.Name}");
+                    DebugEditor.LogWarning($"EventRunnerService: 无法解析所需的服务类型 {type.Name}");
                     return false;
                 }
 
@@ -926,7 +926,7 @@ namespace Modules.EventNodeSystem.Runtime.Runner
             if (!run.SyncGuardEnabled) return;
             var elapsed = Time.realtimeSinceStartup - run.SyncGuardStartTime;
             if (elapsed > SyncImmediateWarnTimeoutSeconds)
-                Debug.LogWarning(
+                DebugEditor.LogWarning(
                     $"[ENS-ExecutionHintGuard] nodeType={run.SyncGuardNodeType}; runId={run.RunId}; index={run.SyncGuardIndex}; hint=SyncImmediate; elapsedMs={elapsed * 1000f:F1}; frame={Time.frameCount}");
         }
 
@@ -939,7 +939,7 @@ namespace Modules.EventNodeSystem.Runtime.Runner
             if (!run.SyncGuardEnabled) return;
             var elapsed = Time.realtimeSinceStartup - run.SyncGuardStartTime;
             if (elapsed > SyncImmediateWarnTimeoutSeconds)
-                Debug.LogWarning(
+                DebugEditor.LogWarning(
                     $"[ENS-ExecutionHintGuard] nodeType={run.SyncGuardNodeType}; runId={run.RunId}; index={run.SyncGuardIndex}; hint=SyncImmediate; elapsedMs={elapsed * 1000f:F1}; frame={Time.frameCount}; stage=OnComplete");
 
             ClearSyncImmediateGuard(run);

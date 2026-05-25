@@ -1,3 +1,4 @@
+using Modules.Core.Runtime;
 using Modules.EventSystem.DataDefine.EventArgs;
 using UnityEngine;
 using VContainer;
@@ -28,7 +29,7 @@ namespace Modules.Player.Runtime.Movement
         private void OnEnable()
         {
             if (!_playerMovement) return;
-            // Debug.Log("[PlayerAnimationController]:订阅移动相关事件");
+            // DebugEditor.Log("[PlayerAnimationController]:订阅移动相关事件");
             _playerMovement.OnMoveDirectionChanged += OnMoveDirectionChanged;
             _playerMovement.OnMoveStateChanged += OnMoveStateChanged;
         }
@@ -50,7 +51,7 @@ namespace Modules.Player.Runtime.Movement
         // 处理方向更新事件（更新混合树参数）
         private void OnMoveDirectionChanged(object sender, PlayerMoveDirectionChangedEventArgs args)
         {
-            // Debug.Log("[PlayerAnimationController]:接收到方向更新事件");
+            // DebugEditor.Log("[PlayerAnimationController]:接收到方向更新事件");
             animator.SetFloat(HorizontalHash, args.Horizontal);
             animator.SetFloat(VerticalHash, args.Vertical);
             animator.Update(0); // 强制刷新
@@ -59,7 +60,7 @@ namespace Modules.Player.Runtime.Movement
         // 处理移动状态变更事件（启动/停止动画、调整速度）
         private void OnMoveStateChanged(object sender, PlayerMoveStateChangedEventArgs args)
         {
-            // Debug.Log("[PlayerAnimationController]:接收到移动状态更新事件");
+            // DebugEditor.Log("[PlayerAnimationController]:接收到移动状态更新事件");
             animator.SetBool(IsMovingHash, args.IsMoving);
 
             if (args.IsMoving)
@@ -80,7 +81,7 @@ namespace Modules.Player.Runtime.Movement
         {
             if (!animator || !animator.runtimeAnimatorController)
             {
-                Debug.LogError("Animator组件或控制器未设置！");
+                DebugEditor.LogError("Animator组件或控制器未设置！");
                 return 0.033f;
             }
 
@@ -88,7 +89,7 @@ namespace Modules.Player.Runtime.Movement
                 if (clip.name == clipName)
                     return clip.length;
 
-            // Debug.LogError($"未找到Walk动画：{clipName}");
+            // DebugEditor.LogError($"未找到Walk动画：{clipName}");
             return 0.033f;
         }
     }

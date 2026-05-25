@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Modules.Core.Runtime;
 using Modules.EventNodeSystem.DataDefine;
 using Modules.EventNodeSystem.Runtime;
 using Modules.EventNodeSystem.Runtime.Nodes;
@@ -38,7 +39,7 @@ namespace Editor.EventNodeSystem
             var mappings = BuildMappings(dataTypes, nodeTypes);
             WriteAsset(mappings);
             AssetDatabase.Refresh();
-            Debug.Log($"EventNodeSystemRegistry 生成完成: {OutputAssetPath} (数量: {mappings.Count})");
+            DebugEditor.Log($"EventNodeSystemRegistry 生成完成: {OutputAssetPath} (数量: {mappings.Count})");
         }
 
         /// <summary>
@@ -60,12 +61,12 @@ namespace Editor.EventNodeSystem
                 var nodeType = FindNodeType(nodeTypes, dataKey, matchedNodes);
                 if (nodeType == null)
                 {
-                    Debug.LogWarning($"ENSRegistryGenerator: 未找到匹配节点，Data = {dataType.Name}");
+                    DebugEditor.LogWarning($"ENSRegistryGenerator: 未找到匹配节点，Data = {dataType.Name}");
                     continue;
                 }
 
                 var nodeAsset = FindNodeAsset(nodeType);
-                if (!nodeAsset) Debug.LogWarning($"ENSRegistryGenerator: 未找到节点资产，Node = {nodeType.Name}");
+                if (!nodeAsset) DebugEditor.LogWarning($"ENSRegistryGenerator: 未找到节点资产，Node = {nodeType.Name}");
 
                 matchedNodes.Add(nodeType);
                 mappings.Add(new NodeMappingTableSo.Entry
@@ -116,7 +117,7 @@ namespace Editor.EventNodeSystem
             var guids = AssetDatabase.FindAssets(filter);
             if (guids == null || guids.Length == 0) return null;
 
-            if (guids.Length > 1) Debug.LogWarning($"ENSRegistryGenerator: 检测到多个节点资产 {nodeType.Name}，将使用第一个。");
+            if (guids.Length > 1) DebugEditor.LogWarning($"ENSRegistryGenerator: 检测到多个节点资产 {nodeType.Name}，将使用第一个。");
 
             var path = AssetDatabase.GUIDToAssetPath(guids[0]);
             return AssetDatabase.LoadAssetAtPath<EventNode>(path);

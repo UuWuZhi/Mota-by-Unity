@@ -7132,7 +7132,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   mapRoot: {fileID: 836520688}
   currentLayerId: 0
-  allLayers:
+  allLayerInfos:
   - {fileID: 1876584957}
   - {fileID: 902272084}
 --- !u!114 &836520694
@@ -14185,9 +14185,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b0247441171cd33488f13acd79328294, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveSpeed: 9
-  rb: {fileID: 983119900}
+  moveSpeed: 5
+  playerRigidbody2D: {fileID: 983119900}
   pathLineRenderer: {fileID: 983119906}
+  pathLineMaterial: {fileID: 0}
 --- !u!95 &983119897
 Animator:
   serializedVersion: 5
@@ -14418,9 +14419,7 @@ LineRenderer:
   m_SortingLayerID: 1647844683
   m_SortingLayer: 4
   m_SortingOrder: 0
-  m_Positions:
-  - {x: 0, y: 0, z: 0}
-  - {x: 4.34961, y: -3.070477, z: 0}
+  m_Positions: []
   m_Parameters:
     serializedVersion: 3
     widthMultiplier: 1
@@ -14428,8 +14427,8 @@ LineRenderer:
       serializedVersion: 2
       m_Curve:
       - serializedVersion: 3
-        time: 0.23340225
-        value: 0.21461105
+        time: 0.470829
+        value: 0.15069199
         inSlope: 0
         outSlope: 0
         tangentMode: 0
@@ -14441,7 +14440,7 @@ LineRenderer:
       m_RotationOrder: 4
     colorGradient:
       serializedVersion: 2
-      key0: {r: 1, g: 1, b: 1, a: 1}
+      key0: {r: 0.23529413, g: 0.23529413, b: 0.23529413, a: 1}
       key1: {r: 1, g: 1, b: 1, a: 1}
       key2: {r: 0, g: 0, b: 0, a: 0}
       key3: {r: 0, g: 0, b: 0, a: 0}

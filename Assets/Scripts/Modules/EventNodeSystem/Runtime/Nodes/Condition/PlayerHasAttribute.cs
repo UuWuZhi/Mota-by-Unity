@@ -1,4 +1,5 @@
 using System;
+using Modules.Core.Runtime;
 using Modules.EventNodeSystem.DataDefine;
 using Modules.EventNodeSystem.DataDefine.Context;
 using Modules.EventNodeSystem.Runtime.Nodes.Condition.Data;
@@ -32,7 +33,7 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Condition
         {
             if (data is not PlayerHasAttributeData conditionData)
             {
-                Debug.LogWarning(
+                DebugEditor.LogWarning(
                     $"{nameof(PlayerHasAttribute)}: 数据类型不匹配，期望 {nameof(PlayerHasAttributeData)}，默认返回 false。");
                 onResult?.Invoke(false);
                 return;
@@ -44,7 +45,7 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Condition
                 var playerAttribute = ctx?.GetService<PlayerAttribute>();
                 if (!playerAttribute)
                 {
-                    Debug.LogWarning($"[{nameof(PlayerHasAttribute)}]: PlayerAttribute 未配置，默认返回 false。");
+                    DebugEditor.LogWarning($"[{nameof(PlayerHasAttribute)}]: PlayerAttribute 未配置，默认返回 false。");
                     onResult?.Invoke(false);
                     return;
                 }
@@ -64,12 +65,13 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Condition
             }
             catch (Exception ex)
             {
-                Debug.LogException(ex);
-                Debug.LogError($"[PlayerHasAttribute(PlayerHasAttribute)]: 执行条件判断时发生异常，默认返回 false。{ex.Message}");
+                DebugEditor.LogException(ex);
+                DebugEditor.LogError($"[PlayerHasAttribute(PlayerHasAttribute)]: 执行条件判断时发生异常，默认返回 false。{ex.Message}");
                 result = false;
             }
 
-            Debug.Log($"PlayerHasAttribute: 检测玩家属性 {conditionData.attributeType} {conditionData.comparisonMode} {conditionData.requiredValue}，实际值：{(ctx?.GetService<PlayerAttribute>()?.GetAttributeValue(conditionData.attributeType) ?? 0)}，结果：{result}");
+            DebugEditor.Log(
+                $"PlayerHasAttribute: 检测玩家属性 {conditionData.attributeType} {conditionData.comparisonMode} {conditionData.requiredValue}，实际值：{ctx?.GetService<PlayerAttribute>()?.GetAttributeValue(conditionData.attributeType) ?? 0}，结果：{result}");
             onResult?.Invoke(result);
         }
     }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Linq;
+using Modules.Core.Runtime;
 using Modules.EventNodeSystem.DataDefine;
 using Modules.EventNodeSystem.DataDefine.Context;
 using Modules.EventNodeSystem.DataDefine.Runner;
@@ -31,7 +32,7 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Action
         {
             if (data is not YarnDialogueData yarnData)
             {
-                Debug.LogWarning("YarnDialogue: data 类型不匹配，跳过执行。");
+                DebugEditor.LogWarning("YarnDialogue: data 类型不匹配，跳过执行。");
                 onComplete?.Invoke();
                 return;
             }
@@ -52,7 +53,7 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Action
 
             if (bridge == null || !runner)
             {
-                Debug.LogError("YarnDialogue: Missing YarnRouteBridge or DialogueRunner in context.");
+                DebugEditor.LogError("YarnDialogue: Missing YarnRouteBridge or DialogueRunner in context.");
                 onComplete?.Invoke();
                 yield break;
             }

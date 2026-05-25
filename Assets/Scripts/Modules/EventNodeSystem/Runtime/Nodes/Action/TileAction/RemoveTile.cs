@@ -1,4 +1,5 @@
 using System;
+using Modules.Core.Runtime;
 using Modules.EventNodeSystem.DataDefine;
 using Modules.EventNodeSystem.DataDefine.Context;
 using Modules.EventNodeSystem.Runtime.Nodes.Action.Data;
@@ -19,7 +20,7 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Action.TileAction
         {
             if (data is not RemoveTileData)
             {
-                Debug.LogWarning("RemoveTile: data 类型不匹配，跳过执行。");
+                DebugEditor.LogWarning("RemoveTile: data 类型不匹配，跳过执行。");
                 onComplete?.Invoke();
                 return;
             }
@@ -27,7 +28,7 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Action.TileAction
             var gridManager = ctx?.GetService<GridManager>();
             if (gridManager == null)
             {
-                Debug.LogWarning("RemoveTile: GridManager 未初始化");
+                DebugEditor.LogWarning("RemoveTile: GridManager 未初始化");
                 onComplete?.Invoke();
                 return;
             }

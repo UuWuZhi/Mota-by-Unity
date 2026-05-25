@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Modules.Core.DataDefine;
+using Modules.Core.Runtime;
 using Modules.Enemy.DataDefine;
 using Modules.Enemy.Runtime;
 using Modules.Item.DataDefine;
@@ -47,7 +48,7 @@ namespace Modules.UI.Runtime
         // UI 显示由 UIManager 控制；重写 OnShown 在显示时刷新内容
         protected override void OnShown()
         {
-            Debug.Log("MonsterBookUI:进入显示函数");
+            DebugEditor.Log("MonsterBookUI:进入显示函数");
             base.OnShown();
             Refresh();
         }
@@ -87,7 +88,7 @@ namespace Modules.UI.Runtime
                 _monsterBook?.MarkSeen(CurrentLayerId, id);
             }
 
-            Debug.Log($"MonsterBookUI:收集到怪物ID {string.Join(", ", ids)}");
+            DebugEditor.Log($"MonsterBookUI:收集到怪物ID {string.Join(", ", ids)}");
             return ids;
         }
 

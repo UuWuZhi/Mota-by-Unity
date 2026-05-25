@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Modules.Core.Runtime;
 using Modules.EventSystem.DataDefine.EventArgs;
 using Modules.Player.DataDefine;
 using Modules.UI.Runtime;
@@ -106,7 +107,7 @@ namespace Modules.Player.Runtime.Inventory.UI
                         {
                             var data = _itemDatabase.Get(e.type);
                             if (data) icon = data.icon;
-                            else Debug.LogWarning($"ItemDatabase 中未找到类型为 {e.type} 的物品数据");
+                            else DebugEditor.LogWarning($"ItemDatabase 中未找到类型为 {e.type} 的物品数据");
                         }
 
                         slot.SetData(e.type, e.count, icon);

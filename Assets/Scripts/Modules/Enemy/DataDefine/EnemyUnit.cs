@@ -1,3 +1,4 @@
+using Modules.Core.Runtime;
 using Modules.Enemy.Runtime;
 using UnityEngine;
 
@@ -22,7 +23,7 @@ namespace Modules.Enemy.DataDefine
         {
             if (enemyData) return enemyData.ToBattleUnitData();
 
-            Debug.LogWarning("EnemyUnit 上未关联 EnemyData，返回默认 BattleUnitData");
+            DebugEditor.LogWarning("EnemyUnit 上未关联 EnemyData，返回默认 BattleUnitData");
             return new BattleUnitData
             {
                 currentHp = 10,

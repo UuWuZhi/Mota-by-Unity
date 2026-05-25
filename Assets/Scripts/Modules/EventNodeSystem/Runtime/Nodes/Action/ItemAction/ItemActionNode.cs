@@ -1,6 +1,6 @@
+using Modules.Core.Runtime;
 using Modules.EventNodeSystem.DataDefine;
 using Modules.EventNodeSystem.DataDefine.Context;
-using UnityEngine;
 
 namespace Modules.EventNodeSystem.Runtime.Nodes.Action.ItemAction
 {
@@ -19,7 +19,8 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Action.ItemAction
             }
             else
             {
-                Debug.LogWarning($"{GetType().Name}: 需要 ItemEventContext，但收到 {ctx?.GetType().Name ?? "null"}，跳过执行。");
+                DebugEditor.LogWarning(
+                    $"{GetType().Name}: 需要 ItemEventContext，但收到 {ctx?.GetType().Name ?? "null"}，跳过执行。");
                 onComplete?.Invoke();
             }
         }

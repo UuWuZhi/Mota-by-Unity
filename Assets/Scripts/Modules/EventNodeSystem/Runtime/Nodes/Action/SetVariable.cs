@@ -1,4 +1,5 @@
 using System;
+using Modules.Core.Runtime;
 using Modules.EventNodeSystem.DataDefine;
 using Modules.EventNodeSystem.DataDefine.Context;
 using Modules.EventNodeSystem.Runtime.Nodes.Action.Data;
@@ -14,7 +15,7 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Action
             var setData = data as SetVariableData;
             if (setData == null)
             {
-                Debug.LogWarning("SetVariable: data 类型不匹配，跳过执行。");
+                DebugEditor.LogWarning("SetVariable: data 类型不匹配，跳过执行。");
                 onComplete?.Invoke();
                 return;
             }
@@ -81,7 +82,7 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Action
             }
             catch (Exception ex)
             {
-                Debug.LogException(ex);
+                DebugEditor.LogException(ex);
             }
 
             onComplete?.Invoke();

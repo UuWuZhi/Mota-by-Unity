@@ -1,4 +1,5 @@
 using System;
+using Modules.Core.Runtime;
 using Modules.EventNodeSystem.DataDefine;
 using Modules.EventNodeSystem.DataDefine.Context;
 using Modules.EventNodeSystem.Runtime.Nodes.Action.Data;
@@ -23,14 +24,14 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Action.ItemAction
             var pickaxeData = data as PickaxeActionData;
             if (pickaxeData == null)
             {
-                Debug.LogWarning("PickaxeActionNode: data 类型不匹配，跳过执行。");
+                DebugEditor.LogWarning("PickaxeActionNode: data 类型不匹配，跳过执行。");
                 onComplete?.Invoke();
                 return;
             }
 
             try
             {
-                Debug.Log("PickaxeActionNode: 执行挖掘逻辑");
+                DebugEditor.Log("PickaxeActionNode: 执行挖掘逻辑");
                 // 获取 GridManager
                 var grid = ctx.GetService<GridManager>();
 
@@ -44,7 +45,7 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Action.ItemAction
 
                 if (grid == null || player == null)
                 {
-                    Debug.LogWarning("PickaxeActionNode: 缺少 GridManager 或 PlayerState，跳过执行");
+                    DebugEditor.LogWarning("PickaxeActionNode: 缺少 GridManager 或 PlayerState，跳过执行");
                     onComplete?.Invoke();
                     return;
                 }
@@ -53,9 +54,10 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Action.ItemAction
                 var playerWorldPos = player.transform.position;
                 if (!grid.TryWorldToCellPos(playerWorldPos, out var playerCell))
                 {
-                    Debug.LogWarning("[PickaxeActionNode]:玩家世界坐标转换为格子坐标失败");
+                    DebugEditor.LogWarning("[PickaxeActionNode]:玩家世界坐标转换为格子坐标失败");
                     return;
                 }
+
                 var targetCell = playerCell;
                 switch (player.Facing)
                 {
@@ -67,7 +69,7 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Action.ItemAction
 
                 if (!grid.IsInGridBounds(targetCell))
                 {
-                    Debug.LogWarning($"PickaxeActionNode: 目标格子 {targetCell} 超出地图边界");
+                    DebugEditor.LogWarning($"PickaxeActionNode: 目标格子 {targetCell} 超出地图边界");
                     onComplete?.Invoke();
                     return;
                 }
@@ -75,7 +77,7 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Action.ItemAction
                 var obstacle = grid.GetObstacleTileAtCell(targetCell);
                 if (obstacle == null || !obstacle.isBreakable)
                 {
-                    Debug.LogWarning($"PickaxeActionNode: 目标格子 {targetCell} 没有可挖掘的障碍物");
+                    DebugEditor.LogWarning($"PickaxeActionNode: 目标格子 {targetCell} 没有可挖掘的障碍物");
                     onComplete?.Invoke();
                     return;
                 }
@@ -93,7 +95,7 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Action.ItemAction
 
                     if (!hasRequired)
                     {
-                        Debug.LogWarning(
+                        DebugEditor.LogWarning(
                             $"PickaxeActionNode: 目标格子 {targetCell} 的障碍物需要特定工具 {pickaxeData.requiredTool}，但玩家没有");
                         onComplete?.Invoke();
                         return;
@@ -103,21 +105,21 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Action.ItemAction
                 var removed = grid.RemoveObstacleTileAtCell(targetCell);
                 if (!removed)
                 {
-                    Debug.LogWarning($"PickaxeActionNode: 无法移除目标格子 {targetCell} 的障碍物");
+                    DebugEditor.LogWarning($"PickaxeActionNode: 无法移除目标格子 {targetCell} 的障碍物");
                     onComplete?.Invoke();
                     return;
                 }
 
                 // 标记成功：使用 ItemEventContext 的约定
                 ctx.MarkUseSucceeded();
-                Debug.Log($"PickaxeActionNode: 成功挖掘格子 {targetCell} 的障碍物");
+                DebugEditor.Log($"PickaxeActionNode: 成功挖掘格子 {targetCell} 的障碍物");
 
                 // 如果希望节点直接消费物品，可以在此调用 inventory.RemoveItem
                 // 但推荐由调用方（ItemUseHandler）根据 useMode 统一消费，或在节点中通过约定直接消费
             }
             catch (Exception ex)
             {
-                Debug.LogException(ex);
+                DebugEditor.LogException(ex);
             }
             finally
             {

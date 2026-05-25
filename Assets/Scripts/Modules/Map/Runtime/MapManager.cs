@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Modules.Core.DataDefine;
+using Modules.Core.Runtime;
 using Modules.EventSystem.DataDefine.EventArgs;
 using Modules.Map.DataDefine;
 using UnityEngine;
@@ -16,7 +17,10 @@ namespace Modules.Map.Runtime
     public class MapManager : MonoBehaviour
     {
         [Header("地图配置")] public Grid mapRoot; // 所有层的根Grid
-        [FormerlySerializedAs("_currentLayerId")] public int currentLayerId; // 当前层数（默认0层）
+
+        [FormerlySerializedAs("_currentLayerId")]
+        public int currentLayerId; // 当前层数（默认0层）
+
         [FormerlySerializedAs("allLayers")] public List<MapLayerInfo> allLayerInfos = new(); // 所有层的配置
 
         // 缓存各层的Tilemap和边界（键：楼层ID，值：(ground, obstacle, eventTilemap, 边界)）
@@ -50,7 +54,7 @@ namespace Modules.Map.Runtime
         {
             if (switchArgs == null || !_layerDataCache.ContainsKey(switchArgs.TargetLayerId))
             {
-                Debug.LogError($"楼层{switchArgs?.TargetLayerId}不存在！");
+                DebugEditor.LogError($"楼层{switchArgs?.TargetLayerId}不存在！");
                 return;
             }
 
@@ -64,7 +68,7 @@ namespace Modules.Map.Runtime
 
             // 2. 激活目标层
             var targetData = _layerDataCache[switchArgs.TargetLayerId];
-            Debug.Log($"切换到楼层{switchArgs.TargetLayerId}，激活Tilemaps");
+            DebugEditor.Log($"切换到楼层{switchArgs.TargetLayerId}，激活Tilemaps");
             targetData.ground.gameObject.SetActive(true);
             targetData.obstacle.gameObject.SetActive(true);
             targetData.eventTilemap.gameObject.SetActive(true);
@@ -73,7 +77,7 @@ namespace Modules.Map.Runtime
             var spawnPos = GetSpawnPosByLayerAndId(switchArgs.TargetLayerId, switchArgs.SpawnPointId);
             if (spawnPos == Vector2.zero)
             {
-                Debug.LogError($"楼层{switchArgs.TargetLayerId}的出生点ID{switchArgs.SpawnPointId}无效！");
+                DebugEditor.LogError($"楼层{switchArgs.TargetLayerId}的出生点ID{switchArgs.SpawnPointId}无效！");
                 return;
             }
 
@@ -92,7 +96,7 @@ namespace Modules.Map.Runtime
                     LayerBounds = targetData.bounds,
                     SpawnPos = spawnPos
                 });
-            Debug.Log($"已切换到楼层{currentLayerId}，出生点ID：{switchArgs.SpawnPointId}");
+            DebugEditor.Log($"已切换到楼层{currentLayerId}，出生点ID：{switchArgs.SpawnPointId}");
         }
 
         #endregion
@@ -109,9 +113,9 @@ namespace Modules.Map.Runtime
             InitLayerDataCache(); // 初始化层数据缓存
 
             if (!mapRoot)
-                Debug.LogError("MapManager：mapRoot未配置！");
+                DebugEditor.LogError("MapManager：mapRoot未配置！");
             if (!_gridManager)
-                Debug.LogError("MapManager：GridManager未注入！");
+                DebugEditor.LogError("MapManager：GridManager未注入！");
 
             // 同步当前层到全局变量存储
             _globalEventVariables?.SetInt(GlobalEventKey.LayerId, currentLayerId);
@@ -125,7 +129,7 @@ namespace Modules.Map.Runtime
             var idSet = new HashSet<int>();
             foreach (var layer in allLayerInfos)
             {
-                if (idSet.Contains(layer.layerId)) Debug.LogError($"楼层ID {layer.layerId} 重复！请检查配置");
+                if (idSet.Contains(layer.layerId)) DebugEditor.LogError($"楼层ID {layer.layerId} 重复！请检查配置");
                 idSet.Add(layer.layerId);
             }
         }
@@ -140,7 +144,7 @@ namespace Modules.Map.Runtime
                      let layerInfo = layer.layerRoot.GetComponent<MapLayerInfo>()
                      where layerInfo && layerInfo.SpawnPoints.Count == 0
                      select layer)
-                Debug.LogWarning($"层 {layer.layerId} 无出生点配置");
+                DebugEditor.LogWarning($"层 {layer.layerId} 无出生点配置");
         }
 
         /// <summary>
@@ -152,13 +156,13 @@ namespace Modules.Map.Runtime
             {
                 if (_layerDataCache.ContainsKey(layerData.layerId))
                 {
-                    Debug.LogError($"层ID {layerData.layerId} 重复，已跳过初始化");
+                    DebugEditor.LogError($"层ID {layerData.layerId} 重复，已跳过初始化");
                     continue;
                 }
 
                 if (!layerData.layerRoot)
                 {
-                    Debug.LogWarning($"层 {layerData.layerId} 的 layerRoot 为 null，跳过初始化");
+                    DebugEditor.LogWarning($"层 {layerData.layerId} 的 layerRoot 为 null，跳过初始化");
                     continue;
                 }
 
@@ -167,7 +171,7 @@ namespace Modules.Map.Runtime
                 if (!layerInfo)
                 {
                     layerInfo = layerData.layerRoot.gameObject.AddComponent<MapLayerInfo>();
-                    Debug.LogWarning($"层 {layerData.layerId} 缺少MapLayerInfo组件，已自动添加");
+                    DebugEditor.LogWarning($"层 {layerData.layerId} 缺少MapLayerInfo组件，已自动添加");
                 }
 
                 // 查找地面、障碍和事件层 Tilemap
@@ -177,7 +181,7 @@ namespace Modules.Map.Runtime
                 var eventTilemap = layerData.layerRoot.Find("Event").GetComponent<Tilemap>();
                 if (!ground || !obstacle || !eventTilemap)
                 {
-                    Debug.LogWarning($"层 {layerData.layerId} 缺少 Ground/Obstacle 或 Event Tilemap，跳过初始化");
+                    DebugEditor.LogWarning($"层 {layerData.layerId} 缺少 Ground/Obstacle 或 Event Tilemap，跳过初始化");
                     continue;
                 }
 

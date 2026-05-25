@@ -1,4 +1,4 @@
-using UnityEngine;
+using Modules.Core.Runtime;
 using Yarn.Unity;
 
 /// <summary>
@@ -13,7 +13,7 @@ public class YarnRouteBridge
         if (dialogueRunner)
             dialogueRunner.AddCommandHandler<string>("ens_route", TriggerRoute);
         else
-            Debug.LogError("YarnRouteBridge: DialogueRunner is missing.");
+            DebugEditor.LogError("YarnRouteBridge: DialogueRunner is missing.");
     }
 
     public string CurrentRoute { get; private set; } = "";

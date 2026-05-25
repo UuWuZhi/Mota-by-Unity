@@ -1,5 +1,3 @@
-using System;
-
 namespace Modules.EventNodeSystem.Runtime.Nodes.Condition.Data
 {
     /// <summary>

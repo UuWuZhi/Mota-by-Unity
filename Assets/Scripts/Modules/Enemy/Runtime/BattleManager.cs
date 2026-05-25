@@ -1,4 +1,5 @@
 using System;
+using Modules.Core.Runtime;
 using Modules.EventSystem.DataDefine.EventArgs;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -67,7 +68,7 @@ namespace Modules.Enemy.Runtime
         /// </summary>
         private void OnBattleCheckRequest(object sender, BattleCheckEventArgs args)
         {
-            Debug.Log("OnBattleCheckRequest:接收到查询请求！");
+            DebugEditor.Log("OnBattleCheckRequest:接收到查询请求！");
             // 使用 ResolveBattle 模拟，不修改原始传入数据
             var playerCopy = new BattleUnitData
             {

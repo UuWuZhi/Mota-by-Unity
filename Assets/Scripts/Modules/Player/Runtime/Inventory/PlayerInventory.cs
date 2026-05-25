@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Modules.Core.Runtime;
 using Modules.EventSystem.DataDefine.EventArgs;
 using Modules.Item.DataDefine;
 using Modules.Player.DataDefine;
@@ -35,7 +36,7 @@ public class PlayerInventory : MonoBehaviour, IInventoryService
 
         _entries.Add(new InventoryEntry(type, count));
         InventoryChanged?.Invoke(this, new InventoryChangedEventArgs(type));
-        Debug.Log($"获得{type}×{count}！当前条目数：{_entries.Count}");
+        DebugEditor.Log($"获得{type}×{count}！当前条目数：{_entries.Count}");
     }
 
     /// <summary>

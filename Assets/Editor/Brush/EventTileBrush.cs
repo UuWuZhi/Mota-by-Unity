@@ -92,7 +92,7 @@
 //                    }
 //                    else
 //                    {
-//                        Debug.LogWarning($"EventTile 在单元格 {cellPos} 引用的 eventPrefab 为 null，未创建实例");
+//                        DebugEditor.LogWarning($"EventTile 在单元格 {cellPos} 引用的 eventPrefab 为 null，未创建实例");
 //                    }
 //                }
 //                else

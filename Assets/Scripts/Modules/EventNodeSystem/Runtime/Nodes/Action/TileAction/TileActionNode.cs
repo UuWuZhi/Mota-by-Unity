@@ -1,6 +1,6 @@
+using Modules.Core.Runtime;
 using Modules.EventNodeSystem.DataDefine;
 using Modules.EventNodeSystem.DataDefine.Context;
-using UnityEngine;
 
 namespace Modules.EventNodeSystem.Runtime.Nodes.Action.TileAction
 {
@@ -19,7 +19,7 @@ namespace Modules.EventNodeSystem.Runtime.Nodes.Action.TileAction
             }
             else
             {
-                Debug.LogWarning(
+                DebugEditor.LogWarning(
                     $"{GetType().Name}: 需要 EventNodeTileContext，但收到 {ctx?.GetType().Name ?? "null"}，跳过执行。");
                 onComplete?.Invoke();
             }

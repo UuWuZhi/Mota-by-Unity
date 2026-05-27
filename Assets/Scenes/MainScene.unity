@@ -14185,7 +14185,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b0247441171cd33488f13acd79328294, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveSpeed: 5
+  moveSpeed: 9
   playerRigidbody2D: {fileID: 983119900}
   pathLineRenderer: {fileID: 983119906}
   pathLineMaterial: {fileID: 0}

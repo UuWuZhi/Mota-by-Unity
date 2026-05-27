@@ -3,15 +3,6 @@ using UnityEngine;
 namespace Modules.EventSystem.DataDefine.EventArgs
 {
     /// <summary>
-    ///     玩家输入事件参数（如方向键输入）
-    /// </summary>
-    public class PlayerInputEventArgs : System.EventArgs
-    {
-        public Vector2 MoveDirection { get; set; } // 移动方向（上下左右）
-        public bool IsValidInput { get; set; } // 是否为有效移动输入
-    }
-
-    /// <summary>
     ///     玩家移动完成事件参数（移动到新位置后触发）
     /// </summary>
     public class PlayerArrivedEventArgs : System.EventArgs

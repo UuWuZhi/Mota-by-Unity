@@ -61,26 +61,10 @@ MonoBehaviour:
       type: {class: EventSequence, ns: Modules.EventNodeSystem.DataDefine, asm: Assembly-CSharp}
       data:
         commands:
-        - rid: 3081733572733173792
-        - rid: 3081733572733173812
-        - rid: 3081733572733173814
-    - rid: 3081733572733173792
-      type: {class: JumpData, ns: Modules.EventNodeSystem.Runtime.Nodes.Flow.Data, asm: Assembly-CSharp}
-      data:
-        targetLabelName: end
-        alwaysJump: 0
-    - rid: 3081733572733173812
-      type: {class: LabelData, ns: Modules.EventNodeSystem.Runtime.Nodes.Flow.Data, asm: Assembly-CSharp}
-      data:
-        labelName: 
-    - rid: 3081733572733173814
-      type: {class: ModifyAttributeData, ns: Modules.EventNodeSystem.Runtime.Nodes.Action.Data, asm: Assembly-CSharp}
-      data:
-        operation: 0
-        parameterSource: 0
-        attributeType: 0
-        value: 1
-        valueVarKey: 1
+        - rid: 3081733760941031428
+    - rid: 3081733760941031428
+      type: {class: RemoveTileData, ns: Modules.EventNodeSystem.Runtime.Nodes.Action.Data, asm: Assembly-CSharp}
+      data: 
 --- !u!61 &3856851608017492117
 BoxCollider2D:
   m_ObjectHideFlags: 0

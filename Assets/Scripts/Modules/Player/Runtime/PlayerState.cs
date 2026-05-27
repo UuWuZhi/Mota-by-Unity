@@ -22,7 +22,7 @@ namespace Modules.Player.Runtime
     /// <summary>
     ///     存储玩家的位置信息（格子坐标/世界坐标）、高度与朝向。
     ///     单一职责的状态组件，可通过 DI 注入或 GetComponent 获取。
-    ///     坐标通过监听 PlayerArrived 事件更新，朝向通过监听 PlayerMoveInput 更新。
+    ///     坐标通过监听 PlayerArrived 事件更新，朝向通过监听 PlayerMoveDirectionChanged 更新。
     /// </summary>
     public class PlayerState : MonoBehaviour
     {
@@ -54,7 +54,7 @@ namespace Modules.Player.Runtime
         {
             if (!_eventCenter || _subscribed) return;
             _eventCenter.OnPlayerArrived += OnPlayerArrived;
-            if (_playerMovement) _playerMovement.OnMoveInput += OnPlayerMoveInput;
+            if (_playerMovement) _playerMovement.OnMoveDirectionChanged += OnPlayerMoveDirectionChanged;
             _subscribed = true;
         }
 
@@ -62,7 +62,7 @@ namespace Modules.Player.Runtime
         {
             if (!_eventCenter || !_subscribed) return;
             _eventCenter.OnPlayerArrived -= OnPlayerArrived;
-            if (_playerMovement) _playerMovement.OnMoveInput -= OnPlayerMoveInput;
+            if (_playerMovement) _playerMovement.OnMoveDirectionChanged -= OnPlayerMoveDirectionChanged;
             _subscribed = false;
         }
 
@@ -79,10 +79,16 @@ namespace Modules.Player.Runtime
             SetPosition(cell, worldPos, false);
         }
 
-        private void OnPlayerMoveInput(object sender, PlayerInputEventArgs args)
+        /// <summary>
+        ///     处理玩家移动方向变化事件并更新朝向。
+        /// </summary>
+        /// <param name="sender">事件触发源。</param>
+        /// <param name="args">玩家移动方向变化事件参数。</param>
+        private void OnPlayerMoveDirectionChanged(object sender, PlayerMoveDirectionChangedEventArgs args)
         {
-            if (args.MoveDirection == Vector2.zero) return;
-            var f = MapDirectionToFacing(args.MoveDirection);
+            if (Mathf.Approximately(args.Horizontal, 0f) && Mathf.Approximately(args.Vertical, 0f)) return;
+            var direction = new Vector2(args.Horizontal, args.Vertical);
+            var f = MapDirectionToFacing(direction);
             SetFacing(f, false);
         }
 

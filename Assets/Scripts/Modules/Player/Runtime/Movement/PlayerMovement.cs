@@ -38,9 +38,18 @@ namespace Modules.Player.Runtime.Movement
         private GridManager _gridManager;
 
         // 事件
-        public event EventHandler<PlayerInputEventArgs> OnMoveInput;
         public event EventHandler<PlayerMoveDirectionChangedEventArgs> OnMoveDirectionChanged;
         public event EventHandler<PlayerMoveStateChangedEventArgs> OnMoveStateChanged;
+
+        /// <summary>
+        ///     移动指令类型，用于区分单步移动与路径移动。
+        /// </summary>
+        private enum PendingMoveCommandType
+        {
+            None,
+            StepDirection,
+            PathToCell
+        }
 
         #region 运行时状态
 
@@ -60,6 +69,12 @@ namespace Modules.Player.Runtime.Movement
         private Queue<Vector3Int> _pathQueue;
         private Vector3Int? _pathTargetCell;
         private Vector2 _targetWorldPos;
+        private Vector3Int? _currentStepTargetCell;
+
+        // 移动指令缓冲（仅保留最新）
+        private PendingMoveCommandType _pendingMoveCommandType;
+        private Vector2 _pendingMoveDirection;
+        private Vector3Int _pendingTargetCell;
 
         #endregion
 
@@ -94,80 +109,6 @@ namespace Modules.Player.Runtime.Movement
             UnsubscribeEventCenter();
         }
 
-        #endregion
-
-        #region 事件系统
-
-        /// <summary>
-        ///     响应楼层切换事件，将玩家传送到事件指定的出生点并记录移动日志。
-        /// </summary>
-        /// <remarks>调用 TeleportToPosition 并传入第二个参数 false（表示不触发过渡效果），随后记录玩家已移动到新楼层出生点的日志。</remarks>
-        /// <param name="sender">触发事件的对象。</param>
-        /// <param name="args">包含楼层切换信息的事件参数，例如 SpawnPos（新的出生位置）。</param>
-        private void OnLayerSwitched(object sender, LayerSwitchedEventArgs args)
-        {
-            TeleportToPosition(args.SpawnPos, false);
-            DebugEditor.Log($"玩家已移动到新楼层出生点：{args.SpawnPos}");
-        }
-
-        /// <summary>
-        ///     处理玩家移动输入：验证状态与输入有效性，触发方向更新，并根据格子通行性与事件管理器决定并启动移动流程。
-        /// </summary>
-        /// <remarks>
-        ///     调用时会先触发 OnMoveInput 事件并在路径移动时取消路径移动。若处于等待事件执行或对话激活，则忽略输入；若已在移动、输入无效或方向为零则直接返回。方法会通过
-        ///     OnMoveDirectionChanged
-        ///     同步动画混合树参数，计算目标格子并进行基础通行性检查；若不可通行则通知被阻挡。是否允许进入目标格子的最终决定交由事件管理器（RequestEnterCell_PreMove），在允许进入时调用
-        ///     StartMoveProcess，并可根据事件执行策略在事件完成前阻塞玩家输入；事件完成后通过回调解除阻塞。
-        /// </remarks>
-        /// <param name="args">包含玩家输入的移动方向、输入有效性等信息，用于计算目标格子并驱动移动逻辑。</param>
-        public void HandleMoveInput(PlayerInputEventArgs args)
-        {
-            OnMoveInput?.Invoke(this, args);
-            // 统一判断是否应忽略移动输入
-            if (ShouldIgnoreMoveInput(args)) return;
-            if (_isPathMoving) CancelPathMove();
-
-            // 1. 拿到事件传递的移动方向
-            var dir = args.MoveDirection;
-            var horizontal = dir.x;
-            var vertical = dir.y;
-            // 2. 同步Blender混合树的horizontal/vertical参数
-            OnMoveDirectionChanged?.Invoke(this, new PlayerMoveDirectionChangedEventArgs
-            {
-                Horizontal = horizontal,
-                Vertical = vertical
-            });
-            // 3. 计算目标位置
-            var targetCell = ComputeTargetCellPosAndUpdateWorldPos(dir);
-            // 4. 基础通行检查（不含事件处理）
-            if (!IsCellBasicPassable(targetCell))
-            {
-                NotifyBlockedMovement(_targetWorldPos);
-                return;
-            }
-
-            // 5. 委托给 EventTileManager 决定是否允许进入以及是否在事件执行期间阻塞玩家
-            _eventNodeManager.RequestEnterCell_PreMove(targetCell, _globalEventVariables.GetInt(GlobalEventKey.LayerId),
-                (allowEnter, blockUntilComplete) =>
-                {
-                    if (!allowEnter)
-                    {
-                        // 阻止移动
-                        NotifyBlockedMovement(_targetWorldPos);
-                        return;
-                    }
-
-                    // 允许进入
-                    StartMoveProcess(_targetWorldPos, blockUntilComplete, () =>
-                    {
-                        // 当事件执行决定阻塞玩家直到完成时，EventTileManager 会在后台执行并在完成时调用此回调
-                        // 该回调用于解锁玩家输入。
-                        _waitingForEventExecution = false;
-                    });
-                }
-            );
-        }
-
         private void SubscribeEventCenter()
         {
             if (!_eventCenter || _eventSubscribed) return;
@@ -182,187 +123,223 @@ namespace Modules.Player.Runtime.Movement
             _eventSubscribed = false;
         }
 
-        /// <summary>
-        ///     在移动被阻止时，将玩家移动状态设置为已停止并触发一个不触发额外处理的到达事件。
-        /// </summary>
-        /// <remarks>
-        ///     该方法通过 OnMoveStateChanged 将 IsMoving 设为 false 并将 MoveTime 重置为 0，随后通过 _eventCenter 触发
-        ///     PlayerArrivedEventArgs（TriggerEvent 为 false）。
-        /// </remarks>
-        /// <param name="blockedTargetWorldPos">表示尝试移动但被阻止的目标位置（世界坐标）。</param>
-        private void NotifyBlockedMovement(Vector2 blockedTargetWorldPos)
-        {
-            OnMoveStateChanged?.Invoke(this, new PlayerMoveStateChangedEventArgs { IsMoving = false, MoveTime = 0 });
-            _eventCenter.TriggerPlayerArrived(new PlayerArrivedEventArgs
-                { TriggerEvent = false, TargetWorldPos = blockedTargetWorldPos });
-        }
-
         #endregion
 
-        #region 玩家移动函数
+        #region 输入处理
 
         /// <summary>
-        ///     开始玩家移动流程：停止当前移动协程（如有），启动移动到指定世界位置的协程，发布移动状态事件并在到达时触发到达事件；根据 blockUntilComplete 决定是否在事件执行完成前阻塞玩家并在适当时机调用回调。
+        ///     响应楼层切换事件，将玩家传送到事件指定的出生点并记录移动日志。
         /// </summary>
-        /// <remarks>
-        ///     方法会递增内部移动令牌并计算移动时间，通过 OnMoveStateChanged 通知移动开始；到达目标后通过 _eventCenter 触发
-        ///     PlayerArrivedEventArgs。若已有移动协程存在会先停止该协程。
-        /// </remarks>
-        /// <param name="targetPos">目标世界位置（Vector2），玩家将移动到该位置。</param>
-        /// <param name="blockUntilComplete">指示在触发到达事件后是否阻塞玩家，若为 true 则等待事件执行完成并由外部解除阻塞。</param>
-        /// <param name="onExecutionComplete">可选回调；当移动完成且未阻塞时立即调用，或在阻塞情况下由外部在事件执行完成时调用。</param>
-        private void StartMoveProcess(Vector2 targetPos, bool blockUntilComplete, Action onExecutionComplete)
+        /// <remarks>调用 TeleportToPosition 并传入第二个参数 false（表示不触发过渡效果），随后记录玩家已移动到新楼层出生点的日志。</remarks>
+        /// <param name="sender">触发事件的对象。</param>
+        /// <param name="args">包含楼层切换信息的事件参数，例如 SpawnPos（新的出生位置）。</param>
+        private void OnLayerSwitched(object sender, LayerSwitchedEventArgs args)
         {
-            var token = ++_moveToken;
-            var moveTime = _gridManager.tileSize / moveSpeed;
-            OnMoveStateChanged?.Invoke(this,
-                new PlayerMoveStateChangedEventArgs { IsMoving = true, MoveTime = moveTime });
-
-            StopMoveCoroutine();
-
-            // 如果事件要求阻塞玩家直到执行完成，则设置标志（等待 EventTileManager 在完成时触发解锁回调）
-            if (blockUntilComplete) _waitingForEventExecution = true;
-
-            _moveCoroutine = StartCoroutine(MoveToTarget(targetPos, token, () =>
-            {
-                // 到达后触发玩家移动事件（由订阅方决定是否响应）
-                _eventCenter.TriggerPlayerArrived(new PlayerArrivedEventArgs
-                    { TriggerEvent = true, TargetWorldPos = targetPos });
-                // 如果事件不要求阻塞，则立即解锁（若要求阻塞则会由 EventTileManager 在事件完成时调用 onExecutionComplete）
-                if (!blockUntilComplete)
-                {
-                    _waitingForEventExecution = false;
-                    onExecutionComplete?.Invoke();
-                }
-
-                // 如果 blockUntilComplete 且 onExecutionComplete 非 null，则保持等待（由外部回调解除）
-                _moveCoroutine = null;
-            }));
+            TeleportToPosition(args.SpawnPos, false);
+            DebugEditor.Log($"玩家已移动到新楼层出生点：{args.SpawnPos}");
         }
 
         /// <summary>
-        ///     在物理帧中平滑移动对象到指定目标，直到到达或移动令牌失效，并在完成后触发可选回调。
+        ///     处理玩家的移动输入：判断是否应忽略输入；在角色正在移动时缓存一步移动命令，否则执行一步移动并在完成后处理挂起的移动。
         /// </summary>
         /// <remarks>
-        ///     使用 Rigidbody.MovePosition 在 FixedUpdate 周期内移动以保持与物理和动画同步；到达目标后会将 transform 和
-        ///     Rigidbody 的位置对齐，并重置移动状态与相应事件通知。
+        ///     若 ShouldIgnoreMoveInput 返回 true 则直接返回；若当前正在移动则调用 TryCacheStepMoveCommand 缓存命令，
+        ///     否则调用 ExecuteStepMove 并在移动完成回调中处理挂起移动。
         /// </remarks>
-        /// <param name="targetPos">目标位置（世界坐标）。</param>
-        /// <param name="token">用于判断当前移动是否仍有效的令牌；令牌不匹配时中止移动。</param>
-        /// <param name="onComplete">可选回调，移动完成且未被取消时调用。</param>
-        /// <returns>一个用于在 FixedUpdate 驱动下执行移动的 IEnumerator 协程。</returns>
-        private IEnumerator MoveToTarget(Vector2 targetPos, int token, Action onComplete = null)
+        /// <param name="moveDirection">玩家输入的移动方向。</param>
+        public void HandleStepMoveInput(Vector2 moveDirection)
         {
-            _isMoving = true;
-            // 物理帧驱动 → 移动更稳定，和动画同步
-            while (token == _moveToken && Vector2.SqrMagnitude((Vector2)transform.position - targetPos) > 0.000001f)
+            // 统一判断是否应忽略移动输入
+            if (IsMovementInputBlocking() || moveDirection == Vector2.zero)
             {
-                playerRigidbody2D.MovePosition(Vector2.MoveTowards(transform.position, targetPos,
-                    moveSpeed * Time.fixedDeltaTime));
-                yield return new WaitForFixedUpdate();
+                ClearPendingMoveCommand();
+                return;
             }
 
-            if (token != _moveToken) yield break;
-
-            // 精准到位 + 重置动画状态
-            transform.position = targetPos;
-            playerRigidbody2D.position = targetPos;
-            _isMoving = false;
-            OnMoveStateChanged?.Invoke(this, new PlayerMoveStateChangedEventArgs
+            if (_isMoving)
             {
-                IsMoving = false,
-                MoveTime = 0
-            });
+                TryCacheStepMoveCommand(moveDirection);
+                return;
+            }
 
-            onComplete?.Invoke();
+            ExecuteStepMove(moveDirection, () => HandlePendingMoveAfterStep(_pathMoveToken, null));
         }
 
         /// <summary>
-        ///     将玩家立即传送到指定的世界坐标，同时停止当前移动、清除路径并更新移动状态，且可选择触发到达事件。
+        ///     路径移动入口
         /// </summary>
-        /// <remarks>
-        ///     会停止并清理现有的移动协程和路径线，设置 _isMoving 为 false 并通过 OnMoveStateChanged 通知状态变更；直接设置
-        ///     transform.position 与 playerRigidbody2D.position 以避免物理问题；最后调用事件中心触发到达事件（若 triggerEvent 为 true）。
-        /// </remarks>
-        /// <param name="targetPos">要传送到的目标世界坐标。</param>
-        /// <param name="triggerEvent">是否触发玩家到达事件；默认为 true。</param>
-        public void TeleportToPosition(Vector2 targetPos, bool triggerEvent = true)
+        /// <param name="worldPos">目标位置的世界坐标。</param>
+        /// <returns>当移动已开始或移动命令已缓存时返回 true；当命令被取消或未执行时返回 false。</returns>
+        public void HandlePathMoveInput(Vector2 worldPos)
         {
-            StopMoveCoroutine();
-
-            ClearPathLine();
-
-            _isMoving = false;
-            _waitingForEventExecution = false;
-            OnMoveStateChanged?.Invoke(this, new PlayerMoveStateChangedEventArgs
+            if (IsMovementInputBlocking())
             {
-                IsMoving = false,
-                MoveTime = 0
-            });
+                ClearPendingMoveCommand();
+                return;
+            }
 
-            // 直接设置位置（同时更新刚体位置避免物理问题）
-            transform.position = targetPos;
-            playerRigidbody2D.position = targetPos;
-
-            _targetWorldPos = targetPos;
-
-            _eventCenter.TriggerPlayerArrived(new PlayerArrivedEventArgs
+            _gridManager.TryWorldToCellPos(worldPos, out var targetCell);
+            if (_isMoving)
             {
-                TriggerEvent = triggerEvent,
-                TargetWorldPos = targetPos
-            });
-            DebugEditor.Log($"玩家已传送至: {targetPos}");
+                TryCachePathMoveCommand(targetCell);
+                return;
+            }
+
+            ExecutePathMove(targetCell);
         }
 
         #endregion
 
-        #region 辅助函数
+        #region 缓冲指令
 
         /// <summary>
-        ///     尝试通过鼠标点击发起逐步移动（世界坐标入口）。
+        ///     尝试在移动协程进行中写入缓冲的单步移动指令。
         /// </summary>
-        /// <param name="worldPos">鼠标点击的世界坐标。</param>
-        /// <returns>是否成功发起逐步移动。</returns>
-        public bool TryMoveToWorldPosStep(Vector2 worldPos)
+        /// <param name="direction">移动方向。</param>
+        private void TryCacheStepMoveCommand(Vector2 direction)
         {
-            if (!_gridManager || _globalEventVariables == null) return false;
-            return _gridManager.TryWorldToCellPos(worldPos, out var targetCell) && TryMoveToCellStep(targetCell);
+            var previewTargetCell = ComputeTargetCellPosAndUpdateWorldPos(direction);
+            TryCacheMoveCommand(previewTargetCell, () =>
+            {
+                _pendingMoveCommandType = PendingMoveCommandType.StepDirection;
+                _pendingMoveDirection = direction;
+            });
+        }
+
+        private void TryCachePathMoveCommand(Vector3Int targetCell)
+        {
+            TryCacheMoveCommand(targetCell, () =>
+            {
+                _pendingMoveCommandType = PendingMoveCommandType.PathToCell;
+                _pendingTargetCell = targetCell;
+            });
         }
 
         /// <summary>
-        ///     尝试通过鼠标点击发起逐步移动（格子坐标入口）。
+        ///     尝试写入通用的缓冲移动指令，统一处理与当前步目标重复的情况。
+        /// </summary>
+        /// <param name="targetCell">待缓存的目标格子。</param>
+        /// <param name="cacheAction">具体的缓存写入逻辑。</param>
+        private void TryCacheMoveCommand(Vector3Int targetCell, Action cacheAction)
+        {
+            // 统一处理与当前步目标重复的情况
+            if (IsSameAsCurrentStepTarget(targetCell))
+            {
+                ClearPendingMoveCommand();
+                return;
+            }
+
+            cacheAction?.Invoke();
+        }
+
+        /// <summary>
+        ///     在当前一步移动完成后处理缓冲的移动指令。
+        /// </summary>
+        /// <param name="token">路径移动令牌。</param>
+        /// <param name="continuePath">继续当前路径移动的回调。</param>
+        private void HandlePendingMoveAfterStep(int token, Action continuePath)
+        {
+            if (_pendingMoveCommandType == PendingMoveCommandType.None)
+            {
+                continuePath?.Invoke();
+                return;
+            }
+
+            if (IsMovementInputBlocking())
+            {
+                ClearPendingMoveCommand();
+                continuePath?.Invoke();
+                return;
+            }
+
+            switch (_pendingMoveCommandType)
+            {
+                case PendingMoveCommandType.StepDirection:
+                    var pendingDirection = _pendingMoveDirection;
+                    if (_isPathMoving) FinishPathMove();
+                    ClearPendingMoveCommand();
+                    ExecuteStepMove(pendingDirection, () => HandlePendingMoveAfterStep(_pathMoveToken, null));
+                    break;
+                case PendingMoveCommandType.PathToCell:
+                    var pendingTargetCell = _pendingTargetCell;
+                    if (_isPathMoving) FinishPathMove();
+                    ClearPendingMoveCommand();
+                    ExecutePathMove(pendingTargetCell);
+                    break;
+                case PendingMoveCommandType.None:
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        #endregion
+
+        #region 玩家移动
+
+        /// <summary>
+        ///     执行单步移动（统一入口）。
+        /// </summary>
+        /// <param name="direction">移动方向。</param>
+        /// <param name="onStepComplete">单步移动完成后的回调。</param>
+        private void ExecuteStepMove(Vector2 direction, Action onStepComplete)
+        {
+            UpdateMoveDirection(direction);
+            var targetCell = ComputeTargetCellPosAndUpdateWorldPos(direction);
+            if (!IsCellBasicPassable(targetCell))
+            {
+                NotifyBlockedMovement(_targetWorldPos);
+                return;
+            }
+
+            _eventNodeManager.RequestEnterCell_PreMove(targetCell, _globalEventVariables.GetInt(GlobalEventKey.LayerId),
+                (allowEnter, blockUntilComplete) =>
+                {
+                    if (!allowEnter)
+                    {
+                        NotifyBlockedMovement(_targetWorldPos);
+                        return;
+                    }
+
+                    StartMoveProcess(_targetWorldPos, blockUntilComplete, () =>
+                    {
+                        _waitingForEventExecution = false;
+                        onStepComplete?.Invoke();
+                    });
+                }
+            );
+        }
+
+        /// <summary>
+        ///     执行路径移动（统一入口）。
         /// </summary>
         /// <param name="targetCell">目标格子坐标。</param>
-        /// <returns>是否成功发起逐步移动。</returns>
-        private bool TryMoveToCellStep(Vector3Int targetCell)
+        /// <returns>是否成功启动路径移动。</returns>
+        private void ExecutePathMove(Vector3Int targetCell)
         {
-            if (_isPathMoving || _isMoving) CancelPathMove();
-            if (_waitingForEventExecution) return false;
-            if (_globalEventVariables.GetBool(GlobalEventKey.DialogueIsActive)) return false;
-            if (!_gridManager || !_gridManager.IsInGridBounds(targetCell)) return false;
-
             if (!TryGetCurrentCell(out var startCell))
-                return false;
-            if (startCell == targetCell) return false;
-            var path = BuildPath(startCell, targetCell);
-            if (path == null || path.Count == 0) return false;
+                return;
+            if (startCell == targetCell) return;
 
-            StartPathMove(path, targetCell);
-            return true;
+            var path = BuildPath(startCell, targetCell);
+            if (path == null || path.Count == 0) return;
+
+            StartPathMoveProcess(path, targetCell);
         }
+
+        #region 路径移动函数
 
         /// <summary>
         ///     启动路径移动流程，并缓存路径队列。
         /// </summary>
         /// <param name="path">按顺序的路径格子列表（不含起点）。</param>
         /// <param name="targetCell">点击的目标格子。</param>
-        private void StartPathMove(List<Vector3Int> path, Vector3Int targetCell)
+        private void StartPathMoveProcess(List<Vector3Int> path, Vector3Int targetCell)
         {
             _isPathMoving = true;
             _pathQueue = new Queue<Vector3Int>(path);
             _pathTargetCell = targetCell;
             _pathMoveToken++;
-            //RenderPathLine();
             MoveNextPathStep(_pathMoveToken);
         }
 
@@ -381,13 +358,7 @@ namespace Modules.Player.Runtime.Movement
             RenderPathLine();
             var nextCell = _pathQueue.Dequeue();
             var isFinalStep = _pathTargetCell.HasValue && nextCell == _pathTargetCell.Value;
-            if (!isFinalStep && !IsCellBasicPassable(nextCell))
-            {
-                FinishPathMove();
-                return;
-            }
-
-            if (!TryGetCurrentCell(out var currentCell))
+            if ((!isFinalStep && !IsCellBasicPassable(nextCell)) || !TryGetCurrentCell(out var currentCell))
             {
                 FinishPathMove();
                 return;
@@ -395,42 +366,9 @@ namespace Modules.Player.Runtime.Movement
 
             Vector2 dir = new(nextCell.x - currentCell.x, nextCell.y - currentCell.y);
             UpdateMoveDirection(dir);
-            //RenderPathLine();
 
-            var targetPos = _gridManager.GetCellOriginWorld(nextCell);
-            TryStartPathStep(nextCell, targetPos, isFinalStep, token);
-        }
-
-        /// <summary>
-        ///     结束路径移动状态并清理缓存。
-        /// </summary>
-        private void FinishPathMove()
-        {
-            _isPathMoving = false;
-            _pathQueue = null;
-            _pathTargetCell = null;
-            ClearPathLine();
-        }
-
-        /// <summary>
-        ///     立即打断路径移动并停止当前移动协程。
-        /// </summary>
-        private void CancelPathMove()
-        {
-            _pathMoveToken++;
-            _moveToken++;
-            StopMoveCoroutine();
-
-            _isMoving = false;
-            _waitingForEventExecution = false;
-            if (playerRigidbody2D)
-            {
-                playerRigidbody2D.velocity = Vector2.zero;
-                playerRigidbody2D.angularVelocity = 0f;
-            }
-
-            FinishPathMove();
-            OnMoveStateChanged?.Invoke(this, new PlayerMoveStateChangedEventArgs { IsMoving = false, MoveTime = 0 });
+            var targetWorldPos = _gridManager.GetCellOriginWorld(nextCell);
+            TryStartPathStep(nextCell, targetWorldPos, isFinalStep, token);
         }
 
         /// <summary>
@@ -443,15 +381,8 @@ namespace Modules.Player.Runtime.Movement
         private void TryStartPathStep(Vector3Int targetCell, Vector2 targetPos, bool allowEvent, int token)
         {
             if (token != _pathMoveToken || !_isPathMoving) return;
-            if (!_gridManager || !_gridManager.IsInGridBounds(targetCell))
-            {
-                FinishPathMove();
-                return;
-            }
 
-            if (!_gridManager.GetGroundTileAtCell(targetCell) ||
-                _gridManager.GetObstacleTileAtCell(targetCell) ||
-                (!allowEvent && _gridManager.GetEventTileAtCell(targetCell)))
+            if (!allowEvent && _gridManager.GetEventTileAtCell(targetCell))
             {
                 NotifyBlockedMovement(targetPos);
                 FinishPathMove();
@@ -469,24 +400,23 @@ namespace Modules.Player.Runtime.Movement
                         return;
                     }
 
-                    StartMoveProcess(targetPos, blockUntilComplete, () => MoveNextPathStep(token));
+                    StartMoveProcess(targetPos, blockUntilComplete,
+                        () => HandlePendingMoveAfterStep(token, () => MoveNextPathStep(token)));
                 }
             );
         }
 
         /// <summary>
-        ///     更新玩家朝向并驱动移动动画参数。
+        ///     结束路径移动状态并清理缓存。
         /// </summary>
-        /// <param name="dir">当前移动方向。</param>
-        private void UpdateMoveDirection(Vector2 dir)
+        private void FinishPathMove()
         {
-            if (dir == Vector2.zero) return;
-            OnMoveDirectionChanged?.Invoke(this, new PlayerMoveDirectionChangedEventArgs
-            {
-                Horizontal = dir.x,
-                Vertical = dir.y
-            });
+            _isPathMoving = false;
+            _pathQueue = null;
+            _pathTargetCell = null;
+            ClearPathLine();
         }
+
 
         /// <summary>
         ///     绘制当前路径线（起点-中间点-终点）。
@@ -596,16 +526,135 @@ namespace Modules.Player.Runtime.Movement
             return path;
         }
 
+        #endregion
+
+        #region 核心移动函数
+
         /// <summary>
-        ///     判断格子是否可直接通行（空地且非障碍/事件）。
+        ///     开始玩家移动流程：停止当前移动协程（如有），启动移动到指定世界位置的协程，发布移动状态事件并在到达时触发到达事件；根据 blockUntilComplete 决定是否在事件执行完成前阻塞玩家并在适当时机调用回调。
         /// </summary>
-        /// <param name="cellPos">格子坐标。</param>
-        /// <returns>是否可直接通行。</returns>
-        private bool IsCellDirectlyPassable(Vector3Int cellPos)
+        /// <remarks>
+        ///     方法会递增内部移动令牌并计算移动时间，通过 OnMoveStateChanged 通知移动开始；到达目标后通过 _eventCenter 触发
+        ///     PlayerArrivedEventArgs。若已有移动协程存在会先停止该协程。
+        /// </remarks>
+        /// <param name="targetPos">目标世界位置（Vector2），玩家将移动到该位置。</param>
+        /// <param name="blockUntilComplete">指示在触发到达事件后是否阻塞玩家，若为 true 则等待事件执行完成并由外部解除阻塞。</param>
+        /// <param name="onExecutionComplete">可选回调；当移动完成且未阻塞时立即调用，或在阻塞情况下由外部在事件执行完成时调用。</param>
+        private void StartMoveProcess(Vector2 targetPos, bool blockUntilComplete, Action onExecutionComplete)
         {
-            if (!_gridManager) return false;
-            return IsCellBasicPassable(cellPos) && !_gridManager.GetEventTileAtCell(cellPos);
+            var token = ++_moveToken;
+            var moveTime = _gridManager.tileSize / moveSpeed;
+            OnMoveStateChanged?.Invoke(this,
+                new PlayerMoveStateChangedEventArgs { IsMoving = true, MoveTime = moveTime });
+
+            if (_gridManager.TryWorldToCellPos(targetPos, out var targetCell))
+                _currentStepTargetCell = targetCell;
+
+            StopMoveCoroutine();
+
+            // 如果事件要求阻塞玩家直到执行完成，则设置标志（等待 EventTileManager 在完成时触发解锁回调）
+            if (blockUntilComplete) _waitingForEventExecution = true;
+
+            _moveCoroutine = StartCoroutine(MoveToTarget(targetPos, token, () =>
+            {
+                // 到达后触发玩家移动事件（由订阅方决定是否响应）
+                _eventCenter.TriggerPlayerArrived(new PlayerArrivedEventArgs
+                    { TriggerEvent = true, TargetWorldPos = targetPos });
+                // 如果事件不要求阻塞，则立即解锁（若要求阻塞则会由 EventTileManager 在事件完成时调用 onExecutionComplete）
+                if (!blockUntilComplete)
+                {
+                    _waitingForEventExecution = false;
+                    onExecutionComplete?.Invoke();
+                }
+
+                // 如果 blockUntilComplete 且 onExecutionComplete 非 null，则保持等待（由外部回调解除）
+                _moveCoroutine = null;
+            }));
         }
+
+        /// <summary>
+        ///     在物理帧中平滑移动对象到指定目标，直到到达或移动令牌失效，并在完成后触发可选回调。
+        /// </summary>
+        /// <remarks>
+        ///     使用 Rigidbody.MovePosition 在 FixedUpdate 周期内移动以保持与物理和动画同步；到达目标后会将 transform 和
+        ///     Rigidbody 的位置对齐，并重置移动状态与相应事件通知。
+        /// </remarks>
+        /// <param name="targetPos">目标位置（世界坐标）。</param>
+        /// <param name="token">用于判断当前移动是否仍有效的令牌；令牌不匹配时中止移动。</param>
+        /// <param name="onComplete">可选回调，移动完成且未被取消时调用。</param>
+        /// <returns>一个用于在 FixedUpdate 驱动下执行移动的 IEnumerator 协程。</returns>
+        private IEnumerator MoveToTarget(Vector2 targetPos, int token, Action onComplete = null)
+        {
+            _isMoving = true;
+            // 物理帧驱动 → 移动更稳定，和动画同步
+            while (token == _moveToken && Vector2.SqrMagnitude((Vector2)transform.position - targetPos) > 0.000001f)
+            {
+                playerRigidbody2D.MovePosition(Vector2.MoveTowards(transform.position, targetPos,
+                    moveSpeed * Time.fixedDeltaTime));
+                yield return new WaitForFixedUpdate();
+            }
+
+            if (token != _moveToken) yield break;
+
+            // 精准到位 + 重置动画状态
+            transform.position = targetPos;
+            playerRigidbody2D.position = targetPos;
+            _isMoving = false;
+            OnMoveStateChanged?.Invoke(this, new PlayerMoveStateChangedEventArgs
+            {
+                IsMoving = false,
+                MoveTime = 0
+            });
+
+            _currentStepTargetCell = null;
+
+            onComplete?.Invoke();
+        }
+
+        /// <summary>
+        ///     将玩家立即传送到指定的世界坐标，同时停止当前移动、清除路径并更新移动状态，且可选择触发到达事件。
+        /// </summary>
+        /// <remarks>
+        ///     会停止并清理现有的移动协程和路径线，设置 _isMoving 为 false 并通过 OnMoveStateChanged 通知状态变更；直接设置
+        ///     transform.position 与 playerRigidbody2D.position 以避免物理问题；最后调用事件中心触发到达事件（若 triggerEvent 为 true）。
+        /// </remarks>
+        /// <param name="targetPos">要传送到的目标世界坐标。</param>
+        /// <param name="triggerEvent">是否触发玩家到达事件；默认为 true。</param>
+        public void TeleportToPosition(Vector2 targetPos, bool triggerEvent = true)
+        {
+            StopMoveCoroutine();
+            ClearPathLine();
+            ClearPendingMoveCommand();
+
+            _isMoving = false;
+            _waitingForEventExecution = false;
+            OnMoveStateChanged?.Invoke(this, new PlayerMoveStateChangedEventArgs
+            {
+                IsMoving = false,
+                MoveTime = 0
+            });
+
+            // 直接设置位置（同时更新刚体位置避免物理问题）
+            transform.position = targetPos;
+            playerRigidbody2D.position = targetPos;
+
+            _targetWorldPos = targetPos;
+
+            _eventCenter.TriggerPlayerArrived(new PlayerArrivedEventArgs
+            {
+                TriggerEvent = triggerEvent,
+                TargetWorldPos = targetPos
+            });
+            DebugEditor.Log($"玩家已传送至: {targetPos}");
+        }
+
+        #endregion
+
+        #endregion
+
+        #region 辅助函数
+
+        #region 计算与转换函数
 
         /// <summary>
         ///     基础通行检查（不含事件处理）：判断指定格子是否可通行（边界、Ground 是否存在、Obstacle 是否为空）。
@@ -618,6 +667,17 @@ namespace Modules.Player.Runtime.Movement
             if (!_gridManager.IsInGridBounds(cellPos)) return false;
             if (!_gridManager.GetGroundTileAtCell(cellPos)) return false;
             return !_gridManager.GetObstacleTileAtCell(cellPos);
+        }
+
+        /// <summary>
+        ///     判断格子是否可直接通行（基础检查+无事件）。
+        /// </summary>
+        /// <param name="cellPos">格子坐标。</param>
+        /// <returns>是否可直接通行。</returns>
+        private bool IsCellDirectlyPassable(Vector3Int cellPos)
+        {
+            if (!_gridManager) return false;
+            return IsCellBasicPassable(cellPos) && !_gridManager.GetEventTileAtCell(cellPos);
         }
 
         /// <summary>
@@ -636,17 +696,16 @@ namespace Modules.Player.Runtime.Movement
         }
 
         /// <summary>
-        ///     判断是否需要忽略本次移动输入。
+        ///     确定当前是否应阻止移动输入。
         /// </summary>
-        /// <param name="args">玩家输入参数。</param>
-        /// <returns>若应忽略移动输入则返回 true；否则返回 false。</returns>
-        private bool ShouldIgnoreMoveInput(PlayerInputEventArgs args)
+        /// <remarks>
+        ///     当正在等待事件执行（_waitingForEventExecution 为 true）或全局事件变量 DialogueIsActive 为 true
+        ///     时，将阻止移动输入并返回 true。
+        /// </remarks>
+        /// <returns>若应阻止移动输入则返回 true；否则返回 false。</returns>
+        private bool IsMovementInputBlocking()
         {
-            // 等待事件执行期间或对话激活时禁止移动输入
-            if (_waitingForEventExecution) return true;
-            if (_globalEventVariables.GetBool(GlobalEventKey.DialogueIsActive)) return true;
-            // 移动中或输入无效时忽略
-            return _isMoving || !args.IsValidInput || args.MoveDirection == Vector2.zero;
+            return _waitingForEventExecution || _globalEventVariables.GetBool(GlobalEventKey.DialogueIsActive);
         }
 
         /// <summary>
@@ -657,9 +716,9 @@ namespace Modules.Player.Runtime.Movement
         private bool TryGetCurrentCell(out Vector3Int currentCell)
         {
             currentCell = Vector3Int.zero;
-            if (!_gridManager) return false;
-            // 统一通过 GridManager 进行世界坐标到格子坐标的转换
-            return _gridManager.TryWorldToCellPos(transform.position, out currentCell);
+            return _gridManager &&
+                   // 统一通过 GridManager 进行世界坐标到格子坐标的转换
+                   _gridManager.TryWorldToCellPos(transform.position, out currentCell);
         }
 
         /// <summary>
@@ -671,6 +730,57 @@ namespace Modules.Player.Runtime.Movement
             StopCoroutine(_moveCoroutine);
             _moveCoroutine = null;
         }
+
+        /// <summary>
+        ///     在移动被阻止时，将玩家移动状态设置为已停止并触发一个不触发额外处理的到达事件。
+        /// </summary>
+        /// <remarks>
+        ///     该方法通过 OnMoveStateChanged 将 IsMoving 设为 false 并将 MoveTime 重置为 0，随后通过 _eventCenter 触发
+        ///     PlayerArrivedEventArgs（TriggerEvent 为 false）。
+        /// </remarks>
+        /// <param name="blockedTargetWorldPos">表示尝试移动但被阻止的目标位置（世界坐标）。</param>
+        private void NotifyBlockedMovement(Vector2 blockedTargetWorldPos)
+        {
+            OnMoveStateChanged?.Invoke(this, new PlayerMoveStateChangedEventArgs { IsMoving = false, MoveTime = 0 });
+            _eventCenter.TriggerPlayerArrived(new PlayerArrivedEventArgs
+                { TriggerEvent = false, TargetWorldPos = blockedTargetWorldPos });
+        }
+
+        /// <summary>
+        ///     更新玩家朝向并驱动移动动画参数。
+        /// </summary>
+        /// <param name="dir">当前移动方向。</param>
+        private void UpdateMoveDirection(Vector2 dir)
+        {
+            if (dir == Vector2.zero) return;
+            OnMoveDirectionChanged?.Invoke(this, new PlayerMoveDirectionChangedEventArgs
+            {
+                Horizontal = dir.x,
+                Vertical = dir.y
+            });
+        }
+
+        /// <summary>
+        ///     清除待执行的移动指令缓冲。
+        /// </summary>
+        private void ClearPendingMoveCommand()
+        {
+            _pendingMoveCommandType = PendingMoveCommandType.None;
+            _pendingMoveDirection = Vector2.zero;
+            _pendingTargetCell = Vector3Int.zero;
+        }
+
+        /// <summary>
+        ///     判断目标格是否与当前一步移动目标一致。
+        /// </summary>
+        /// <param name="targetCell">目标格子坐标。</param>
+        /// <returns>一致返回 true，否则返回 false。</returns>
+        private bool IsSameAsCurrentStepTarget(Vector3Int targetCell)
+        {
+            return _currentStepTargetCell.HasValue && _currentStepTargetCell.Value == targetCell;
+        }
+
+        #endregion
 
         #endregion
     }

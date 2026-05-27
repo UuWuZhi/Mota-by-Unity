@@ -46,7 +46,7 @@ namespace Modules.Core.Runtime
         public static void LogError(object message, Object context = null)
         {
             // 仅在编辑器环境下调用错误接口
-            LogError(message, context);
+            Debug.LogError(message, context);
         }
 
         // ReSharper disable Unity.PerformanceAnalysis

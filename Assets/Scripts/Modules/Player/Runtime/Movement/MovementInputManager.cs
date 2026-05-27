@@ -1,4 +1,3 @@
-using Modules.EventSystem.DataDefine.EventArgs;
 using UnityEngine;
 using VContainer;
 
@@ -33,7 +32,7 @@ namespace Modules.Player.Runtime.Movement
                         var mousePos = Input.mousePosition;
                         mousePos.z = -cam.transform.position.z;
                         Vector2 worldPos = cam.ScreenToWorldPoint(mousePos);
-                        _playerMovement.TryMoveToWorldPosStep(worldPos);
+                        _playerMovement.HandlePathMoveInput(worldPos);
                     }
                 }
 
@@ -71,11 +70,7 @@ namespace Modules.Player.Runtime.Movement
             if (useInputInterval && !(Time.time - _lastInputTime >= inputInterval)) return;
             _lastInputTime = Time.time; // 更新上次输入时间（无论是否启用间隔都记录，方便后续扩展）
             if (_playerMovement)
-                _playerMovement.HandleMoveInput(new PlayerInputEventArgs
-                {
-                    MoveDirection = moveDir,
-                    IsValidInput = true
-                });
+                _playerMovement.HandleStepMoveInput(moveDir);
         }
 
         [Inject]
